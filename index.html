@@ -296,6 +296,7 @@ td{padding:12px; border-bottom:1px solid var(--border); vertical-align:middle;}
         <a href="#contact">Contact</a>
       </div>
       <div class="pv-nav-right">
+        <button class="btn btn-outline btn-sm" onclick="openMyAccount()">My Account</button>
         <button class="btn btn-primary btn-sm" onclick="scrollToId('collections')">Start a Lay-Away</button>
         <button class="hamburger" onclick="toggleMobilePanel()">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -307,6 +308,7 @@ td{padding:12px; border-bottom:1px solid var(--border); vertical-align:middle;}
       <a href="#how" onclick="toggleMobilePanel()">How Lay-Away Works</a>
       <a href="#reviews" onclick="toggleMobilePanel()">Reviews</a>
       <a href="#contact" onclick="toggleMobilePanel()">Contact</a>
+      <a href="javascript:void(0)" onclick="toggleMobilePanel(); openMyAccount()">My Account</a>
     </div>
   </nav>
 
@@ -453,15 +455,9 @@ td{padding:12px; border-bottom:1px solid var(--border); vertical-align:middle;}
       <div class="step-track">
         <div class="step-dot active" id="stepDot1">1</div><div class="step-line"></div>
         <div class="step-dot" id="stepDot2">2</div><div class="step-line"></div>
-        <div class="step-dot" id="stepDot3">3</div><div class="step-line"></div>
-        <div class="step-dot" id="stepDot4">4</div>
+        <div class="step-dot" id="stepDot3">3</div>
       </div>
       <div id="checkoutStep1">
-        <div class="form-row"><label>Full Name</label><input type="text" placeholder="Your Name"></div>
-        <div class="form-row"><label>Email Address</label><input type="email" placeholder="your@email.com"></div>
-        <div class="form-row"><label>Mobile Number</label><input type="tel" placeholder="+63 900 000 0001"></div>
-      </div>
-      <div id="checkoutStep2" class="hidden">
         <div class="form-row"><label>Lay-Away Term</label>
           <select id="planTermSelect" onchange="rebuildCheckoutSchedule()"><option value="6">3 Months (6 payments)</option><option value="4">2 Months (4 payments)</option><option value="2">1 Month (2 payments)</option></select>
         </div>
@@ -470,7 +466,7 @@ td{padding:12px; border-bottom:1px solid var(--border); vertical-align:middle;}
           <div class="schedule-list" id="planSchedulePreview"></div>
         </div>
       </div>
-      <div id="checkoutStep3" class="hidden">
+      <div id="checkoutStep2" class="hidden">
         <div class="plan-box">
           <h4>Choose Payment Method</h4>
           <div class="pay-method-list">
@@ -492,7 +488,7 @@ td{padding:12px; border-bottom:1px solid var(--border); vertical-align:middle;}
           </div>
         </div>
       </div>
-      <div id="checkoutStep4" class="hidden">
+      <div id="checkoutStep3" class="hidden">
         <div class="confirm-box">
           <div class="confirm-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg></div>
           <h3 style="font-size:20px; margin-bottom:8px;">Reservation Submitted</h3>
@@ -504,6 +500,25 @@ td{padding:12px; border-bottom:1px solid var(--border); vertical-align:middle;}
       <button class="btn btn-outline" onclick="closeModal('checkoutModalBackdrop')">Cancel</button>
       <button class="btn btn-primary" onclick="checkoutNext()">Continue</button>
     </div>
+  </div>
+</div>
+<!-- ===== My Account Modal (Customer) ===== -->
+<div class="modal-backdrop hidden" id="myAccountModalBackdrop" onclick="closeOnBackdrop(event,'myAccountModalBackdrop')">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head">
+      <h3>My Account</h3>
+      <button class="modal-close" onclick="closeModal('myAccountModalBackdrop')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="spec-grid" id="maSummary"></div>
+      <h4 style="margin:18px 0 10px; font-size:15px;">Active Lay-Aways</h4>
+      <div id="maActive"></div>
+      <h4 style="margin:18px 0 10px; font-size:15px;">Completed Lay-Aways</h4>
+      <div id="maCompleted"></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal('myAccountModalBackdrop')">Close</button></div>
   </div>
 </div>
 <!-- ===== Order Detail Modal (Admin) ===== -->
@@ -579,6 +594,13 @@ const customers = [
   {name:'Sample User',email:'user@sampleemail.com',phone:'+63 900 000 0003',active:2,since:'Aug 2025'},
   {name:'Sample Patron',email:'patron@sampleemail.com',phone:'+63 900 000 0004',active:1,since:'Jun 2026'}
 ];
+
+/* Sample signed-in customer for the "My Account" view — in the real system this
+   comes from the logged-in session, not a hardcoded name. */
+const currentCustomerName = 'Sample Client';
+const completedOrders = [
+  {id:'LA-0987',customer:'Sample Client',item:'Vintage Rose Pendant',plan:'2 Mo. / 4 Payments',completedOn:'Jul 2026'}
+];
 </script>
 <script>
 /* ================= View / Navigator Control ================= */
@@ -653,13 +675,13 @@ function startCheckout(){
 /* ================= Checkout Flow ================= */
 let checkoutStep = 1;
 function renderCheckoutStep(){
-  for(let i=1;i<=4;i++){ document.getElementById('checkoutStep'+i).classList.toggle('hidden', i!==checkoutStep); }
-  for(let i=1;i<=4;i++){ document.getElementById('stepDot'+i).classList.toggle('active', i<=checkoutStep); }
-  if(checkoutStep===2){
+  for(let i=1;i<=3;i++){ document.getElementById('checkoutStep'+i).classList.toggle('hidden', i!==checkoutStep); }
+  for(let i=1;i<=3;i++){ document.getElementById('stepDot'+i).classList.toggle('active', i<=checkoutStep); }
+  if(checkoutStep===1){
     rebuildCheckoutSchedule();
   }
   const foot = document.getElementById('checkoutFoot');
-  if(checkoutStep<4){
+  if(checkoutStep<3){
     foot.innerHTML = '<button class="btn btn-outline" onclick="closeModal(\'checkoutModalBackdrop\')">Cancel</button><button class="btn btn-primary" onclick="checkoutNext()">Continue</button>';
   } else {
     foot.innerHTML = '<button class="btn btn-primary" onclick="closeModal(\'checkoutModalBackdrop\')" style="width:100%; justify-content:center;">Done</button>';
@@ -691,11 +713,36 @@ function rebuildCheckoutSchedule(){
   preview.innerHTML = rows;
 }
 function checkoutNext(){
-  if(checkoutStep===3){
+  if(checkoutStep===2){
     showToast('Reservation submitted for '+(activePiece?activePiece.name:'your selected piece')+'.');
   }
   checkoutStep++;
   renderCheckoutStep();
+}
+</script>
+<script>
+/* ================= My Account (Customer) ================= */
+function openMyAccount(){
+  const cust = customers.find(c=>c.name===currentCustomerName);
+  const mine = orders.filter(o=>o.customer===currentCustomerName);
+  const mineCompleted = completedOrders.filter(o=>o.customer===currentCustomerName);
+  document.getElementById('maSummary').innerHTML = `
+    <div class="spec-item"><span>Name</span><b>${cust.name}</b></div>
+    <div class="spec-item"><span>Email</span><b>${cust.email}</b></div>
+    <div class="spec-item"><span>Active Lay-Aways</span><b>${mine.length}</b></div>
+    <div class="spec-item"><span>Member Since</span><b>${cust.since}</b></div>`;
+  document.getElementById('maActive').innerHTML = mine.length ? mine.map(o=>`
+    <div class="plan-box" style="margin-bottom:12px;">
+      <h4 style="display:flex; justify-content:space-between; align-items:center; font-size:14px;">
+        <span>${o.item}</span>
+        <span class="badge ${o.status==='ok'?'badge-ok':'badge-warn'}">${o.status==='ok'?'On Track':'Overdue'}</span>
+      </h4>
+      <p style="font-size:12.5px; color:var(--text-soft); margin:4px 0 10px;">${o.plan} · Order #${o.id} · Next Due ${o.due}</p>
+      <div class="schedule-list">${buildSchedule(o)}</div>
+    </div>`).join('') : '<p style="font-size:13.5px; color:var(--text-soft);">No active lay-aways right now.</p>';
+  document.getElementById('maCompleted').innerHTML = mineCompleted.length ? mineCompleted.map(o=>`
+    <div class="schedule-row"><span>${o.item}</span><span>${o.plan}</span><span class="badge badge-ok">Completed ${o.completedOn}</span></div>`).join('') : '<p style="font-size:13.5px; color:var(--text-soft);">No completed lay-aways yet.</p>';
+  document.getElementById('myAccountModalBackdrop').classList.remove('hidden');
 }
 </script>
 <script>
