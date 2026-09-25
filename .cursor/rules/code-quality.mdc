@@ -1,0 +1,21 @@
+---
+description: Lean, readable React — reusable components and colocated tests
+alwaysApply: true
+---
+
+# Code quality
+
+Prioritize **readability** over cleverness. Smallest clear implementation. No speculative helpers, unused props, or comments that restate the code.
+
+## Components
+
+- Extract a reusable component when the same UI or interaction appears more than once (buttons, cards, modals, tables, form rows, badges). That extraction is in scope, not an extra refactor.
+- Keep components focused: one job. Prefer composition (`children`, `className`) over a large variant API.
+- Pages compose primitives; they do not duplicate markup.
+
+## Tests
+
+- Every new or materially changed **component** and **page** needs a colocated unit test: `Foo.jsx` → `Foo.test.jsx`.
+- Use Vitest + Testing Library. Assert user-visible behavior (roles, labels, text), not implementation details.
+- Run `npm test` and `npm run lint` before handing off. Code must pass the repo ESLint config (`eslint.config.js`). Do not disable rules to silence a failure unless Gabriel asks.
+---

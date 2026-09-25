@@ -1,0 +1,37 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.nav {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.nav a {
+  color: #6e2140;
+  text-decoration: none;
+}
+
+.nav a.active {
+  color: #b98b2e;
+  font-weight: 600;
+}
+
+.tagline {
+  margin: 0;
+  font-size: 1.125rem;
+  color: #6e2140;
+}
+
+.hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: #5c534e;
+}

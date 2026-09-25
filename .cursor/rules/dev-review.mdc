@@ -1,0 +1,14 @@
+---
+description: Developer then reviewer; human owns push
+alwaysApply: true
+---
+
+# Two-agent workflow
+
+After any implementation, the **parent** (this chat) invokes the `reviewer` subagent on the real git diff. The `developer` agent must not start a review.
+
+The reviewer must apply `.cursor/rules/code-quality.mdc` (readability, reusable components, colocated tests, ESLint).
+
+Do not commit or push unless Gabriel explicitly asks.
+
+Do not treat the reviewer as a merge gate. Present its findings and wait for his review.
