@@ -13,18 +13,64 @@ export const galleryPage = {
 };
 
 const displayById = {
-  1: { name: 'Solitaire Halo Ring', category: 'Rings' },
-  2: { name: 'Vintage Rose Pendant', category: 'Necklaces' },
-  3: { name: 'Emerald Drop Earrings', category: 'Earrings' },
-  4: { name: 'Classic Tennis Bracelet', category: 'Bracelets' },
-  5: { name: 'Sapphire Signet Ring', category: 'Rings' },
-  6: { name: 'Pearl Drop Necklace', category: 'Necklaces' },
+  1: {
+    name: 'Solitaire Halo Ring',
+    category: 'Rings',
+    material: '18K White Gold',
+    stone: '0.75ct Diamond',
+    size: 'US 6 (resizable)',
+    cert: 'GIA Certified',
+  },
+  2: {
+    name: 'Vintage Rose Pendant',
+    category: 'Necklaces',
+    material: '14K Rose Gold',
+    stone: '0.40ct Diamond Cluster',
+    size: '18in Chain',
+    cert: 'In-house Appraisal',
+  },
+  3: {
+    name: 'Emerald Drop Earrings',
+    category: 'Earrings',
+    material: '18K Yellow Gold',
+    stone: 'Emerald & Diamond',
+    size: 'Standard Post',
+    cert: 'GIA Certified',
+  },
+  4: {
+    name: 'Classic Tennis Bracelet',
+    category: 'Bracelets',
+    material: '14K White Gold',
+    stone: '2.10ct Diamond (Total)',
+    size: '7in, Adjustable',
+    cert: 'GIA Certified',
+  },
+  5: {
+    name: 'Sapphire Signet Ring',
+    category: 'Rings',
+    material: '18K Yellow Gold',
+    stone: '1.2ct Sapphire',
+    size: 'US 7 (resizable)',
+    cert: 'In-house Appraisal',
+  },
+  6: {
+    name: 'Pearl Drop Necklace',
+    category: 'Necklaces',
+    material: 'Sterling Silver',
+    stone: 'Akoya Pearl',
+    size: '16in Chain',
+    cert: 'In-house Appraisal',
+  },
 };
 
 export function presentPiece(item) {
   const extras = displayById[item.id] ?? {
     name: item.title,
     category: 'Jewelry',
+    material: '—',
+    stone: '—',
+    size: '—',
+    cert: '—',
   };
   return {
     ...item,
@@ -38,4 +84,12 @@ export function getGallery() {
     ...galleryPage,
     results: galleryPage.results.map(presentPiece),
   });
+}
+
+export function getGalleryPiece(id) {
+  const item = galleryPage.results.find((piece) => piece.id === Number(id));
+  if (!item) {
+    return Promise.resolve(null);
+  }
+  return Promise.resolve(presentPiece(item));
 }

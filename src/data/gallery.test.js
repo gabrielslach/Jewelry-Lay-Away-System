@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getGallery, presentPiece } from './gallery.js';
+import { getGallery, getGalleryPiece, presentPiece } from './gallery.js';
 
 describe('gallery', () => {
   it('presents a jewelry name and category instead of the barcode title', () => {
@@ -17,5 +17,10 @@ describe('gallery', () => {
     const page = await getGallery();
     expect(page.results).toHaveLength(6);
     expect(page.next).toBeNull();
+  });
+
+  it('looks up a single piece with mocked specs', async () => {
+    const piece = await getGalleryPiece(1);
+    expect(piece.material).toBe('18K White Gold');
   });
 });
