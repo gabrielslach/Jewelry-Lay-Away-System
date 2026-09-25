@@ -1,5 +1,5 @@
 import { MemoryRouter } from 'react-router-dom';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import Home from './Home.jsx';
 
@@ -18,5 +18,19 @@ describe('Home', () => {
     expect(
       await screen.findByRole('heading', { name: 'Handpicked Pieces' }),
     ).toBeInTheDocument();
+  });
+
+  it('opens piece details from the gallery', async () => {
+    render(
+      <MemoryRouter>
+        <Home />
+      </MemoryRouter>,
+    );
+    const buttons = await screen.findAllByRole('button', { name: 'View Details' });
+    fireEvent.click(buttons[0]);
+    expect(
+      await screen.findByRole('dialog', { name: 'Solitaire Halo Ring' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('GIA Certified')).toBeInTheDocument();
   });
 });
