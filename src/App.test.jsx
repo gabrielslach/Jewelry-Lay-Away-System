@@ -11,7 +11,7 @@ describe('App', () => {
       </MemoryRouter>,
     );
     expect(
-      screen.getByRole('heading', { name: /sample jewelry co\./i }),
+      screen.getByRole('heading', { name: /reserve the piece you love/i }),
     ).toBeInTheDocument();
   });
 
