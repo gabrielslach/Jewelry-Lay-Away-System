@@ -1,0 +1,59 @@
+.testi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.testi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+}
+
+.testi p {
+  font-size: 14px;
+  color: var(--text-soft);
+  margin-bottom: 14px;
+}
+
+.testi-who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 13px;
+}
+
+.testi-who b {
+  display: block;
+  font-size: 13px;
+}
+
+.testi-who span {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+@media (max-width: 900px) {
+  .testi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .testi-grid {
+    grid-template-columns: 1fr;
+  }
+}
