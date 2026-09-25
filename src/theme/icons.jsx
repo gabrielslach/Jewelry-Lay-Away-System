@@ -7,8 +7,9 @@ export function HamburgerIcon({ size = 20, title = 'Menu' }) {
       fill="none"
       stroke="currentColor"
       strokeWidth="2"
-      role="img"
-      aria-label={title}
+      role={title ? 'img' : 'presentation'}
+      aria-hidden={title ? undefined : true}
+      aria-label={title || undefined}
     >
       <line x1="3" y1="6" x2="21" y2="6" />
       <line x1="3" y1="12" x2="21" y2="12" />
