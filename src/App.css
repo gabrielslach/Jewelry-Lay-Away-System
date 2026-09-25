@@ -15,23 +15,23 @@
 }
 
 .nav a {
-  color: #6e2140;
+  color: var(--accent);
   text-decoration: none;
 }
 
 .nav a.active {
-  color: #b98b2e;
+  color: var(--primary);
   font-weight: 600;
 }
 
 .tagline {
   margin: 0;
   font-size: 1.125rem;
-  color: #6e2140;
+  color: var(--accent);
 }
 
 .hint {
   margin: 0.5rem 0 0;
   font-size: 0.875rem;
-  color: #5c534e;
+  color: var(--text-soft);
 }
