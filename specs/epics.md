@@ -394,7 +394,7 @@ Three slides. Slide 3 is a solid `--surface-2` panel (swap in a photo later with
 | 2 — Plan | `/hero-2.png` | Subcopy only: **Browse our curated jewelry collection and secure any piece with a flexible lay-away plan — up to 3 months, with payment dates you choose.** | **Start a Lay-Away** → `/collections` (same destination as the nav primary) |
 | 3 — Proof | solid color | The three stats only: **3,000+** Pieces Available · **3 Mo.** Max Lay-Away Term · **Your Dates** Flexible Due Days | **See how it works** → `/#how` |
 
-Phone: photo on top (object-fit cover, ~40vh max), copy **under** the photo — do not put the full headline as small type on the image. Desktop (`min-width: 800px`): photo and copy side by side (photo ~50–60%), or photo as a panel with a **scrim** so type stays `--text` / `--on-accent` with contrast. Dark maroon CTAs keep white labels (existing button rule).
+Copy **overlays** the photo on every width (object-fit cover). A dark scrim behind the type keeps `--on-accent` / `--primary` readable. Dark maroon CTAs keep white labels (existing button rule). Dots stay below the image.
 
 ### HC-3 Tests
 
