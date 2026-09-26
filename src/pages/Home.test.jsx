@@ -32,5 +32,9 @@ describe('Home', () => {
       await screen.findByRole('dialog', { name: 'Solitaire Halo Ring' }),
     ).toBeInTheDocument();
     expect(screen.getByText('GIA Certified')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Reserve This Piece' }));
+    expect(
+      await screen.findByRole('dialog', { name: 'Reserve on Lay-Away' }),
+    ).toBeInTheDocument();
   });
 });
