@@ -217,7 +217,9 @@ Seed enough catalog and customers to fill Home, **Epic 8** pagination, **Epic 9*
 | GET | `/api/gallery` | Paginated `{ count, next, previous, results }` with `id`, `title` (barcode), `price`, `currency`, `in_stock`, `images`. Support `page` / `page_size` (default `page_size=12`). Seed **at least two pages**. |
 | GET | `/api/gallery/:id` | Same object as one `results` item, or `404`. Each piece has **2–4** `images` entries for Epic 9. |
 | POST | `/api/customers/register` | Create customer; `429` after 10 attempts / 15 min per IP (`{ error }`). |
-| POST | `/api/customers/login` | `{ token, customer }`; same rate limit. Seed **Sample Client**. |
+| POST | `/api/customers/login` | `{ access_token, refresh_token, customer }` (**Epic 15**); same rate limit. Seed **Sample Client**. |
+| POST | `/api/customers/refresh` | `{ refresh_token }` → `{ access_token }`; `401` if expired, revoked, or unknown (**Epic 15**). |
+| POST | `/api/customers/logout` | `{ refresh_token }` → revoke that one session (**Epic 15**). |
 | GET | `/api/customers/:id/orders` | Bearer for that customer; `401` / `403` otherwise. Include active **and** completed plans so AC-2 / AC-3 work. Mock-only list fields as needed: item name, plan label, next due, On Track / Overdue. |
 
 **Demo display (mock-only fields on gallery objects):** `name`, `category`, `material`, `stone`, `size`, `cert` — same values as the demo `pieces` array for the original six; invented but consistent for extra catalog rows. Live API will not send these. Document as mock-only in `specs/mock-api.md`.
@@ -247,7 +249,7 @@ Confirm/reject should mark installments paid, write a ledger row, and complete t
 Arbitrary contracts. Shapes can be simple JSON; they exist so the HTML demo’s behaviors work against HTTP.
 
 **Checkout without login screens (until Epic 5)**  
-`POST /api/dev/session/customer` — no body, or `{ email }` defaulting to Sample Client. Returns the same `{ token, customer }` as login.
+`POST /api/dev/session/customer` — no body, or `{ email }` defaulting to Sample Client. Returns the same envelope as login (`{ access_token, refresh_token, customer }` after **Epic 15**).
 
 **Admin without a login screen**  
 `POST /api/dev/session/admin` — returns `{ token, admin }` for a seeded staff user.
@@ -294,7 +296,7 @@ Email + password. `POST /api/customers/login` through a service. Same token stor
 
 ### AU-3 Session and gates
 
-Persist customer JWT (memory + `sessionStorage` or equivalent). `/account` and `POST /api/layaway/plans` require it. Nav “My Account” goes to `/account` when signed in and `/login` when not. After AU-3, stop using `POST /api/dev/session/customer` in the SPA (mock may keep the route).
+Persist the customer session (access + refresh tokens and storage rules are **Epic 15**). `/account` and `POST /api/layaway/plans` require it. Nav “My Account” goes to `/account` when signed in and `/login` when not. After AU-3, stop using `POST /api/dev/session/customer` in the SPA (mock may keep the route).
 
 ---
 
@@ -574,3 +576,64 @@ There is a duplicate `presentPiece` in `src/data/gallery.js`. If the SPA UI no l
 - presentPiece: omit / null / `""` / whitespace for the four fields → `"-"`; present values unchanged; name falls back to title; category stays `"Jewelry"` when absent.
 
 Tests under `test/` mirroring `src/`. Vitest + Testing Library. User-visible behavior.
+
+---
+
+## Epic 15 — Customer access and refresh tokens
+
+Customer register and login no longer return one `token`. They return a short-lived **access token** (15 minutes) and a **refresh token** (24 hours, or until logout). The SPA keeps sending `Authorization: Bearer <access_token>` on protected calls. When that is rejected with `401`, the SPA gets a new access token from the refresh token and retries once, without sending the shopper back to `/login`. **No new screens or copy.** Admin auth stays `{ token, admin }`.
+
+Supersedes the customer half of **AU-3** (session storage and the single JWT). AU-1 / AU-2 pages are unchanged apart from what they store. Contract: [`api-definition.md`](api-definition.md) Section 1.
+
+### RT-1 Session from register and login
+
+`POST /api/customers/register` and `POST /api/customers/login` return `{ access_token, refresh_token, customer }`.
+
+**Storage (`src/services/session.js`):**
+
+- `refresh_token` and `customer` → `localStorage`. Closing the tab or browser keeps the shopper signed in until the refresh token expires or is revoked.
+- `access_token` → `sessionStorage`. It lives 15 minutes; a new tab gets its own via RT-2.
+- **Signed in** means a refresh token and customer are stored. `SessionProvider` reads them on load, so nav “My Account” and `/account` work in a new tab.
+- The old `sessionStorage` `customerSession` (`{ token, customer }`) is ignored and removed. That shopper signs in again once.
+
+`getCustomerToken()` returns the access token. Services never read `refresh_token` themselves.
+
+**Mock:** register, login, and `POST /api/dev/session/customer` return the new envelope. Access tokens expire 15 minutes after issue and refresh tokens 24 hours after issue (use the store clock so tests can advance it). Admin login and `POST /api/dev/session/admin` stay `{ token, admin }`.
+
+### RT-2 Refresh on 401 (and on a missing access token)
+
+New service `refreshCustomerToken` → `POST /api/customers/refresh` with `{ refresh_token }` → `{ access_token }`. The refresh token is **not** rotated.
+
+Customer requests (`getCustomerOrders`, `createLayawayPlan`, `mockGatewayPayment`, and any later customer-auth service) go through one shared authorized-request path:
+
+1. No access token but a refresh token is stored → refresh first (new tab, or `sessionStorage` cleared).
+2. Send with `Bearer <access_token>`.
+3. On `401`, refresh once, save the new access token, retry the original request once.
+4. A second `401` on the retry is a real failure (`Please sign in to continue.`). `403` / `404` / `429` / network errors are not refreshed.
+
+Only **one refresh in flight**: concurrent callers wait for it and reuse the result. Never refresh `login`, `register`, `refresh`, or `logout`.
+
+Refresh `401` (expired or revoked) clears the customer session in both storages **and** updates `SessionProvider`. `/account` then follows the existing redirect to `/login`; checkout shows its existing signed-out message. Guests with no refresh token keep today’s checkout behavior (`Please sign in to continue.`, no POST).
+
+No timers or JWT decoding. Expiry is whatever the server says with `401`.
+
+### RT-3 Sign out revokes that session
+
+My Account **Sign out** (already on the page) calls service `logoutCustomer` → `POST /api/customers/logout` with `{ refresh_token }`, then clears the local session. Clear locally even if the call fails (network or `401`), so this browser is signed out; the server-side token then just expires. Same destination and copy as today.
+
+Revokes **only this** refresh token. Other browsers stay signed in. Another tab in the same browser shares `localStorage`, so its next refresh fails and it signs out; its current access token can still work for up to 15 minutes. Acceptable; no cross-tab sync in this epic.
+
+**Mock:** logout deletes that refresh token (`204` or `{ ok: true }`). A refresh with a revoked, expired, or unknown token is `401`. Other refresh tokens for the same customer keep working.
+
+### RT-4 Tests
+
+- Login / register persist refresh token + customer in `localStorage` and access token in `sessionStorage`; a later customer call sends the access token as Bearer.
+- New-tab case: only `localStorage` populated → first customer call refreshes, then succeeds.
+- A customer call that `401`s once refreshes, retries, succeeds.
+- Two overlapping `401`s share one refresh call.
+- Refresh `401` clears both storages and the shopper is treated as signed out (e.g. `/account` → `/login`).
+- Sign out posts the refresh token and clears the session; a failed logout still clears it.
+- Legacy `{ token, customer }` in `sessionStorage` is signed out.
+- Mock: expiry at 15 min / 24 h, logout revokes one session only, admin envelope unchanged.
+
+Tests under `test/` mirroring `src/`. Vitest + Testing Library.

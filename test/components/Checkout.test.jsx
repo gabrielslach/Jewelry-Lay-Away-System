@@ -6,7 +6,7 @@ import { SessionProvider } from '../../src/components/SessionProvider.jsx';
 import { ToastProvider } from '../../src/components/ToastProvider.jsx';
 import { loginCustomer } from '../../src/services/loginCustomer.js';
 import { getGallery } from '../../src/services/getGallery.js';
-import { clearCustomerSession } from '../../src/services/session.js';
+import { clearCustomerSession, setCustomerToken } from '../../src/services/session.js';
 
 const piece = { id: 1, name: 'Solitaire Halo Ring', price: 48000 };
 
@@ -107,6 +107,26 @@ describe('Checkout', () => {
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Done' }));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('creates the plan in a new tab without bouncing to login', async () => {
+    sessionStorage.clear();
+    const onScheduled = vi.fn();
+    renderCheckout(<Checkout piece={piece} onClose={() => {}} onScheduled={onScheduled} />, {
+      path: '/collections/1',
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(await screen.findByText('GCash / E-Wallet')).toBeInTheDocument();
+    expect(onScheduled).toHaveBeenCalled();
+    expect(screen.getByTestId('location')).toHaveTextContent('/collections/1');
+  });
+
+  it('asks the shopper to sign in when the refresh token is revoked', async () => {
+    setCustomerToken('expired');
+    localStorage.setItem('customerRefreshToken', 'revoked');
+    renderCheckout(<Checkout piece={piece} onClose={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(await screen.findByText('Please sign in to continue.')).toBeInTheDocument();
   });
 
   it('sends guests to login with from on continue', async () => {

@@ -4,6 +4,7 @@ import ErrorMessage from '../components/ErrorMessage.jsx';
 import { useSession } from '../components/useSession.js';
 import { ServiceError } from '../services/http.js';
 import { getCustomerOrders } from '../services/getCustomerOrders.js';
+import { logoutCustomer } from '../services/logoutCustomer.js';
 import './Account.css';
 import './AuthPage.css';
 import '../components/Checkout.css';
@@ -18,7 +19,7 @@ function badgeLabel(status) {
 }
 
 export default function Account() {
-  const { customer, signOut } = useSession();
+  const { customer } = useSession();
   const [orders, setOrders] = useState({ active: [], completed: [] });
   const [error, setError] = useState(null);
 
@@ -51,7 +52,7 @@ export default function Account() {
     <section className="page-block">
       <div className="account-head">
         <h1>My Account</h1>
-        <button type="button" className="text-link" onClick={signOut}>
+        <button type="button" className="text-link" onClick={logoutCustomer}>
           Sign out
         </button>
       </div>

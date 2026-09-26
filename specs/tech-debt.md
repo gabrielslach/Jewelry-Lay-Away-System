@@ -41,7 +41,7 @@ These endpoints are in the contract (many already live) but **do not appear** as
 | Endpoint | Purpose | SPA epic |
 | --- | --- | --- |
 | `POST /api/customers/register` | Customer registration | AU-1 |
-| `POST /api/customers/login` | Customer JWT (`token` + `customer`) | AU-2 |
+| `POST /api/customers/login` | `access_token` + `refresh_token` + `customer` | AU-2, Epic 15 |
 | Rate limit `429` on register/login | Distinct UI (“please wait”) vs wrong password | AU-1, AU-2 |
 | `POST /api/admin/login` | Separate admin token | none (dev session helper) |
 | `GET /api/bank-accounts` (public) | Bank name, account, QR for manual pay | not in demo checkout |
@@ -67,5 +67,6 @@ These endpoints are in the contract (many already live) but **do not appear** as
 - Plan create may return `note` when no markup rule is configured — `total_price` may still be unmarked-up.
 - Installment `overdue` flips lazily when plan detail is **read**, not via a background job.
 - Admin is Phase 2 in the API doc; we still ship demo admin **screens** with mocks as listed above.
-- Auth is enforced: missing/invalid token `401`; wrong customer `403`.
+- Auth is enforced: missing/invalid/expired token `401`; wrong customer `403`.
+- Customer refresh token lives in `localStorage` (Epic 15) so sessions survive a closed tab. Any XSS can read it for up to 24 hours. An httpOnly cookie would need a backend change.
 - Switching from mock to Hostinger drops mock-only gallery fields (`name`, `category`, specs, extra images). Keep mapping in services so missing fields degrade to barcode + placeholder, not a crash.

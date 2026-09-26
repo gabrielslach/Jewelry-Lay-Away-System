@@ -37,7 +37,7 @@ describe('mock API', () => {
     });
     expect(login.body.customer.member_since).toBe('Jan 2026');
     const orders = call(store, 'GET', '/api/customers/1/orders', {
-      headers: { authorization: `Bearer ${login.body.token}` },
+      headers: { authorization: `Bearer ${login.body.access_token}` },
     });
     expect(orders.status).toBe(200);
     expect(orders.body.results.some((row) => row.id === 'LA-1001')).toBe(true);
@@ -50,7 +50,7 @@ describe('mock API', () => {
       body: { email: 'buyer@sampleemail.com', password: 'password' },
     });
     const orders = call(store, 'GET', '/api/customers/1/orders', {
-      headers: { authorization: `Bearer ${login.body.token}` },
+      headers: { authorization: `Bearer ${login.body.access_token}` },
     });
     expect(orders.status).toBe(403);
   });
@@ -59,7 +59,7 @@ describe('mock API', () => {
     const store = createStore();
     const session = call(store, 'POST', '/api/dev/session/customer', { body: {} });
     const created = call(store, 'POST', '/api/layaway/plans', {
-      headers: { authorization: `Bearer ${session.body.token}` },
+      headers: { authorization: `Bearer ${session.body.access_token}` },
       body: {
         product_id: firstPiece.id,
         term_months: 3,
@@ -69,7 +69,7 @@ describe('mock API', () => {
     expect(created.status).toBe(201);
     expect(created.body.installments).toHaveLength(2);
     const gateway = call(store, 'POST', `/api/layaway/plans/${created.body.id}/payments`, {
-      headers: { authorization: `Bearer ${session.body.token}` },
+      headers: { authorization: `Bearer ${session.body.access_token}` },
       body: {},
     });
     expect(gateway.status).toBe(501);
@@ -78,7 +78,7 @@ describe('mock API', () => {
       'POST',
       `/api/layaway/plans/${created.body.id}/payments/mock-gateway`,
       {
-        headers: { authorization: `Bearer ${session.body.token}` },
+        headers: { authorization: `Bearer ${session.body.access_token}` },
         body: { method: 'gcash' },
       },
     );
@@ -95,6 +95,74 @@ describe('mock API', () => {
     expect(dash.body.collected_this_month).toBe(184200);
     const customers = call(store, 'GET', '/api/admin/customers', { headers: auth });
     expect(customers.body.results.some((row) => row.name === 'Sample Shopper')).toBe(true);
+  });
+
+  it('expires access tokens at 15 minutes and refresh tokens at 24 hours', () => {
+    const store = createStore();
+    const start = store.now().getTime();
+    store.now = () => new Date(start);
+    const login = call(store, 'POST', '/api/customers/login', {
+      body: { email: 'client@sampleemail.com', password: 'password' },
+    });
+    const orders = (token) =>
+      call(store, 'GET', '/api/customers/1/orders', {
+        headers: { authorization: `Bearer ${token}` },
+      }).status;
+    const refresh = () =>
+      call(store, 'POST', '/api/customers/refresh', {
+        body: { refresh_token: login.body.refresh_token },
+      });
+
+    store.now = () => new Date(start + 15 * 60 * 1000 - 1);
+    expect(orders(login.body.access_token)).toBe(200);
+    store.now = () => new Date(start + 15 * 60 * 1000);
+    expect(orders(login.body.access_token)).toBe(401);
+
+    const refreshed = refresh();
+    expect(refreshed.status).toBe(200);
+    expect(Object.keys(refreshed.body)).toEqual(['access_token']);
+    expect(orders(refreshed.body.access_token)).toBe(200);
+
+    store.now = () => new Date(start + 24 * 60 * 60 * 1000);
+    expect(refresh().status).toBe(401);
+  });
+
+  it('logout revokes only that refresh token', () => {
+    const store = createStore();
+    const login = () =>
+      call(store, 'POST', '/api/customers/login', {
+        body: { email: 'client@sampleemail.com', password: 'password' },
+      });
+    const first = login().body.refresh_token;
+    const second = login().body.refresh_token;
+    const refresh = (token) =>
+      call(store, 'POST', '/api/customers/refresh', { body: { refresh_token: token } }).status;
+
+    expect(call(store, 'POST', '/api/customers/logout', { body: { refresh_token: first } }).status).toBe(
+      200,
+    );
+    expect(refresh(first)).toBe(401);
+    expect(refresh(second)).toBe(200);
+    expect(refresh('unknown')).toBe(401);
+  });
+
+  it('returns the customer envelope from register and dev session, admin unchanged', () => {
+    const store = createStore();
+    const registered = call(store, 'POST', '/api/customers/register', {
+      body: { name: 'New Guest', email: 'guest@sampleemail.com', password: 'password' },
+    });
+    const dev = call(store, 'POST', '/api/dev/session/customer', { body: {} });
+    for (const { body } of [registered, dev]) {
+      expect(Object.keys(body).sort()).toEqual(['access_token', 'customer', 'refresh_token']);
+    }
+    const admin = call(store, 'POST', '/api/admin/login', {
+      body: { email: 'admin@samplejewelry.example', password: 'password' },
+    });
+    expect(Object.keys(admin.body).sort()).toEqual(['admin', 'token']);
+    expect(Object.keys(call(store, 'POST', '/api/dev/session/admin').body).sort()).toEqual([
+      'admin',
+      'token',
+    ]);
   });
 
   it('rate-limits login after 10 attempts', () => {
