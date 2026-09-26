@@ -2,9 +2,13 @@
 
 Invented and mock-only fields used by the Vite mock in `mock-server/`. Live Hostinger responses will not include these.
 
+## Gallery catalog
+
+`GET /api/gallery` and `GET /api/gallery/:id` are served from [`mock-server/gallery-items.json`](../mock-server/gallery-items.json). Image `url`s stay on the DigitalOcean CDN; the mock does not rewrite them to local placeholders.
+
 ## Mock-only gallery fields
 
-On `GET /api/gallery` and `GET /api/gallery/:id` objects:
+Merged onto each JSON item (cycled from the six demo styles):
 
 `name`, `category`, `material`, `stone`, `size`, `cert`
 

@@ -2,6 +2,15 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-09-26 (gallery JSON)
+
+- Mock gallery is [`mock-server/gallery-items.json`](../mock-server/gallery-items.json); CDN image URLs are kept. Mock-only display fields (`name`, `category`, specs) are still merged on in [`mock-api.md`](mock-api.md).
+
+## 2026-09-26 (user stories + UX bugs)
+
+- Added [`user-stories.md`](user-stories.md): shopper US-1–US-14 and staff US-20–US-26.
+- Added [`bugs.md`](bugs.md): UX issues from a pass on the running SPA (storefront + admin, desktop and ~390px).
+
 ## 2026-09-26 (implementation)
 
 - Epic 4 mock server is live in `mock-server/` (`npm run dev` serves `/api`).

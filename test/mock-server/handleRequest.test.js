@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import galleryPage from '../../mock-server/gallery-items.json';
 import { createStore, handleRequest } from '../../mock-server/handleRequest.js';
+
+const firstPiece = galleryPage.results[0];
 
 function call(store, method, url, opts = {}) {
   return handleRequest(store, { method, url, ...opts });
@@ -14,12 +17,16 @@ describe('mock API', () => {
     expect(page1.body.results).toHaveLength(12);
     expect(page1.body.next).toContain('page=2');
     expect(page1.body.results[0].name).toBe('Solitaire Halo Ring');
-    expect(page1.body.results[0].images.length).toBeGreaterThanOrEqual(2);
+    expect(page1.body.results[0].title).toBe(firstPiece.title);
+    expect(page1.body.results[0].images[0].url).toBe(firstPiece.images[0].url);
+    expect(page1.body.results[0].images[0].url).toContain('digitaloceanspaces.com');
   });
 
   it('returns a single piece or 404', () => {
     const store = createStore();
-    expect(call(store, 'GET', '/api/gallery/1').body.title).toBe('PJ17414');
+    expect(call(store, 'GET', `/api/gallery/${firstPiece.id}`).body.title).toBe(
+      firstPiece.title,
+    );
     expect(call(store, 'GET', '/api/gallery/999').status).toBe(404);
   });
 
@@ -54,7 +61,7 @@ describe('mock API', () => {
     const created = call(store, 'POST', '/api/layaway/plans', {
       headers: { authorization: `Bearer ${session.body.token}` },
       body: {
-        product_id: 1,
+        product_id: firstPiece.id,
         term_months: 3,
         installment_dates: ['2026-10-01', '2026-10-15'],
       },

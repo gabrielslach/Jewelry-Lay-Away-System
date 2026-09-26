@@ -1,12 +1,14 @@
 import { MemoryRouter } from 'react-router-dom';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import galleryPage from '../../mock-server/gallery-items.json';
 import App from '../../src/App.jsx';
 
 describe('PiecePage', () => {
-  it('shows carousel photos and details', async () => {
+  it('shows the CDN photo and details', async () => {
+    const piece = galleryPage.results[0];
     render(
-      <MemoryRouter initialEntries={['/collections/1']}>
+      <MemoryRouter initialEntries={[`/collections/${piece.id}`]}>
         <App />
       </MemoryRouter>,
     );
@@ -14,7 +16,9 @@ describe('PiecePage', () => {
       await screen.findByRole('heading', { name: 'Solitaire Halo Ring' }),
     ).toBeInTheDocument();
     expect(screen.getByText('GIA Certified')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Show photo 2' }));
-    expect(screen.getByRole('button', { name: 'Show photo 2' })).toHaveClass('active');
+    expect(screen.getByRole('img', { name: /solitaire halo ring photo/i })).toHaveAttribute(
+      'src',
+      piece.images[0].url,
+    );
   });
 });
