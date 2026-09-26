@@ -61,6 +61,8 @@ Sticky nav (logo, Collections / How Lay-Away Works / Reviews / Contact), My Acco
 
 Eyebrow, headline, subcopy, Browse Collections, three stats (3,000+ pieces, 3 Mo. max term, Your Dates). Demo `.hero`.
 
+**Superseded for new work by Epic 10** (home hero carousel). Do not extend the single stacked text block; replace it when Epic 10 is approved.
+
 ### SF-3 Collections gallery
 
 Card grid: media, category, name, price + “as low as …/payment”, View Details. Demo `#collections` / `#galleryGrid`. Home shows a **six-card teaser** (`page_size=6`) and links to the full catalog (**Epic 8**, `/collections`).
@@ -359,3 +361,41 @@ Display name, category, barcode/`title` if useful, specs (material, stone, size,
 ### PD-3 Reserve
 
 Primary action starts checkout (existing Checkout flow) with this piece. Back link to `/collections`. `404` / service error copy on the page.
+
+---
+
+## Epic 10 — Home hero carousel
+
+Replace the SF-2 text stack with a **three-slide carousel** so the pitch is easier to scan. Slides 1–2 use `public/hero-1.png` and `public/hero-2.png` (Higgsfield mark already cropped off). Slide 3 uses a solid color until a third photo exists. **No API.** **Mobile-first.** Home still owns this block; How-it-works and Reviews stay below as today.
+
+Copy stays the current Sample Jewelry Co. strings (same as SF-2 / demo). Do not invent a new slogan unless Gabriel asks.
+
+### HC-1 Carousel shell
+
+One `Hero` region at the top of `/`. Role `region` with an accessible name (e.g. “Featured”). Only **one slide** is in view.
+
+Controls:
+
+- **Dots** (required) — one per slide, `aria-current` on the active slide, labels like “Show slide 2 of 3”.
+- **Previous / Next** — visible from `min-width: 800px`; on a phone, swipe (touch) is enough plus dots. Buttons must have names (“Previous slide”, “Next slide”). Wrap from last to first.
+- Keyboard: Left/Right when the carousel is focused.
+
+Do **not** autoplay. Honor `prefers-reduced-motion` (no slide animation, instant swap).
+
+Reuse `Button` for CTAs. Do not add a carousel library.
+
+### HC-2 Slides (split the current hero)
+
+Three slides. Slide 3 is a solid `--surface-2` panel (swap in a photo later without changing copy):
+
+| Slide | Image | Copy (keep wording) | CTA |
+| --- | --- | --- | --- |
+| 1 — Hook | `/hero-1.png` | Eyebrow **Fine Jewelry, Paid Your Way**. Headline **Reserve the piece you love, pay for it on your schedule.** | **Browse Collections** → `/collections` |
+| 2 — Plan | `/hero-2.png` | Subcopy only: **Browse our curated jewelry collection and secure any piece with a flexible lay-away plan — up to 3 months, with payment dates you choose.** | **Start a Lay-Away** → `/collections` (same destination as the nav primary) |
+| 3 — Proof | solid color | The three stats only: **3,000+** Pieces Available · **3 Mo.** Max Lay-Away Term · **Your Dates** Flexible Due Days | **See how it works** → `/#how` |
+
+Phone: photo on top (object-fit cover, ~40vh max), copy **under** the photo — do not put the full headline as small type on the image. Desktop (`min-width: 800px`): photo and copy side by side (photo ~50–60%), or photo as a panel with a **scrim** so type stays `--text` / `--on-accent` with contrast. Dark maroon CTAs keep white labels (existing button rule).
+
+### HC-3 Tests
+
+`test/components/Hero.test.jsx` (and a small carousel primitive under `test/` if extracted). Assert: slide 1 heading + Browse Collections; activating next/dot 2 shows the plan subcopy and hides the stats; slide 3 shows **3,000+** / **3 Mo.** / **Your Dates** and **See how it works**. Image `src` is `/hero-1.png` then `/hero-2.png` as specified. No new services.
