@@ -2,6 +2,10 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-09-27 (hamburger at 910px)
+
+- Epic 12: section links collapse into the hamburger **below 910px**. Chrome **My Account** remains until **≤680px**.
+
 ## 2026-09-27 (mobile nav menu)
 
 - **Epic 12** — phone hamburger sheet (`NM-1`–`NM-3`): under-nav panel, overlay, close icon; same SF-1 destinations; Start a Lay-Away stays chrome-only. SF-1 look of the panel points here.

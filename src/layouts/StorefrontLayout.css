@@ -224,6 +224,12 @@
 }
 
 @media (min-width: 681px) {
+  .mobile-panel-account {
+    display: none;
+  }
+}
+
+@media (min-width: 910px) {
   .pv-links {
     display: flex;
   }
@@ -232,10 +238,6 @@
   .mobile-panel,
   .mobile-overlay {
     display: none !important;
-  }
-
-  .footer-cols {
-    gap: 60px;
   }
 }
 

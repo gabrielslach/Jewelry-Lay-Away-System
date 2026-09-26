@@ -31,7 +31,7 @@ export default function StorefrontLayout() {
       return undefined;
     }
 
-    const query = window.matchMedia('(min-width: 681px)');
+    const query = window.matchMedia('(min-width: 910px)');
     function onChange(event) {
       if (event.matches) {
         setMenuOpen(false);
