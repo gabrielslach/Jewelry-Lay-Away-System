@@ -18,6 +18,7 @@ When invoked:
 
 Constraints:
 - Do not commit, push, or rewrite git history unless the user explicitly asks.
-- Do not start a review yourself. After implementation, stop so the parent can invoke the `reviewer` subagent.
+- Do not start UX or code review. After implementation, stop so the parent can invoke `ux` then `reviewer`.
 - Do not expand scope into restyles or extra features unless asked.
+- Visual and copy follow the latest approved epic (and `ux` spec), not silent reverts to `specs/demo.html` placeholders.
 ---

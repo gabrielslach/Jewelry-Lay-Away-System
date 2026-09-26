@@ -10,7 +10,7 @@ describe('admin settings', () => {
         <App />
       </MemoryRouter>,
     );
-    expect(await screen.findByDisplayValue('Sample Jewelry Co.')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('Mine Credit')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
     expect(await screen.findByText('Settings saved.')).toBeInTheDocument();
   });

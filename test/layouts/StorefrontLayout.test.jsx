@@ -44,6 +44,18 @@ describe('StorefrontLayout', () => {
     expect(screen.getByRole('contentinfo')).toHaveTextContent(
       /sample data shown for demonstration purposes only/i,
     );
+    const nav = screen.getByRole('navigation', { name: 'Storefront' });
+    const home = within(nav).getByRole('link', { name: 'Mine Credit' });
+    expect(home).toHaveAttribute('href', '/');
+    expect(within(home).getByRole('img', { name: 'Mine Credit' })).toHaveAttribute(
+      'src',
+      '/store-logo.png',
+    );
+    expect(
+      within(screen.getByRole('contentinfo')).getByRole('img', {
+        name: 'Mine Credit',
+      }),
+    ).toHaveAttribute('src', '/store-logo.png');
   });
 
   it('keeps the closed menu button labeled Menu', () => {

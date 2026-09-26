@@ -27,9 +27,14 @@
   padding: 16px 24px;
 }
 
+.pv-nav-inner > a:has(.logo) {
+  display: flex;
+  flex-shrink: 0;
+  width: fit-content;
+}
+
 .pv-nav .logo {
-  color: var(--text);
-  text-decoration: none;
+  height: 40px;
 }
 
 .pv-links {
@@ -185,7 +190,11 @@
 }
 
 .footer-inner .logo {
-  color: var(--on-accent);
+  height: 88px;
+}
+
+.footer-inner .logo img {
+  border-color: var(--footer-line);
 }
 
 .footer-blurb {
@@ -230,6 +239,10 @@
 }
 
 @media (min-width: 910px) {
+  .pv-nav .logo {
+    height: 48px;
+  }
+
   .pv-links {
     display: flex;
   }
@@ -243,13 +256,13 @@
 
 @media (max-width: 680px) {
   .pv-nav-inner {
+    flex-wrap: nowrap;
     gap: 10px;
     padding: 12px 16px;
   }
 
   .pv-nav .logo {
-    font-size: 18px;
-    white-space: nowrap;
+    height: 36px;
   }
 
   .pv-account-chrome {

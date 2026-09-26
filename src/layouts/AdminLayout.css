@@ -22,7 +22,7 @@
 }
 
 .admin-sidebar .logo {
-  color: var(--on-accent);
+  height: 72px;
 }
 
 .sb-link {

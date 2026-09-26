@@ -2,6 +2,10 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-09-27 (Mine Credit lockup)
+
+- **Epic 13** — `public/store-logo.png` in theme `Logo`; SPA name **Mine Credit**. Demo.html identity unchanged. AD-8 default `business_name` is Mine Credit.
+
 ## 2026-09-27 (hamburger at 910px)
 
 - Epic 12: section links collapse into the hamburger **below 910px**. Chrome **My Account** remains until **≤680px**.

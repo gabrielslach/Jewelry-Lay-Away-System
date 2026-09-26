@@ -1,13 +1,13 @@
 # Build guide — epics and features
 
-Step-by-step outline for the Sample Jewelry Co. React SPA. Visual and copy target is [`demo.html`](demo.html). Data contract is [`api-definition.md`](api-definition.md). Gaps and mocks are listed in [`tech-debt.md`](tech-debt.md). Spec edits are logged in [`CHANGELOG.md`](CHANGELOG.md).
+Step-by-step outline for the Mine Credit React SPA. Visual target is still [`demo.html`](demo.html). Live store identity is **Mine Credit** (**Epic 13**); the demo file still says Sample Jewelry Co. Data contract is [`api-definition.md`](api-definition.md). Gaps and mocks are listed in [`tech-debt.md`](tech-debt.md). Spec edits are logged in [`CHANGELOG.md`](CHANGELOG.md).
 
-**How we build:** pick **one feature id** (for example `SF-1`) → implement against the demo look + API or mock → reviewer on the real diff → Gabriel decides. Do not commit unless asked.
+**How we build:** pick **one feature id** → `ux` specifies → `developer` implements → `ux` then `reviewer` PASS/FAIL → Gabriel decides. Do not commit unless asked.
 
 **Mock API:** local HTTP fixtures live in **Epic 4**. Feature code talks to **Epic 6** services, not raw `fetch` in components and not new in-memory `src/data` stubs. Invented endpoints stay documented under Epic 4 until they exist on the live backend.
 
 **Product rules**
-- Match demo screens as closely as possible (layout and copy). Sample Jewelry Co. palette, fonts, and icons are the **default theme**, not values to repeat inside each epic.
+- Match demo screens as closely as possible (layout and copy). Cream/plum tokens and fonts are the **default theme**, not values to repeat inside each epic.
 - **Mobile-first:** unimplemented features are specified and built for a phone layout first, then `@media (min-width: …)` for tablet/desktop. Do not design desktop-only and squeeze down. Existing screens are retrofitted in **Epic 7**.
 - Mock anything the live API cannot back; record it in `tech-debt.md`.
 - The HTML demo’s Storefront / Admin switcher and landing chooser are **not** product features. The SPA uses routes.
@@ -266,7 +266,7 @@ Customer object (login + orders context) includes mock-only `phone` and `member_
 `POST /api/admin/plans/:id/mark-next-paid` — marks the next unpaid installment paid and sets plan status on-track. Matches the one-click demo button (not confirm/reject + proof).
 
 **Settings persistence (AD-8)**  
-`GET` and `PUT /api/admin/settings`: `business_name`, `max_term_months`, `late_penalty_per_day`, `require_full_payment_before_release`, `sms_reminders`, `customer_selected_due_dates`. Default to demo values (Sample Jewelry Co., 3, 50, all toggles on). In-memory persist for the process lifetime.
+`GET` and `PUT /api/admin/settings`: `business_name`, `max_term_months`, `late_penalty_per_day`, `require_full_payment_before_release`, `sms_reminders`, `customer_selected_due_dates`. Default **Mine Credit**, 3, 50, all toggles on (**Epic 13**). In-memory persist for the process lifetime.
 
 ### MS-6 Seed data
 
@@ -469,3 +469,52 @@ UX direction (2026-09-27): under-nav jewelry sheet (not a Material drawer); dim 
 - Chrome still has Start a Lay-Away → `/collections` as primary.
 
 No new services.
+
+---
+
+## Epic 13 — Brand lockup and name
+
+Replace the Cormorant **Sample Jewelry Co.** wordmark with `public/store-logo.png` and SPA copy **Mine Credit**. **Same destinations.** F-1 catalog only (no `<img>` in layouts/pages). **No API** except seed `business_name`. **Mobile-first.** Do not restyle the hero or rewrite `specs/demo.html`.
+
+UX direction (2026-09-27): full square beige lockup as a small brand plate; no invert; no second typeset wordmark.
+
+### BR-1 Logo placement
+
+**Asset:** `public/store-logo.png` (opaque square). Only `src/theme/Logo.jsx` + `.logo` in `assets.css`.
+
+**`Logo`:** Wrapper `as` default `p` (layouts still `as="span"`). Renders `<img src="/store-logo.png" alt="Mine Credit" />`. No default children wordmark; do not render `children` as visible name. Accessible name = alt. Nav `Link` wrapping the logo unchanged. Admin sidebar: still not a link.
+
+**Img:** `display: block`; `object-fit: contain`; `object-position: center`; `width: auto`; height from context; `max-width` = same as height (square). `border-radius: 8px`; `border: 1px solid var(--border)`.
+
+| Surface | Height | Notes |
+| --- | --- | --- |
+| Storefront nav ≤680 | **36px** | Pad 12px 16px. `.pv-nav-inner` `flex-wrap: nowrap`. Drop text `font-size`/`white-space` on `.pv-nav .logo`. |
+| Nav 681–909 | **40px** | Hamburger still in chrome. Pad 16px 24px. |
+| Nav ≥910 | **48px** | Hamburger hidden; links inline. |
+| Footer | **88px** | On `--text`. Border `var(--footer-line)`. Drop `color: var(--on-accent)` on `.footer-inner .logo`. |
+| Admin sidebar | **72px** | Same plate. Drop on-accent text color on `.admin-sidebar .logo`. |
+
+Dark surfaces show the beige square. Do not knock out the field.
+
+**Not in this epic:** hero, piece cards, favicon, login/register, mobile-panel header.
+
+### BR-2 Name copy (SPA only)
+
+Replace **Sample Jewelry Co.** with **Mine Credit** in live SPA:
+
+- `index.html` `<title>` → `Mine Credit — Lay-Away`
+- Footer © line → keep the sample-data disclaimer; `© 2026 Mine Credit (fictional).`
+- Mock seed `business_name` → `Mine Credit`
+- Logo tests / settings field display value
+
+Leave hero/CTAs. Palette/fonts unchanged.
+
+### BR-3 Tests
+
+`test/theme/Logo.test.jsx`: img `src` `/store-logo.png`, accessible name **Mine Credit**; `className` on wrapper `.logo`; `as="h1"` heading named **Mine Credit**; no visible “Sample Jewelry Co.” or a second typeset “Mine Credit”.
+
+`test/layouts/StorefrontLayout.test.jsx`: nav home link contains that image; footer does too.
+
+`test/pages/admin/Settings.test.jsx` + `test/services/getAdminSettings.test.js`: default **Mine Credit**.
+
+No pixel-height asserts in JSDOM. No new services.

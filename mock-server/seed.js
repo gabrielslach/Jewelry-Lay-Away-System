@@ -248,7 +248,7 @@ export function initialBankAccounts() {
 
 export function initialSettings() {
   return {
-    business_name: 'Sample Jewelry Co.',
+    business_name: 'Mine Credit',
     max_term_months: 3,
     late_penalty_per_day: 50,
     require_full_payment_before_release: true,

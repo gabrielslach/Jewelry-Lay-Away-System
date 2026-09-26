@@ -187,8 +187,8 @@ export default function StorefrontLayout() {
           </div>
         </div>
         <div className="footer-bottom">
-          Sample data shown for demonstration purposes only. © 2026 Sample Jewelry
-          Co. (fictional).
+          Sample data shown for demonstration purposes only. © 2026 Mine Credit
+          (fictional).
         </div>
       </footer>
     </div>
