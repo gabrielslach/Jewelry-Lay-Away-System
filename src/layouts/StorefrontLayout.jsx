@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import Button from '../components/Button.jsx';
+import { useSession } from '../components/useSession.js';
 import { HamburgerIcon, Logo } from '../theme/assets.js';
 import './StorefrontLayout.css';
 
 const sectionLinks = [
-  { href: '/#collections', label: 'Collections' },
+  { href: '/collections', label: 'Collections' },
   { href: '/#how', label: 'How Lay-Away Works' },
   { href: '/#reviews', label: 'Reviews' },
   { href: '/#contact', label: 'Contact' },
@@ -13,10 +14,13 @@ const sectionLinks = [
 
 export default function StorefrontLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { customer } = useSession();
 
   function closeMenu() {
     setMenuOpen(false);
   }
+
+  const accountTo = customer ? '/account' : '/login';
 
   return (
     <div className="storefront">
@@ -26,17 +30,23 @@ export default function StorefrontLayout() {
             <Logo as="span" />
           </Link>
           <div className="pv-links">
-            {sectionLinks.map((link) => (
-              <a key={link.href} href={link.href}>
-                {link.label}
-              </a>
-            ))}
+            {sectionLinks.map((link) =>
+              link.href.startsWith('/#') ? (
+                <a key={link.href} href={link.href}>
+                  {link.label}
+                </a>
+              ) : (
+                <Link key={link.href} to={link.href}>
+                  {link.label}
+                </Link>
+              ),
+            )}
           </div>
           <div className="pv-nav-right">
-            <Button variant="outline" size="sm" to="/account">
+            <Button variant="outline" size="sm" to={accountTo}>
               My Account
             </Button>
-            <Button variant="primary" size="sm" to="/#collections">
+            <Button variant="primary" size="sm" to="/collections">
               Start a Lay-Away
             </Button>
             <button
@@ -56,12 +66,18 @@ export default function StorefrontLayout() {
           id="mobile-panel"
           hidden={!menuOpen}
         >
-          {sectionLinks.map((link) => (
-            <a key={link.href} href={link.href} onClick={closeMenu}>
-              {link.label}
-            </a>
-          ))}
-          <NavLink to="/account" onClick={closeMenu}>
+          {sectionLinks.map((link) =>
+            link.href.startsWith('/#') ? (
+              <a key={link.href} href={link.href} onClick={closeMenu}>
+                {link.label}
+              </a>
+            ) : (
+              <Link key={link.href} to={link.href} onClick={closeMenu}>
+                {link.label}
+              </Link>
+            ),
+          )}
+          <NavLink to={accountTo} onClick={closeMenu}>
             My Account
           </NavLink>
         </div>
@@ -81,7 +97,7 @@ export default function StorefrontLayout() {
           <div className="footer-cols">
             <div className="footer-col">
               <h4>Shop</h4>
-              <a href="/#collections">Collections</a>
+              <Link to="/collections">Collections</Link>
               <a href="/#how">Lay-Away Plans</a>
             </div>
             <div className="footer-col">

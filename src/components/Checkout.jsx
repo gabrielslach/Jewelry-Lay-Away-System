@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react';
 import { CheckIcon } from '../theme/assets.js';
-import { createLayawayPlan, defaultDates } from '../data/plans.js';
+import { createLayawayPlan, defaultDates } from '../services/createLayawayPlan.js';
+import { mockGatewayPayment } from '../services/mockGatewayPayment.js';
+import { ServiceError } from '../services/http.js';
 import { formatPeso, splitAmount } from '../lib/money.js';
 import Button from './Button.jsx';
+import ErrorMessage from './ErrorMessage.jsx';
 import Modal from './Modal.jsx';
 import { useToast } from './useToast.js';
 import './Checkout.css';
@@ -26,6 +29,8 @@ export default function Checkout({ piece, onClose, onScheduled, onPayMethod }) {
   const [payments, setPayments] = useState(6);
   const [dates, setDates] = useState(() => defaultDates(6));
   const [method, setMethod] = useState('gcash');
+  const [planId, setPlanId] = useState(null);
+  const [error, setError] = useState(null);
 
   const amounts = useMemo(
     () => splitAmount(piece.price, payments),
@@ -43,20 +48,29 @@ export default function Checkout({ piece, onClose, onScheduled, onPayMethod }) {
   }
 
   async function handleContinue() {
-    if (step === 1) {
-      const plan = await createLayawayPlan({
-        productId: piece.id,
-        paymentCount: payments,
-        dates,
-      });
-      onScheduled?.({ plan, payments, dates, amounts });
-      setStep(2);
-      return;
-    }
-    if (step === 2) {
-      onPayMethod?.(method);
-      showToast(`Reservation submitted for ${piece.name}.`);
-      setStep(3);
+    setError(null);
+    try {
+      if (step === 1) {
+        const plan = await createLayawayPlan({
+          productId: piece.id,
+          paymentCount: payments,
+          dates,
+        });
+        setPlanId(plan.id);
+        onScheduled?.({ plan, payments, dates, amounts });
+        setStep(2);
+        return;
+      }
+      if (step === 2) {
+        if (method !== 'bank' && planId) {
+          await mockGatewayPayment({ planId, method });
+        }
+        onPayMethod?.(method);
+        showToast(`Reservation submitted for ${piece.name}.`);
+        setStep(3);
+      }
+    } catch (err) {
+      setError(err instanceof ServiceError ? err.message : 'Unable to continue checkout.');
     }
   }
 
@@ -81,6 +95,7 @@ export default function Checkout({ piece, onClose, onScheduled, onPayMethod }) {
         )
       }
     >
+      <ErrorMessage>{error}</ErrorMessage>
       {step === 1 ? (
         <>
           <div className="form-row">

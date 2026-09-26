@@ -10,9 +10,15 @@
 
 .spec-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 12px;
   margin: 16px 0 20px;
+}
+
+@media (min-width: 520px) {
+  .spec-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .spec-item {

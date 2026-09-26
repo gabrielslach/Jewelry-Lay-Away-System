@@ -5,14 +5,22 @@ import Hero from '../components/Hero.jsx';
 import HowItWorks from '../components/HowItWorks.jsx';
 import PieceDetail from '../components/PieceDetail.jsx';
 import Reviews from '../components/Reviews.jsx';
-import { getGalleryPiece } from '../data/gallery.js';
+import ErrorMessage from '../components/ErrorMessage.jsx';
+import { ServiceError } from '../services/http.js';
+import { getGalleryPiece } from '../services/getGalleryPiece.js';
 
 export default function Home() {
   const [piece, setPiece] = useState(null);
   const [checkoutPiece, setCheckoutPiece] = useState(null);
+  const [error, setError] = useState(null);
 
   function handleViewDetails(selected) {
-    getGalleryPiece(selected.id).then(setPiece);
+    setError(null);
+    getGalleryPiece(selected.id)
+      .then(setPiece)
+      .catch((err) => {
+        setError(err instanceof ServiceError ? err.message : 'Unable to load this piece.');
+      });
   }
 
   function handleReserve(selected) {
@@ -23,6 +31,11 @@ export default function Home() {
   return (
     <>
       <Hero />
+      {error ? (
+        <div className="container">
+          <ErrorMessage>{error}</ErrorMessage>
+        </div>
+      ) : null}
       <Gallery onViewDetails={handleViewDetails} />
       <HowItWorks />
       <Reviews />

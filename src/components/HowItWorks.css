@@ -4,7 +4,7 @@
 
 .steps {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr;
   gap: 24px;
 }
 
@@ -38,14 +38,14 @@
   color: var(--text-soft);
 }
 
-@media (max-width: 900px) {
+@media (min-width: 680px) {
   .steps {
     grid-template-columns: 1fr 1fr;
   }
 }
 
-@media (max-width: 680px) {
+@media (min-width: 900px) {
   .steps {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, 1fr);
   }
 }
