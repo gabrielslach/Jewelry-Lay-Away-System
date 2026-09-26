@@ -1,8 +1,9 @@
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Button from '../components/Button.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
 import { useSession } from '../components/useSession.js';
+import { returnPath } from '../lib/returnPath.js';
 import { ServiceError } from '../services/http.js';
 import { loginCustomer } from '../services/loginCustomer.js';
 import './AuthPage.css';
@@ -11,10 +12,13 @@ export default function Login() {
   const { customer } = useSession();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = new URLSearchParams(location.search).get('from') || '/account';
+  const fromParam = new URLSearchParams(location.search).get('from');
+  const from = returnPath(fromParam);
   const [email, setEmail] = useState('client@sampleemail.com');
   const [password, setPassword] = useState('password');
   const [error, setError] = useState(null);
+
+  useEffect(() => window.scrollTo(0, 0), []);
 
   if (customer) {
     return <Navigate to={from} replace />;
@@ -30,6 +34,8 @@ export default function Login() {
       setError(err instanceof ServiceError ? err.message : 'Unable to sign in.');
     }
   }
+
+  const registerTo = fromParam ? `/register?from=${encodeURIComponent(from)}` : '/register';
 
   return (
     <section className="page-block">
@@ -64,7 +70,7 @@ export default function Login() {
         </Button>
       </form>
       <p className="auth-switch">
-        New here? <Link to="/register">Create an account</Link>
+        New here? <Link to={registerTo}>Create an account</Link>
       </p>
     </section>
   );

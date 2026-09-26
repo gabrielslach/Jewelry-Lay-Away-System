@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import Button from '../components/Button.jsx';
 import Checkout from '../components/Checkout.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
 import PieceImage from '../components/PieceImage.jsx';
+import { useSession } from '../components/useSession.js';
 import { ServiceError } from '../services/http.js';
 import { getGalleryPiece } from '../services/getGalleryPiece.js';
 import '../components/Gallery.css';
@@ -12,10 +13,26 @@ import './PiecePage.css';
 
 export default function PiecePage() {
   const { id } = useParams();
+  const { customer } = useSession();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [piece, setPiece] = useState(null);
   const [error, setError] = useState(null);
   const [index, setIndex] = useState(0);
-  const [checkout, setCheckout] = useState(false);
+  const [checkout, setCheckout] = useState(
+    () => Boolean(customer) && searchParams.get('reserve') === '1',
+  );
+
+  useEffect(() => {
+    if (searchParams.has('reserve')) {
+      setSearchParams(
+        (params) => {
+          params.delete('reserve');
+          return params;
+        },
+        { replace: true },
+      );
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     let cancelled = false;

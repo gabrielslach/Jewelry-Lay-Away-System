@@ -1,8 +1,9 @@
-import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import Button from '../components/Button.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
 import { useSession } from '../components/useSession.js';
+import { returnPath } from '../lib/returnPath.js';
 import { ServiceError } from '../services/http.js';
 import { registerCustomer } from '../services/registerCustomer.js';
 import './AuthPage.css';
@@ -10,14 +11,19 @@ import './AuthPage.css';
 export default function Register() {
   const { customer } = useSession();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromParam = new URLSearchParams(location.search).get('from');
+  const from = returnPath(fromParam);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState(null);
 
+  useEffect(() => window.scrollTo(0, 0), []);
+
   if (customer) {
-    return <Navigate to="/account" replace />;
+    return <Navigate to={from} replace />;
   }
 
   async function handleSubmit(event) {
@@ -29,11 +35,13 @@ export default function Register() {
     }
     try {
       await registerCustomer({ name, email, password });
-      navigate('/account', { replace: true });
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err instanceof ServiceError ? err.message : 'Unable to register.');
     }
   }
+
+  const loginTo = fromParam ? `/login?from=${encodeURIComponent(from)}` : '/login';
 
   return (
     <section className="page-block">
@@ -89,7 +97,7 @@ export default function Register() {
         </Button>
       </form>
       <p className="auth-switch">
-        Already have an account? <Link to="/login">Sign in</Link>
+        Already have an account? <Link to={loginTo}>Sign in</Link>
       </p>
     </section>
   );

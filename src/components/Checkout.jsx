@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { CheckIcon } from '../theme/assets.js';
 import { createLayawayPlan, defaultDates } from '../services/createLayawayPlan.js';
 import { mockGatewayPayment } from '../services/mockGatewayPayment.js';
@@ -28,8 +27,6 @@ const PAY_METHODS = [
 export default function Checkout({ piece, onClose, onScheduled, onPayMethod }) {
   const { showToast } = useToast();
   const { customer } = useSession();
-  const navigate = useNavigate();
-  const location = useLocation();
   const [step, setStep] = useState(1);
   const [payments, setPayments] = useState(6);
   const [dates, setDates] = useState(() => defaultDates(6));
@@ -56,11 +53,6 @@ export default function Checkout({ piece, onClose, onScheduled, onPayMethod }) {
     setError(null);
     try {
       if (step === 1) {
-        if (!customer) {
-          onClose();
-          navigate(`/login?from=${encodeURIComponent(location.pathname)}`);
-          return;
-        }
         const plan = await createLayawayPlan({
           productId: piece.id,
           paymentCount: payments,
@@ -82,6 +74,31 @@ export default function Checkout({ piece, onClose, onScheduled, onPayMethod }) {
     } catch (err) {
       setError(err instanceof ServiceError ? err.message : 'Unable to continue checkout.');
     }
+  }
+
+  if (!customer) {
+    const from = encodeURIComponent(`/collections/${piece.id}?reserve=1`);
+    return (
+      <Modal
+        title="Reserve on Lay-Away"
+        onClose={onClose}
+        footer={
+          <>
+            <Button variant="outline" to={`/register?from=${from}`}>
+              Create account
+            </Button>
+            <Button variant="primary" to={`/login?from=${from}`}>
+              Sign in
+            </Button>
+          </>
+        }
+      >
+        <div className="confirm-box">
+          <h3>Sign in to reserve</h3>
+          <p>Your lay-away plan is saved to your account so you can track payments in My Account.</p>
+        </div>
+      </Modal>
+    );
   }
 
   return (
