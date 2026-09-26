@@ -18,7 +18,9 @@ export default function Login() {
   const [password, setPassword] = useState('password');
   const [error, setError] = useState(null);
 
-  useEffect(() => window.scrollTo(0, 0), []);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   if (customer) {
     return <Navigate to={from} replace />;

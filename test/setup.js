@@ -9,7 +9,7 @@ beforeEach(() => {
   store = createStore();
   sessionStorage.clear();
   localStorage.clear();
-  vi.stubGlobal('scrollTo', vi.fn());
+  vi.stubGlobal('scrollTo', vi.fn(() => Promise.resolve()));
   vi.stubGlobal('fetch', async (input, init = {}) => {
     const url = typeof input === 'string' ? input : input.url;
     const headers = init.headers || {};

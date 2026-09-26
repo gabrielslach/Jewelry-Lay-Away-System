@@ -20,7 +20,9 @@ export default function Register() {
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState(null);
 
-  useEffect(() => window.scrollTo(0, 0), []);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   if (customer) {
     return <Navigate to={from} replace />;
