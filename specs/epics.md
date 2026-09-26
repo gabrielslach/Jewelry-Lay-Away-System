@@ -55,9 +55,9 @@ Public marketing, gallery, piece detail, and lay-away checkout from `#publicView
 
 ### SF-1 Public chrome
 
-Sticky nav (logo, Collections / How Lay-Away Works / Reviews / Contact), My Account + Start a Lay-Away, hamburger + mobile panel, footer `#contact` (Shop / Support / Company columns, demo disclaimer).
+Sticky nav (logo, Collections / How Lay-Away Works / Reviews / Contact), account button (**AU-5**) + Start a Lay-Away, hamburger + mobile panel, footer `#contact` (Shop / Support / Company columns, demo disclaimer).
 
-Hamburger **look** is **Epic 12** (NM-1–NM-3): section links collapse below **910px**; chrome My Account until **≤680px**. Destinations stay these.
+Hamburger **look** is **Epic 12** (NM-1–NM-3): section links collapse below **910px**; chrome account button (**AU-5**) until **≤680px**. Destinations stay these.
 
 “Collections” in the nav goes to `/collections` once Epic 8 lands (until then, in-page `#collections` is fine).
 
@@ -307,7 +307,11 @@ A guest who opens checkout (piece page **Reserve This Piece**, home product moda
 
 ### AU-3 Session and gates
 
-Persist the customer session (access + refresh tokens and storage rules are **Epic 15**). `/account` and `POST /api/layaway/plans` require it. Nav “My Account” goes to `/account` when signed in and `/login` when not. After AU-3, stop using `POST /api/dev/session/customer` in the SPA (mock may keep the route).
+Persist the customer session (access + refresh tokens and storage rules are **Epic 15**). `/account` and `POST /api/layaway/plans` require it. Nav account button: see **AU-5**. After AU-3, stop using `POST /api/dev/session/customer` in the SPA (mock may keep the route).
+
+### AU-5 Signed-out chrome label
+
+The storefront account button reads **Sign in** (→ `/login`, no `from`) when there is no customer session and **My Account** (→ `/account`) when signed in. Same outline `sm` button, placement, and Epic 12 breakpoints (chrome from 681px, `#mobile-panel` row ≤680px). Sign out stays on My Account only. `/login` and `/register` keep redirecting a signed-in customer to `from` or `/account`. Admin chrome unchanged.
 
 ---
 
@@ -451,7 +455,7 @@ One `Hero` region at the top of `/`. Accessible name e.g. “Featured”.
 
 ## Epic 12 — Mobile nav menu
 
-Elevate SF-1 hamburger + `#mobile-panel`. **Same destinations.** **Start a Lay-Away** stays chrome-only. Tokens only (`--primary`, `--accent`, `--bg`, `--surface`, `--surface-2`, `--text`, `--text-soft`, `--border`, `--radius`, `--shadow`, `--font-display`, `--font-body`, `--nav-bg`; `--on-accent` / `--accent-hover` already on the CTA). **No API.** **Mobile-first.** Section links collapse into the hamburger **below 910px**. Chrome **My Account** stays until **phone (≤680px)**, then only in the sheet. Scope: hamburger, panel, overlay under sticky nav. Do not restyle the rest of the site.
+Elevate SF-1 hamburger + `#mobile-panel`. **Same destinations.** **Start a Lay-Away** stays chrome-only. Tokens only (`--primary`, `--accent`, `--bg`, `--surface`, `--surface-2`, `--text`, `--text-soft`, `--border`, `--radius`, `--shadow`, `--font-display`, `--font-body`, `--nav-bg`; `--on-accent` / `--accent-hover` already on the CTA). **No API.** **Mobile-first.** Section links collapse into the hamburger **below 910px**. The chrome account button (**AU-5**) stays until **phone (≤680px)**, then only in the sheet. Scope: hamburger, panel, overlay under sticky nav. Do not restyle the rest of the site.
 
 UX direction (2026-09-27): under-nav jewelry sheet (not a Material drawer); dim the page, keep the bar; hamburger becomes close.
 
@@ -461,9 +465,9 @@ UX direction (2026-09-27): under-nav jewelry sheet (not a Material drawer); dim 
 - **Hamburger (open):** same hit target; background `--accent`; icon `--on-accent`; swap to `CloseIcon` 18px; `aria-label="Close menu"`; `aria-expanded="true"`.
 - **Panel:** still a child of sticky `.pv-nav`, full width, **not** a left/right drawer. Background `--surface-2`. Top edge: **1px `--primary`**. Padding **8px 16px 20px**. No `--shadow` on the sheet (nav already sticky).
 - **Section links** (Collections, How Lay-Away Works, Reviews, Contact): `--font-display`, **22px**, weight 500, `--text`. Block padding **12px 8px**, **min-height 44px**. **1px `--border`** between items. Hover/focus-visible: `--accent` (no underline). Current route (`/collections` when on that page): `--accent`.
-- **My Account:** after a **1px `--primary`** rule and **12px** top padding. Reuse **outline `Button` `sm`** to `/login` or `/account` (same session rule as chrome). Full width of the padded panel. Show this row **only ≤680px** (chrome My Account is visible from 681px). Do **not** add Start a Lay-Away in the panel.
+- **Account button (AU-5 label):** after a **1px `--primary`** rule and **12px** top padding. Reuse **outline `Button` `sm`**: **Sign in** → `/login` or **My Account** → `/account` (same session rule as chrome). Full width of the padded panel. Show this row **only ≤680px** (the chrome account button is visible from 681px). Do **not** add Start a Lay-Away in the panel.
 - **Overlay:** fixed, inset 0, **z-index below `.pv-nav` (100)** so bar stays on top. Fill `color-mix(in srgb, var(--text) 32%, transparent)`. Not in the tab order.
-- **681px–909px:** hamburger + sheet for section links; chrome still shows My Account and Start a Lay-Away.
+- **681px–909px:** hamburger + sheet for section links; chrome still shows the account button and Start a Lay-Away.
 - **≥910px:** inline `.pv-links`; hamburger, panel, overlay **not shown**. No desktop menu.
 
 ### NM-2 Motion / behavior
@@ -479,7 +483,7 @@ UX direction (2026-09-27): under-nav jewelry sheet (not a Material drawer); dim 
 `test/layouts/StorefrontLayout.test.jsx` (extend). Assert:
 
 - Menu button `aria-controls="mobile-panel"`; closed → `aria-expanded="false"`, name **Menu**; open → `aria-expanded="true"`, name **Close menu**.
-- Open panel: Collections `/collections`, How Lay-Away Works `/#how`, Reviews `/#reviews`, Contact `/#contact`. **No** “Start a Lay-Away” inside `#mobile-panel`. My Account is in the panel markup (`/login` signed-out, `/account` signed-in) and is chrome-visible from 681px (CSS hides the panel row).
+- Open panel: Collections `/collections`, How Lay-Away Works `/#how`, Reviews `/#reviews`, Contact `/#contact`. **No** “Start a Lay-Away” inside `#mobile-panel`. The account button (AU-5: **Sign in** → `/login` signed-out, **My Account** → `/account` signed-in) is in the panel markup and is chrome-visible from 681px (CSS hides the panel row).
 - Overlay present when open; click overlay closes. Escape closes. Clicking a panel link closes.
 - Chrome still has Start a Lay-Away → `/collections` as primary.
 

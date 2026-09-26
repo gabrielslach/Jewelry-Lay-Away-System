@@ -42,10 +42,6 @@ describe('StorefrontLayout', () => {
     expect(
       screen.getByRole('navigation', { name: 'Storefront' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'My Account' })).toHaveAttribute(
-      'href',
-      '/login',
-    );
     expect(screen.getByRole('link', { name: 'Start a Lay-Away' })).toHaveAttribute(
       'href',
       '/collections',
@@ -104,23 +100,47 @@ describe('StorefrontLayout', () => {
       'href',
       '/#contact',
     );
-    expect(menu.getByRole('link', { name: 'My Account' })).toHaveAttribute(
-      'href',
-      '/login',
-    );
     expect(
       menu.queryByRole('link', { name: 'Start a Lay-Away' }),
     ).not.toBeInTheDocument();
     expect(screen.getByTestId('mobile-overlay')).toBeInTheDocument();
   });
 
-  it('links My Account in the panel to /account when signed in', async () => {
+  it('shows Sign in to /login in chrome and panel when signed out', () => {
+    renderLayout();
+    openMenu();
+    const nav = within(screen.getByRole('navigation', { name: 'Storefront' }));
+    const signIns = nav.getAllByRole('link', { name: 'Sign in' });
+    expect(signIns).toHaveLength(2);
+    signIns.forEach((link) => expect(link).toHaveAttribute('href', '/login'));
+    expect(
+      within(panel()).getByRole('link', { name: 'Sign in' }),
+    ).toHaveAttribute('href', '/login');
+    expect(nav.queryByRole('link', { name: 'My Account' })).not.toBeInTheDocument();
+  });
+
+  it('shows My Account to /account in chrome and panel when signed in', async () => {
     await loginCustomer({ email: 'client@sampleemail.com', password: 'password' });
     renderLayout();
     openMenu();
+    const nav = within(screen.getByRole('navigation', { name: 'Storefront' }));
+    const accounts = nav.getAllByRole('link', { name: 'My Account' });
+    expect(accounts).toHaveLength(2);
+    accounts.forEach((link) => expect(link).toHaveAttribute('href', '/account'));
     expect(
       within(panel()).getByRole('link', { name: 'My Account' }),
     ).toHaveAttribute('href', '/account');
+    expect(nav.queryByRole('link', { name: 'Sign in' })).not.toBeInTheDocument();
+  });
+
+  it('closes the menu when the panel Sign in is tapped', () => {
+    renderLayout();
+    openMenu();
+    fireEvent.click(within(panel()).getByRole('link', { name: 'Sign in' }));
+    expect(screen.getByRole('button', { name: 'Menu' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
   });
 
   it('closes the menu when the overlay is clicked', () => {

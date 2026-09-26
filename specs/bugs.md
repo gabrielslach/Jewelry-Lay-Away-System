@@ -83,6 +83,13 @@ Reservation success is both a modal (**Reservation Submitted**) and a toast (`z-
 
 UX proposal (not implemented): hold the toast until the confirmation modal closes. US-9 and the demo both show the toast with the success step, so dropping it needs Gabriel's approval.
 
+### BUG-18 — My Account shows an empty state while orders load
+**P3** · US-12 · **Open**
+
+Until `getCustomerOrders` resolves, `/account` shows **Active Lay-Aways 0** and “No active lay-aways right now.” / “No completed lay-aways yet.”, then fills in. After Epic 15 a first load in a new tab also waits on a token refresh, so the false empty state lasts longer. If the session is revoked, the empty page flashes before the redirect to `/login`.
+
+UX proposal (not implemented): a loading state; no count and no empty copy until orders arrive.
+
 ---
 
 ## Staff

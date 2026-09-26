@@ -1,5 +1,5 @@
 import { MemoryRouter } from 'react-router-dom';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import galleryPage from '../../mock-server/gallery-items.json';
 import App from '../../src/App.jsx';
@@ -54,12 +54,12 @@ describe('Register', () => {
 
   it('links to plain sign in when opened without from', () => {
     renderRegister('/register');
-    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login');
+    expect(within(screen.getByRole('main')).getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login');
   });
 
   it('keeps from on the sign in link', () => {
     renderRegister('/register?from=%2Fcollections%2F1%3Freserve%3D1');
-    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute(
+    expect(within(screen.getByRole('main')).getByRole('link', { name: 'Sign in' })).toHaveAttribute(
       'href',
       '/login?from=%2Fcollections%2F1%3Freserve%3D1',
     );

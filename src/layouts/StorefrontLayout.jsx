@@ -75,7 +75,9 @@ export default function StorefrontLayout() {
     document.getElementById(id)?.scrollIntoView();
   }, [location.pathname, location.hash]);
 
-  const accountTo = customer ? '/account' : '/login';
+  const account = customer
+    ? { to: '/account', label: 'My Account' }
+    : { to: '/login', label: 'Sign in' };
 
   return (
     <div className="storefront">
@@ -102,9 +104,9 @@ export default function StorefrontLayout() {
               className="pv-account-chrome"
               variant="outline"
               size="sm"
-              to={accountTo}
+              to={account.to}
             >
-              My Account
+              {account.label}
             </Button>
             <Button variant="primary" size="sm" to="/collections" onClick={closeMenu}>
               Start a Lay-Away
@@ -153,10 +155,10 @@ export default function StorefrontLayout() {
               className="pv-account-panel"
               variant="outline"
               size="sm"
-              to={accountTo}
+              to={account.to}
               onClick={closeMenu}
             >
-              My Account
+              {account.label}
             </Button>
           </div>
         </div>
