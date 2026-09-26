@@ -33,7 +33,7 @@ Step 1 (6 payment dates) lives in a modal with `max-height: 88vh` and the whole 
 The admin order modal has the same clip (installment 6 + **Mark Next Payment Received**) — US-22 / US-23.
 
 ### ~~BUG-5 — Guest continue does not look like a sign-in wall~~
-**P1** · US-6 · **Fixed 2026-09-27** — guest Continue closes checkout and opens `/login?from=` the current page. Dates are not restored after login.
+**P1** · US-6 · **Fixed 2026-09-27**, **replaced by AU-4** — a guest opening checkout sees a “Sign in to reserve” step; after sign-in or register the piece page reopens checkout. The earlier fix (Continue silently jumping to `/login`) felt like a surprise redirect.
 
 With no customer token, `createLayawayPlan` throws `Please sign in to continue.` and does not POST. In the checkout dialog that `role="alert"` sits above a long date list (see BUG-4), so a guest can tap **Continue**, see no next step, and not notice the message. Do not treat extra Sample Client plans (`LA-1006` / `LA-1007`) as a guest write unless it reproduces with an empty session.
 

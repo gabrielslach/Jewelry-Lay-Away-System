@@ -1,10 +1,33 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import galleryPage from '../../mock-server/gallery-items.json';
 import App from '../../src/App.jsx';
+import { loginCustomer } from '../../src/services/loginCustomer.js';
+
+function LocationDisplay() {
+  const location = useLocation();
+  return (
+    <div data-testid="location">{`${location.pathname}${location.search}`}</div>
+  );
+}
 
 describe('PiecePage', () => {
+  it('opens checkout on step 1 from ?reserve=1 and clears the param', async () => {
+    await loginCustomer({ email: 'client@sampleemail.com', password: 'password' });
+    const piece = galleryPage.results[0];
+    render(
+      <MemoryRouter initialEntries={[`/collections/${piece.id}?reserve=1`]}>
+        <App />
+        <LocationDisplay />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByLabelText('Lay-Away Term')).toHaveValue('6');
+    expect(screen.getAllByLabelText(/Payment \d+ date/)).toHaveLength(6);
+    expect(screen.getByTestId('location')).toHaveTextContent(`/collections/${piece.id}`);
+    expect(screen.getByTestId('location')).not.toHaveTextContent('reserve');
+  });
+
   it('shows the CDN photo and details', async () => {
     const piece = galleryPage.results[0];
     render(

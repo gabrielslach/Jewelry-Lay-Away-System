@@ -2,6 +2,11 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-09-27 (guest reserve gate)
+
+- **Epic 5 AU-4** — guests opening checkout see “Sign in to reserve” (Sign in / Create account) instead of being redirected after Continue; return to `/collections/:id?reserve=1` reopens checkout. Login/Register honour `from` only when it resolves to the same origin.
+- `bugs.md` BUG-5 now points to AU-4.
+
 ## 2026-09-27 (access and refresh tokens)
 
 - **Epic 15** — customer register/login return `access_token` + `refresh_token`; refresh on `401`; logout revokes one session. Refresh token + customer in `localStorage`, access token in `sessionStorage`. AU-3 and Epic 4 (MS-2, MS-5) point here.

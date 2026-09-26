@@ -294,6 +294,17 @@ Name, email, password (and confirm). Submit `POST /api/customers/register` throu
 
 Email + password. `POST /api/customers/login` through a service. Same token storage, distinct copy for wrong password vs `429`, link to `/register`. Optional return-to query so checkout can send the user here.
 
+### AU-4 Guest reserve gate
+
+A guest who opens checkout (piece page **Reserve This Piece**, home product modal) sees a sign-in step **instead of** step 1, inside the same “Reserve on Lay-Away” dialog. No silent redirect after Continue.
+
+- Body reuses the `confirm-box` layout (no check icon): heading **Sign in to reserve**, text **Your lay-away plan is saved to your account so you can track payments in My Account.** Plain text, not an alert.
+- Footer: outline **Create account** → `/register?from=…`, primary **Sign in** → `/login?from=…`. No Cancel (✕ / Escape close). No step dot for this step.
+- Return target is always `/collections/:id?reserve=1` (the home modal has no URL of its own).
+- Login and Register follow `from` only when it starts with `/` and resolves to the same origin and the normalized path does not start with `//` (rejects `//host`, `/\host`, `/.//host`, tab/newline tricks); otherwise `/account`. Their cross-links (“Create an account” / “Sign in”) pass `from` on only when the page was opened with one. Both pages open scrolled to the top.
+- Piece page with `?reserve=1` and a signed-in customer opens checkout on step 1 (default term and dates), then removes `reserve` with a replace navigation.
+- Signed-in shoppers never see this step. Do not sign in inside the dialog, gate the Reserve buttons, persist term/dates, or offer guest checkout (`POST /api/layaway/plans` needs a customer).
+
 ### AU-3 Session and gates
 
 Persist the customer session (access + refresh tokens and storage rules are **Epic 15**). `/account` and `POST /api/layaway/plans` require it. Nav “My Account” goes to `/account` when signed in and `/login` when not. After AU-3, stop using `POST /api/dev/session/customer` in the SPA (mock may keep the route).
