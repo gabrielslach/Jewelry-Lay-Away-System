@@ -2,6 +2,10 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-09-27 (Epic 14 collections fallback)
+
+- **Epic 14** — image load failure → GemMark on PieceCard / piece carousel (main + thumbs); empty material/stone/size/cert from GET /api/gallery → `-` via `presentPiece`.
+
 ## 2026-09-27 (Mine Credit lockup)
 
 - **Epic 13** — `public/store-logo.png` in theme `Logo`; SPA name **Mine Credit**. Demo.html identity unchanged. AD-8 default `business_name` is Mine Credit.

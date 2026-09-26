@@ -21,6 +21,37 @@ describe('PieceCard', () => {
     expect(screen.getByRole('img', { name: 'Solitaire Halo Ring' })).toBeInTheDocument();
   });
 
+  it('shows an img when the piece has a photo URL', () => {
+    render(
+      <PieceCard
+        piece={{
+          ...piece,
+          images: [{ url: 'https://cdn.example/ring.jpg', is_primary: true }],
+        }}
+      />,
+    );
+    expect(document.querySelector('.piece-media img')).toHaveAttribute(
+      'src',
+      'https://cdn.example/ring.jpg',
+    );
+  });
+
+  it('replaces a broken photo with GemMark', () => {
+    render(
+      <PieceCard
+        piece={{
+          ...piece,
+          images: [{ url: 'https://cdn.example/broken.jpg', is_primary: true }],
+        }}
+      />,
+    );
+    fireEvent.error(document.querySelector('.piece-media img'));
+    expect(document.querySelector('.piece-media img')).toBeNull();
+    expect(screen.getByRole('img', { name: 'Solitaire Halo Ring' })).toHaveClass(
+      'gem-mark',
+    );
+  });
+
   it('notifies when View Details is clicked', () => {
     const onViewDetails = vi.fn();
     render(<PieceCard piece={piece} onViewDetails={onViewDetails} />);

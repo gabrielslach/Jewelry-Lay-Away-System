@@ -1,6 +1,6 @@
 import Button from './Button.jsx';
+import PieceImage from './PieceImage.jsx';
 import { formatPeso } from '../lib/money.js';
-import { GemMark } from '../theme/assets.js';
 import './Gallery.css';
 
 export default function PieceCard({ piece, onViewDetails, to }) {
@@ -8,11 +8,7 @@ export default function PieceCard({ piece, onViewDetails, to }) {
   return (
     <article className="piece-card">
       <div className="piece-media">
-        {piece.images?.[0]?.url ? (
-          <img src={piece.images[0].url} alt="" />
-        ) : (
-          <GemMark title={piece.name} />
-        )}
+        <PieceImage src={piece.images?.[0]?.url} title={piece.name} />
       </div>
       <div className="piece-body">
         <div className="piece-cat">{piece.category}</div>

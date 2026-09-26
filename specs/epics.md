@@ -518,3 +518,43 @@ Leave hero/CTAs. Palette/fonts unchanged.
 `test/pages/admin/Settings.test.jsx` + `test/services/getAdminSettings.test.js`: default **Mine Credit**.
 
 No pixel-height asserts in JSDOM. No new services.
+
+## Epic 14 — Collections image fallback and empty specs
+
+When a piece image URL fails to load, show the demo gallery jewel icon. When Material / Stone / Size / Certification has no data from GET /api/gallery, show hyphen-minus `-`. Reuse GemMark and presentPiece. No new flows. F-1: no new raw brand hex.
+
+### CF-1 Image load failure → GemMark
+
+**Surfaces:** `PieceCard` (`.piece-media` on `/collections` and the home teaser — same component; do not restyle the hero) and piece page `/collections/:id` carousel main + thumbs.
+
+**Behavior:** Missing URL or `<img>` `onerror` → replace the broken image with existing `GemMark` from `src/theme/GemMark.jsx`. Do not add a second SVG.
+
+Display matches demo gallery `GEM_ICON` in `specs/demo.html`:
+
+- size 70, viewBox 0 0 24 24, fill none, strokeWidth 1.3, color `var(--primary)` via existing `.gem-mark { color: var(--primary) }`
+- paths already in GemMark
+- centered in the existing `.piece-media` (190px flex center). Do not recolor `.piece-media` and do not add raw hex `#EADFCB`.
+
+Carousel main: same GemMark default size 70, centered in the existing carousel well.
+
+Thumbs are 64×64 (`.thumb` in PiecePage.css). Show the same GemMark artwork fully visible inside the thumb (pass a size that fits, about 36), same stroke and paths. Do not drop a 70px icon into a 64px box so it gets cropped.
+
+When the carousel index changes, a new URL must be allowed to try loading again (reset failure state when `src` changes).
+
+Home product modal (`PieceDetail`): optional `onerror` so a broken URL is not a broken image, but keep `GemMark size={60}` (demo modal is 60 / stroke 1.4). Do not change GemMark’s default strokeWidth (gallery stays 1.3). Do not restyle the modal to the gallery gem. If adding onerror to the modal requires the shared component, pass `size={60}`.
+
+### CF-2 Empty description fields → `-`
+
+In `src/services/presentPiece.js` only (the live GET /api/gallery path), for material, stone, size, cert: missing, null, or blank after trim → ASCII hyphen-minus `"-"`, not em dash `—`.
+
+Unchanged: `name = item.name || item.title`; `category = item.category || 'Jewelry'`; price; images.
+
+There is a duplicate `presentPiece` in `src/data/gallery.js`. If the SPA UI no longer imports it, do not refactor that module. If you must touch it because tests or UI still depend on the em dash and you would otherwise leave two behaviors, only change the four fallback characters to `"-"` if that file is still used by the app. Prefer leaving unused data-layer code alone. Check imports first.
+
+### CF-3 Tests
+
+- Piece image fallback: URL present + fire error event → gem accessible image, the `<img>` is gone. Missing URL → gem. Successful URL → img.
+- Piece page: failed main and a failed thumb show GemMark; thumb button chrome remains.
+- presentPiece: omit / null / `""` / whitespace for the four fields → `"-"`; present values unchanged; name falls back to title; category stays `"Jewelry"` when absent.
+
+Tests under `test/` mirroring `src/`. Vitest + Testing Library. User-visible behavior.

@@ -1,7 +1,7 @@
 import { formatPeso } from '../lib/money.js';
-import { GemMark } from '../theme/assets.js';
 import Button from './Button.jsx';
 import Modal from './Modal.jsx';
+import PieceImage from './PieceImage.jsx';
 import './Gallery.css';
 import './PieceDetail.css';
 
@@ -22,11 +22,12 @@ export default function PieceDetail({ piece, onClose, onReserve }) {
       }
     >
       <div className="modal-media">
-        {piece.images?.[0]?.url ? (
-          <img src={piece.images[0].url} alt={piece.name} />
-        ) : (
-          <GemMark size={60} title={piece.name} />
-        )}
+        <PieceImage
+          src={piece.images?.[0]?.url}
+          alt={piece.name}
+          title={piece.name}
+          size={60}
+        />
       </div>
       <div className="piece-cat">{piece.category}</div>
       <div className="piece-detail-price">{formatPeso(piece.price)}</div>
