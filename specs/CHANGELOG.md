@@ -2,6 +2,10 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-09-27 (editorial hero)
+
+- **Epic 11** — single split home hero (`EH-1`–`EH-3`): approved copy, `/hero-1.png`, no carousel. Supersedes Epic 10.
+
 ## 2026-09-26 (hero overlay)
 
 - Epic 10 layout: hero copy overlays the image with a scrim on all widths (no stacked or split panel).

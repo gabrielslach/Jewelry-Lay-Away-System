@@ -61,7 +61,7 @@ Sticky nav (logo, Collections / How Lay-Away Works / Reviews / Contact), My Acco
 
 Eyebrow, headline, subcopy, Browse Collections, three stats (3,000+ pieces, 3 Mo. max term, Your Dates). Demo `.hero`.
 
-**Superseded for new work by Epic 10** (home hero carousel). Do not extend the single stacked text block; replace it when Epic 10 is approved.
+**Superseded for new work by Epic 11** (editorial home hero). Epic 10 (carousel) is also superseded.
 
 ### SF-3 Collections gallery
 
@@ -366,6 +366,8 @@ Primary action starts checkout (existing Checkout flow) with this piece. Back li
 
 ## Epic 10 — Home hero carousel
 
+**Superseded for new work by Epic 11** (editorial home hero). Do not extend the carousel.
+
 Replace the SF-2 text stack with a **three-slide carousel** so the pitch is easier to scan. Slides 1–2 use `public/hero-1.png` and `public/hero-2.png` (Higgsfield mark already cropped off). Slide 3 uses a solid color until a third photo exists. **No API.** **Mobile-first.** Home still owns this block; How-it-works and Reviews stay below as today.
 
 Copy stays the current Sample Jewelry Co. strings (same as SF-2 / demo). Do not invent a new slogan unless Gabriel asks.
@@ -399,3 +401,32 @@ Copy **overlays** the photo on every width (object-fit cover). A dark scrim behi
 ### HC-3 Tests
 
 `test/components/Hero.test.jsx` (and a small carousel primitive under `test/` if extracted). Assert: slide 1 heading + Browse Collections; activating next/dot 2 shows the plan subcopy and hides the stats; slide 3 shows **3,000+** / **3 Mo.** / **Your Dates** and **See how it works**. Image `src` is `/hero-1.png` then `/hero-2.png` as specified. No new services.
+
+---
+
+## Epic 11 — Editorial home hero
+
+Replace the Epic 10 carousel with a **single** split hero: copy on cream, still-life on the right (Aura-style proportions). Photo is `/hero-1.png` (`public/hero-2.png` kept for a later still-life). **No API.** **No carousel.** **Mobile-first.** How-it-works and Reviews stay below. Copy is the block Gabriel approved (2026-09-27).
+
+### EH-1 Layout
+
+One `Hero` region at the top of `/`. Accessible name e.g. “Featured”.
+
+- Phone: copy first (left-aligned), photo under (`object-fit: cover`, ~40vh).
+- `min-width: 800px`: two columns — copy ~40–45% on `--bg`, photo fills the rest. No scrim, no text on the image. Type uses `--text` / `--text-soft` / `--primary` for the eyebrow.
+- Reuse `Button` primary for the CTA (white label on maroon).
+- Three stats in one row under the CTA (wrap on narrow widths). No icons required.
+
+### EH-2 Copy (approved)
+
+| Part | Text |
+| --- | --- |
+| Eyebrow | **Paid Your Way** |
+| Headline | **Reserve the Piece.** / **Pay on Your Terms.** (two lines) |
+| Body | **Secure any jewelry with a flexible lay-away — up to 3 months, on dates you choose.** |
+| CTA | **Browse Collections** → `/collections` |
+| Stats | **3,000+ pieces** · **Up to 3 months** · **Dates you choose** |
+
+### EH-3 Tests
+
+`test/components/Hero.test.jsx`. Assert: headline (both lines), body, Browse Collections → `/collections`, the three stats, `img` `src` `/hero-1.png`. No slide dots/prev/next. No new services.
