@@ -12,9 +12,17 @@ const TERMS = [
   { payments: 2, label: '1 Month (2 payments)' },
 ];
 
-export default function Checkout({ piece, onClose, onScheduled }) {
+const PAY_METHODS = [
+  { id: 'gcash', label: 'GCash / E-Wallet' },
+  { id: 'bank', label: 'Bank Transfer' },
+  { id: 'card', label: 'Credit / Debit Card' },
+];
+
+export default function Checkout({ piece, onClose, onScheduled, onPayMethod }) {
+  const [step, setStep] = useState(1);
   const [payments, setPayments] = useState(6);
   const [dates, setDates] = useState(() => defaultDates(6));
+  const [method, setMethod] = useState('gcash');
 
   const amounts = useMemo(
     () => splitAmount(piece.price, payments),
@@ -32,12 +40,17 @@ export default function Checkout({ piece, onClose, onScheduled }) {
   }
 
   async function handleContinue() {
-    const plan = await createLayawayPlan({
-      productId: piece.id,
-      paymentCount: payments,
-      dates,
-    });
-    onScheduled?.({ plan, payments, dates, amounts });
+    if (step === 1) {
+      const plan = await createLayawayPlan({
+        productId: piece.id,
+        paymentCount: payments,
+        dates,
+      });
+      onScheduled?.({ plan, payments, dates, amounts });
+      setStep(2);
+      return;
+    }
+    onPayMethod?.(method);
   }
 
   return (
@@ -55,33 +68,58 @@ export default function Checkout({ piece, onClose, onScheduled }) {
         </>
       }
     >
-      <div className="form-row">
-        <label htmlFor="plan-term">Lay-Away Term</label>
-        <select id="plan-term" value={payments} onChange={handleTermChange}>
-          {TERMS.map((term) => (
-            <option key={term.payments} value={term.payments}>
-              {term.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="plan-box">
-        <h4>Choose Each Payment Date</h4>
-        <div className="schedule-list">
-          {dates.map((date, index) => (
-            <div className="schedule-row" key={index}>
-              <span>Payment {index + 1}</span>
-              <input
-                type="date"
-                value={date}
-                aria-label={`Payment ${index + 1} date`}
-                onChange={(event) => handleDateChange(index, event.target.value)}
-              />
-              <b>{formatPeso(amounts[index])}</b>
+      {step === 1 ? (
+        <>
+          <div className="form-row">
+            <label htmlFor="plan-term">Lay-Away Term</label>
+            <select id="plan-term" value={payments} onChange={handleTermChange}>
+              {TERMS.map((term) => (
+                <option key={term.payments} value={term.payments}>
+                  {term.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="plan-box">
+            <h4>Choose Each Payment Date</h4>
+            <div className="schedule-list">
+              {dates.map((date, index) => (
+                <div className="schedule-row" key={index}>
+                  <span>Payment {index + 1}</span>
+                  <input
+                    type="date"
+                    value={date}
+                    aria-label={`Payment ${index + 1} date`}
+                    onChange={(event) => handleDateChange(index, event.target.value)}
+                  />
+                  <b>{formatPeso(amounts[index])}</b>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+        </>
+      ) : (
+        <div className="plan-box">
+          <h4>Choose Payment Method</h4>
+          <div className="pay-method-list">
+            {PAY_METHODS.map((option) => (
+              <label
+                className={method === option.id ? 'pay-method selected' : 'pay-method'}
+                key={option.id}
+              >
+                <input
+                  type="radio"
+                  name="payMethod"
+                  value={option.id}
+                  checked={method === option.id}
+                  onChange={() => setMethod(option.id)}
+                />
+                <span>{option.label}</span>
+              </label>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </Modal>
   );
 }
