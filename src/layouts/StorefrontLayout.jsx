@@ -82,7 +82,7 @@ export default function StorefrontLayout() {
       <nav className="pv-nav" aria-label="Storefront">
         <div className="pv-nav-inner">
           <Link to="/" onClick={closeMenu}>
-            <Logo as="span" />
+            <Logo as="span" withName />
           </Link>
           <div className="pv-links">
             {sectionLinks.map((link) =>

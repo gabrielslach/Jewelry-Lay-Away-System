@@ -478,7 +478,7 @@ No new services.
 
 Replace the Cormorant **Sample Jewelry Co.** wordmark with `public/store-logo.png` and SPA copy **Mine Credit**. **Same destinations.** F-1 catalog only (no `<img>` in layouts/pages). **No API** except seed `business_name`. **Mobile-first.** Do not restyle the hero or rewrite `specs/demo.html`.
 
-UX direction (2026-09-27): full square beige lockup as a small brand plate; no invert; no second typeset wordmark.
+UX direction (2026-09-27): full square beige lockup as a small brand plate; no invert. Header typeset name is **BR-4**.
 
 ### BR-1 Logo placement
 
@@ -520,6 +520,20 @@ Leave hero/CTAs. Palette/fonts unchanged.
 `test/pages/admin/Settings.test.jsx` + `test/services/getAdminSettings.test.js`: default **Mine Credit**.
 
 No pixel-height asserts in JSDOM. No new services.
+
+### BR-4 Header wordmark
+
+Storefront **header** only: typeset **Mine Credit** beside the plate so the 36–48px PNG is readable. **Footer and admin stay image-only.** Do not typeset **MURA NA HULUGAN PA**.
+
+**`Logo`:** `withName` boolean, default **false**. Wrapper classes `logo` and `logo--named` when `withName`. `withName={false}`: img `alt="Mine Credit"` only. `withName={true}`: img **`alt=""`** plus `<span className="logo-name">Mine Credit</span>` (hard-coded, not `business_name`). Storefront nav: `<Logo as="span" withName />`. Footer and admin: no `withName`.
+
+**Type (tokens, `assets.css`):** `--font-display`, weight 700, `--text`. `.logo--named`: `inline-flex`, `align-items: center`, `flex-shrink: 0`, `white-space: nowrap`. Plate heights unchanged (BR-1). Gap **6px** ≤680, **10px** ≥681. Name: ≤680 **16px** letter-spacing 0; ≥681 **22px** letter-spacing 0.5px.
+
+**Row:** keep full **Start a Lay-Away**, nowrap inner ≤680. One row at **≥360px**. Do not ellipsize the name. Do not drop the plate.
+
+**Tests:** `Logo` default still has no visible “Mine Credit” text; `withName` shows the text once and empty img alt. Nav home link named **Mine Credit** with visible wordmark; footer img still `alt="Mine Credit"`. Admin sidebar has no `.logo-name`.
+
+---
 
 ## Epic 14 — Collections image fallback and empty specs
 
