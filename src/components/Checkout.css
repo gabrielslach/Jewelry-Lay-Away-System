@@ -47,3 +47,34 @@
   background: var(--surface);
   color: var(--text);
 }
+
+.pay-method-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pay-method {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.pay-method input {
+  margin: 0;
+}
+
+.pay-method span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pay-method.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+}

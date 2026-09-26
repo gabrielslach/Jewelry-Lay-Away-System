@@ -37,4 +37,14 @@ describe('Checkout', () => {
     });
     expect(onScheduled.mock.calls[0][0].plan.term_months).toBe(3);
   });
+
+  it('lets the shopper pick a mocked payment method', async () => {
+    const onPayMethod = vi.fn();
+    render(<Checkout piece={piece} onClose={() => {}} onPayMethod={onPayMethod} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(await screen.findByText('GCash / E-Wallet')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', { name: 'Bank Transfer' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(onPayMethod).toHaveBeenCalledWith('bank');
+  });
 });
