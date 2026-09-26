@@ -5,10 +5,10 @@ info:
 
 http:
   method: GET
-  url: https://honeydew-stork-999262.hostingersite.com/api/customers/18/orders
+  url: https://honeydew-stork-999262.hostingersite.com/api/customers/orders
   auth:
     type: bearer
-    token: '{{token}}'
+    token: '{{access_token}}'
 
 settings:
   encodeUrl: true

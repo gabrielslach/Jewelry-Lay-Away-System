@@ -13,7 +13,7 @@
 | | |
 |---|---|
 | Base URL | `https://honeydew-stork-999262.hostingersite.com` (sandbox — will move before go-live) |
-| Auth | `/customers/login` returns a JWT as `token`. **Now enforced (Sep 23):** protected routes require `Authorization: Bearer <token>` — a missing/invalid token returns `401`, and a token for the wrong customer returns `403`. Build UI logic assuming this now. |
+| Auth | **Breaking (Sep 27):** customer `register`/`login` return `{ access_token, refresh_token, customer }` instead of `token`. `access_token` is valid for **15 minutes** — send it as `Authorization: Bearer <access_token>`. On `401`, call `POST /api/customers/refresh` with `{ refresh_token }` to get `{ access_token }` without re-login. `refresh_token` lasts **24 hours**, or until `POST /api/customers/logout` with it (revokes just that one session). Protected routes: missing/invalid/expired token `401`, token for the wrong customer `403`. Admin auth is unchanged (`{ token, admin }`). |
 | Rate limiting | `register`/`login` (both customer and admin) are rate-limited to 10 attempts per 15 minutes per IP — a `429` with `{ error }` means "too many attempts," not a real validation error. Handle it distinctly in the UI (e.g. "please wait a few minutes") rather than showing it as a wrong-password message. |
 | Protocol | HTTPS (prod), JSON, UTF-8 |
 
@@ -25,9 +25,11 @@
 |---|---|---|---|
 | GET | `/api/gallery` | ✅ Live | List browsable pieces (proxies the client's catalog through our adapter). Query params: `page`, `page_size` (no `category` filter — see Section 5) |
 | GET | `/api/gallery/:id` | ✅ Live | Single piece detail |
-| POST | `/api/customers/register` | ✅ Live | Customer registration |
-| POST | `/api/customers/login` | ✅ Live | Customer login — returns `{ token, customer }` |
-| GET | `/api/customers/:id/orders` | ✅ Live — **requires** `Authorization: Bearer <token>` for that same customer | Customer's lay-away order history (My Account page) |
+| POST | `/api/customers/register` | ✅ Live | Customer registration — returns `{ access_token, refresh_token, customer }` |
+| POST | `/api/customers/login` | ✅ Live | Customer login — returns `{ access_token, refresh_token, customer }` |
+| POST | `/api/customers/refresh` | ✅ Live (Sep 27) | Body `{ refresh_token }` → `{ access_token }`. `401` if the refresh token is expired or revoked |
+| POST | `/api/customers/logout` | ✅ Live (Sep 27) | Body `{ refresh_token }` — revokes that one session |
+| GET | `/api/customers/:id/orders` | ✅ Live — **requires** `Authorization: Bearer <access_token>` for that same customer | Customer's lay-away order history (My Account page) |
 
 ## 3. Lay-away & checkout endpoints
 
@@ -101,6 +103,7 @@ Price/markup logic is still unresolved (WBS M1) — `price` above is the provide
 ---
 
 *This document is confidential and proprietary to The Loft IT Solutions.*
+*Version 1.6 — Updated Sep 27, 2026: **breaking** — customer register/login return `{ access_token, refresh_token, customer }` (access 15 min, refresh 24 h); added `POST /api/customers/refresh` and `POST /api/customers/logout`. Admin auth unchanged.*
 *Version 1.5 — Updated Sep 24, 2026: gallery field set confirmed final (client API dev Jeffmathew) — removed `category` from `/api/gallery`'s query params and response example; documented that `title` is barcode-based and that category/colour/quality/stone/metal are intentionally absent (placeholder data client-side), not a frontend gap to fix.*
 *Version 1.4 — Updated Sep 23, 2026, later same day: added rate-limiting behavior (Section 1 — `429` on too many login/register attempts); documented the new `overdue` installment status (Section 3, lazy on plan read); added `GET /api/admin/plans` (Section 4), the data source for the admin dashboard/orders page.*
 *Version 1.3 — Updated Sep 23, 2026, later same day: added the manual (non-gateway) payment path — `POST /api/layaway/plans/:id/payments/manual` and `GET /api/bank-accounts` — which runs alongside the still-blocked gateway path (correction, not a client change). All admin endpoints (`/api/finance/ledger`, `/api/admin/markup-rules`, `/penalty-rules`, and the new `/api/bank-accounts` POST and `/api/admin/payments/*`) now require an admin token, not left open.*

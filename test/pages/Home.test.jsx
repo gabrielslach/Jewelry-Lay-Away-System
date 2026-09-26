@@ -1,15 +1,18 @@
 import { MemoryRouter } from 'react-router-dom';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { SessionProvider } from '../../src/components/SessionProvider.jsx';
 import { ToastProvider } from '../../src/components/ToastProvider.jsx';
 import Home from '../../src/pages/Home.jsx';
 
 function renderHome() {
   return render(
     <MemoryRouter>
-      <ToastProvider>
-        <Home />
-      </ToastProvider>
+      <SessionProvider>
+        <ToastProvider>
+          <Home />
+        </ToastProvider>
+      </SessionProvider>
     </MemoryRouter>,
   );
 }

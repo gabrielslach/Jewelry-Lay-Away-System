@@ -8,7 +8,7 @@ import { loginCustomer } from '../services/loginCustomer.js';
 import './AuthPage.css';
 
 export default function Login() {
-  const { signIn, customer } = useSession();
+  const { customer } = useSession();
   const navigate = useNavigate();
   const location = useLocation();
   const from = new URLSearchParams(location.search).get('from') || '/account';
@@ -24,8 +24,7 @@ export default function Login() {
     event.preventDefault();
     setError(null);
     try {
-      const data = await loginCustomer({ email, password });
-      signIn(data);
+      await loginCustomer({ email, password });
       navigate(from, { replace: true });
     } catch (err) {
       setError(err instanceof ServiceError ? err.message : 'Unable to sign in.');

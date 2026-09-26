@@ -8,5 +8,5 @@ export async function ensureCustomerToken() {
   }
   const data = await request('/api/dev/session/customer', { method: 'POST', body: {} });
   setCustomerSession(data);
-  return data.token;
+  return data.access_token;
 }

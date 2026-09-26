@@ -2,9 +2,12 @@ import { planLabel } from './seed.js';
 import {
   createStore,
   hitRate,
+  issueAccessToken,
+  issueCustomerSession,
   issueToken,
   publicAdmin,
   publicCustomer,
+  readRefreshToken,
   readToken,
 } from './store.js';
 
@@ -193,8 +196,7 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     };
     store.nextCustomerId += 1;
     store.customers.push(customer);
-    const token = issueToken(store, 'customer', customer.id);
-    return json(201, { token, customer: publicCustomer(customer) });
+    return json(201, issueCustomerSession(store, customer));
   }
 
   if (verb === 'POST' && path === '/api/customers/login') {
@@ -207,8 +209,22 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     if (!customer) {
       return json(401, { error: 'Invalid credentials' });
     }
-    const token = issueToken(store, 'customer', customer.id);
-    return json(200, { token, customer: publicCustomer(customer) });
+    return json(200, issueCustomerSession(store, customer));
+  }
+
+  if (verb === 'POST' && path === '/api/customers/refresh') {
+    const entry = readRefreshToken(store, body?.refresh_token);
+    if (!entry) {
+      return json(401, { error: 'Unauthorized' });
+    }
+    return json(200, { access_token: issueAccessToken(store, entry.id) });
+  }
+
+  if (verb === 'POST' && path === '/api/customers/logout') {
+    if (store.tokens.get(body?.refresh_token)?.kind === 'refresh') {
+      store.tokens.delete(body.refresh_token);
+    }
+    return json(200, { ok: true });
   }
 
   params = match(path, '/api/customers/:id/orders');
@@ -353,8 +369,7 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     if (!customer) {
       return json(404, { error: 'Customer not found' });
     }
-    const token = issueToken(store, 'customer', customer.id);
-    return json(200, { token, customer: publicCustomer(customer) });
+    return json(200, issueCustomerSession(store, customer));
   }
 
   if (verb === 'POST' && path === '/api/dev/session/admin') {

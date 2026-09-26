@@ -4,11 +4,11 @@ import { CheckIcon } from '../theme/assets.js';
 import { createLayawayPlan, defaultDates } from '../services/createLayawayPlan.js';
 import { mockGatewayPayment } from '../services/mockGatewayPayment.js';
 import { ServiceError } from '../services/http.js';
-import { getCustomerToken } from '../services/session.js';
 import { formatPeso, splitAmount } from '../lib/money.js';
 import Button from './Button.jsx';
 import ErrorMessage from './ErrorMessage.jsx';
 import Modal from './Modal.jsx';
+import { useSession } from './useSession.js';
 import { useToast } from './useToast.js';
 import './Checkout.css';
 import './PieceDetail.css';
@@ -27,6 +27,7 @@ const PAY_METHODS = [
 
 export default function Checkout({ piece, onClose, onScheduled, onPayMethod }) {
   const { showToast } = useToast();
+  const { customer } = useSession();
   const navigate = useNavigate();
   const location = useLocation();
   const [step, setStep] = useState(1);
@@ -55,7 +56,7 @@ export default function Checkout({ piece, onClose, onScheduled, onPayMethod }) {
     setError(null);
     try {
       if (step === 1) {
-        if (!getCustomerToken()) {
+        if (!customer) {
           onClose();
           navigate(`/login?from=${encodeURIComponent(location.pathname)}`);
           return;

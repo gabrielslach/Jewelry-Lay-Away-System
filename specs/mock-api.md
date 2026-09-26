@@ -26,7 +26,7 @@ Merged onto each JSON item (cycled from the six demo styles):
 | GET | `/api/admin/settings` | admin |
 | PUT | `/api/admin/settings` | admin |
 
-Customer tokens: `Authorization: Bearer <token>` from login, register, or dev session.
+Customer tokens: login, register, and dev session return `{ access_token, refresh_token, customer }`. Send `Authorization: Bearer <access_token>` (expires 15 minutes after issue). `POST /api/customers/refresh` with `{ refresh_token }` (expires 24 hours after issue) returns a new `{ access_token }`; `POST /api/customers/logout` revokes that one refresh token. Expiry uses the store clock (`store.now()`). Admin tokens do not expire.
 
 Seeded customer login: `client@sampleemail.com` / `password`.
 

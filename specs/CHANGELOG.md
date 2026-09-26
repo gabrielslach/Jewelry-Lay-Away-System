@@ -2,6 +2,12 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-09-27 (access and refresh tokens)
+
+- **Epic 15** — customer register/login return `access_token` + `refresh_token`; refresh on `401`; logout revokes one session. Refresh token + customer in `localStorage`, access token in `sessionStorage`. AU-3 and Epic 4 (MS-2, MS-5) point here.
+- `api-definition.md` v1.6: breaking auth change, `POST /api/customers/refresh` and `/logout`.
+- `tech-debt.md`: login envelope; `localStorage` refresh-token caveat.
+
 ## 2026-09-27 (header Mine Credit wordmark)
 
 - Epic 13 **BR-4**: typeset **Mine Credit** beside the header lockup; footer and admin stay image-only.

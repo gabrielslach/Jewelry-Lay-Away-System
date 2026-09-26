@@ -1,24 +1,56 @@
-const KEY = 'customerSession';
+const LEGACY_KEY = 'customerSession';
+const CUSTOMER_KEY = 'customer';
+const REFRESH_KEY = 'customerRefreshToken';
+const ACCESS_KEY = 'customerAccessToken';
 
-export function getCustomerSession() {
+sessionStorage.removeItem(LEGACY_KEY);
+
+const listeners = new Set();
+
+function notify() {
+  listeners.forEach((listener) => listener());
+}
+
+export function subscribeCustomerSession(listener) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+export function getCustomer() {
+  if (!localStorage.getItem(REFRESH_KEY)) {
+    return null;
+  }
   try {
-    const raw = sessionStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : null;
+    return JSON.parse(localStorage.getItem(CUSTOMER_KEY));
   } catch {
     return null;
   }
 }
 
-export function setCustomerSession(session) {
-  sessionStorage.setItem(KEY, JSON.stringify(session));
+export function setCustomerSession({ access_token, refresh_token, customer }) {
+  localStorage.setItem(REFRESH_KEY, refresh_token);
+  localStorage.setItem(CUSTOMER_KEY, JSON.stringify(customer));
+  sessionStorage.setItem(ACCESS_KEY, access_token);
+  notify();
 }
 
 export function clearCustomerSession() {
-  sessionStorage.removeItem(KEY);
+  localStorage.removeItem(REFRESH_KEY);
+  localStorage.removeItem(CUSTOMER_KEY);
+  sessionStorage.removeItem(ACCESS_KEY);
+  notify();
 }
 
 export function getCustomerToken() {
-  return getCustomerSession()?.token ?? null;
+  return sessionStorage.getItem(ACCESS_KEY);
+}
+
+export function setCustomerToken(accessToken) {
+  sessionStorage.setItem(ACCESS_KEY, accessToken);
+}
+
+export function getCustomerRefreshToken() {
+  return localStorage.getItem(REFRESH_KEY);
 }
 
 const ADMIN_KEY = 'adminSession';

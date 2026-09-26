@@ -2,3 +2,7 @@ name: dev
 variables:
   - secret: true
     name: token
+  - secret: true
+    name: refresh_token
+  - secret: true
+    name: access_token

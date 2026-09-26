@@ -3,13 +3,15 @@ import { loginCustomer } from '../../src/services/loginCustomer.js';
 import { ServiceError } from '../../src/services/http.js';
 
 describe('loginCustomer', () => {
-  it('returns a token for the seeded client', async () => {
+  it('stores the refresh token and customer locally and the access token per tab', async () => {
     const data = await loginCustomer({
       email: 'client@sampleemail.com',
       password: 'password',
     });
-    expect(data.token).toBeTruthy();
     expect(data.customer.email).toBe('client@sampleemail.com');
+    expect(localStorage.getItem('customerRefreshToken')).toBe(data.refresh_token);
+    expect(JSON.parse(localStorage.getItem('customer')).email).toBe('client@sampleemail.com');
+    expect(sessionStorage.getItem('customerAccessToken')).toBe(data.access_token);
   });
 
   it('surfaces invalid credentials', async () => {

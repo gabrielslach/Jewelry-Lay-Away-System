@@ -8,7 +8,7 @@ import { registerCustomer } from '../services/registerCustomer.js';
 import './AuthPage.css';
 
 export default function Register() {
-  const { signIn, customer } = useSession();
+  const { customer } = useSession();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -28,8 +28,7 @@ export default function Register() {
       return;
     }
     try {
-      const data = await registerCustomer({ name, email, password });
-      signIn(data);
+      await registerCustomer({ name, email, password });
       navigate('/account', { replace: true });
     } catch (err) {
       setError(err instanceof ServiceError ? err.message : 'Unable to register.');
