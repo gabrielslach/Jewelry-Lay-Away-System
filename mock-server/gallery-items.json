@@ -1,0 +1,665 @@
+{
+    "count": 728,
+    "next": "/api/gallery?page=2",
+    "previous": null,
+    "results": [
+      {
+        "id": 6666,
+        "title": "PJ21125",
+        "price": "37400.00",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ21125.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 6694,
+        "title": "PJ21156",
+        "price": "27500.00",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ21156.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 6695,
+        "title": "PJ21157",
+        "price": "18150.00",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ21157.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 6718,
+        "title": "PJ21183",
+        "price": "23100.00",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ21183.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 6722,
+        "title": "PJ21187",
+        "price": "56100.00",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ21187.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 6726,
+        "title": "PJ21191",
+        "price": "20900.00",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ21191.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 6728,
+        "title": "PJ21193",
+        "price": "36300.00",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ21193.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 6832,
+        "title": "PJ20444",
+        "price": "65.55",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ20444.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 6859,
+        "title": "PJ10742",
+        "price": "27991.70",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ10742.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 6932,
+        "title": "PJ23003",
+        "price": "70.00",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ23003.jpg",
+            "is_primary": true
+          },
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/39-LGPARA.jpg",
+            "is_primary": false
+          }
+        ]
+      },
+      {
+        "id": 6961,
+        "title": "PJ17414",
+        "price": "588.33",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ17414.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 6990,
+        "title": "PJ17418",
+        "price": "441.53",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ17418.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7023,
+        "title": "PJ17426",
+        "price": "446.05",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ17426.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7028,
+        "title": "PJ17431",
+        "price": "545.42",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ17431.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7031,
+        "title": "PJ17434",
+        "price": "695.61",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/Z-E4763.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7038,
+        "title": "PJ17442",
+        "price": "423.46",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ17442.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7039,
+        "title": "PJ17443",
+        "price": "553.32",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ17443.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7041,
+        "title": "PJ17445",
+        "price": "627.85",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ17445.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7053,
+        "title": "PJ17573",
+        "price": "1454.45",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ17573.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7055,
+        "title": "PJ17610",
+        "price": "580.77",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ17610.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7056,
+        "title": "PJ17613",
+        "price": "788.69",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ17613.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7062,
+        "title": "PJ17620",
+        "price": "341.49",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ17620.jpg",
+            "is_primary": true
+          },
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/P1353.jpg",
+            "is_primary": false
+          }
+        ]
+      },
+      {
+        "id": 7074,
+        "title": "PJ17633",
+        "price": "650.46",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ17633.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7076,
+        "title": "PJ17635",
+        "price": "414.67",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/H-E2357.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7099,
+        "title": "PJ15123",
+        "price": "1422.89",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ15123.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7100,
+        "title": "PJ15124",
+        "price": "2601.85",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ15124.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7101,
+        "title": "PJ15128",
+        "price": "1667.97",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ15128.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7106,
+        "title": "PJ15135",
+        "price": "1289.31",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ15135.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7111,
+        "title": "PJ15011",
+        "price": "796.82",
+        "currency": "USD",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ15011.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7133,
+        "title": "PJ4503",
+        "price": "48276.30",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ4503.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7137,
+        "title": "PJ4786",
+        "price": "25351.80",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ4786.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7138,
+        "title": "PJ4793",
+        "price": "42432.80",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ4793.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7141,
+        "title": "PJ4832",
+        "price": "15462.80",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ4832.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7149,
+        "title": "PJ4925",
+        "price": "37488.30",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ4925.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7150,
+        "title": "PJ4927",
+        "price": "38836.80",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ4927.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7151,
+        "title": "PJ5174",
+        "price": "29756.90",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ5174.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7152,
+        "title": "PJ5175",
+        "price": "28408.40",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ5175.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7153,
+        "title": "PJ5188",
+        "price": "39376.20",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ5188.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7168,
+        "title": "PJ7015",
+        "price": "24722.50",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ7015.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7190,
+        "title": "PJ9671",
+        "price": "34054.12",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ9671.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7198,
+        "title": "PJ9927",
+        "price": "47287.40",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ9927.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7200,
+        "title": "PJ9940",
+        "price": "51782.40",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ9940.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7204,
+        "title": "PJ9945",
+        "price": "52501.60",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ9945.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7231,
+        "title": "PJ10223",
+        "price": "19778.00",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ10223.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7240,
+        "title": "PJ10339",
+        "price": "9978.90",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ10339.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7267,
+        "title": "PJ10613",
+        "price": "63126.00",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ10613.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7269,
+        "title": "PJ10629",
+        "price": "63794.00",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ10629.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7272,
+        "title": "PJ10642",
+        "price": "35153.50",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ10642.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7290,
+        "title": "PJ11763",
+        "price": "40998.50",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ11763.jpg",
+            "is_primary": true
+          }
+        ]
+      },
+      {
+        "id": 7292,
+        "title": "PJ11782",
+        "price": "40664.50",
+        "currency": "PHP",
+        "in_stock": true,
+        "images": [
+          {
+            "url": "https://perfect-jewel-media.nyc3.cdn.digitaloceanspaces.com/product_images/2026/09/PJ11782.jpg",
+            "is_primary": true
+          }
+        ]
+      }
+    ]
+  }

@@ -11,6 +11,7 @@ const piece = {
   stone: '0.75ct Diamond',
   size: 'US 6 (resizable)',
   cert: 'GIA Certified',
+  images: [{ url: 'https://cdn.example/pj.jpg', is_primary: true }],
 };
 
 describe('PieceDetail', () => {
@@ -20,6 +21,10 @@ describe('PieceDetail', () => {
     expect(screen.getByRole('dialog', { name: 'Solitaire Halo Ring' })).toBeInTheDocument();
     expect(screen.getByText('18K White Gold')).toBeInTheDocument();
     expect(screen.getByText('Lay-Away Available')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: piece.name })).toHaveAttribute(
+      'src',
+      piece.images[0].url,
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Reserve This Piece' }));
     expect(onReserve).toHaveBeenCalledWith(piece);
   });

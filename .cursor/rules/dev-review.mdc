@@ -1,14 +1,17 @@
 ---
-description: Developer then reviewer; human owns push
+description: UX, developer, and reviewer always work as a trio
 alwaysApply: true
 ---
 
-# Two-agent workflow
+# Three-agent workflow
 
-After any implementation, the **parent** (this chat) invokes the `reviewer` subagent on the real git diff. The `developer` agent must not start a review.
+For every implementation, the **parent** (this chat) runs this loop. Do not skip a role.
 
-The reviewer must apply `.cursor/rules/code-quality.mdc` (readability, reusable components, tests under `test/` mirroring `src/`, ESLint).
+1. **`ux`** — direction or spec first (or confirm there is no visual/copy change). Does not write production code.
+2. **`developer`** — implements against that spec. Does not start UX or code review.
+3. **`ux`** — PASS/FAIL on the running UI when anything user-visible changed (use screenshots / the browser).
+4. **`reviewer`** — PASS/FAIL on the real git diff (`.cursor/rules/code-quality.mdc`). Does not implement.
+
+Loop steps 2–4 until **both** UX and reviewer pass. Then present findings and wait for Gabriel. The reviewer is not a merge gate.
 
 Do not commit or push unless Gabriel explicitly asks.
-
-Do not treat the reviewer as a merge gate. Present its findings and wait for his review.

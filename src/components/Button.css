@@ -14,12 +14,9 @@
   transition: 0.15s;
 }
 
-.btn-primary {
+.btn-primary,
+a.btn.btn-primary {
   background: var(--accent);
-  color: var(--on-accent);
-}
-
-a.btn-primary {
   color: var(--on-accent);
 }
 
@@ -36,6 +33,11 @@ a.btn-primary {
 .btn-outline:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.btn-sm {
+  padding: 8px 14px;
+  font-size: 13px;
 }
 
 .btn:disabled {

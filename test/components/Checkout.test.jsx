@@ -1,18 +1,39 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Checkout from '../../src/components/Checkout.jsx';
 import { SessionProvider } from '../../src/components/SessionProvider.jsx';
 import { ToastProvider } from '../../src/components/ToastProvider.jsx';
 import { loginCustomer } from '../../src/services/loginCustomer.js';
+import { getGallery } from '../../src/services/getGallery.js';
+import { clearCustomerSession } from '../../src/services/session.js';
 
 const piece = { id: 1, name: 'Solitaire Halo Ring', price: 48000 };
 
-function renderCheckout(ui) {
+function LocationDisplay() {
+  const location = useLocation();
+  return (
+    <div data-testid="location">{`${location.pathname}${location.search}`}</div>
+  );
+}
+
+function renderCheckout(ui, { path = '/' } = {}) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[path]}>
       <SessionProvider>
-        <ToastProvider>{ui}</ToastProvider>
+        <ToastProvider>
+          <Routes>
+            <Route
+              path="*"
+              element={
+                <>
+                  {ui}
+                  <LocationDisplay />
+                </>
+              }
+            />
+          </Routes>
+        </ToastProvider>
       </SessionProvider>
     </MemoryRouter>,
   );
@@ -21,6 +42,8 @@ function renderCheckout(ui) {
 describe('Checkout', () => {
   beforeEach(async () => {
     await loginCustomer({ email: 'client@sampleemail.com', password: 'password' });
+    const page = await getGallery({ pageSize: 1 });
+    piece.id = page.results[0].id;
   });
   it('shows six payments for the three-month term', () => {
     renderCheckout(<Checkout piece={piece} onClose={() => {}} />);
@@ -37,7 +60,7 @@ describe('Checkout', () => {
   it('puts remainder pesos on the last installment', () => {
     renderCheckout(
       <Checkout
-        piece={{ id: 1, name: 'Solitaire Halo Ring', price: 48500 }}
+        piece={{ id: piece.id, name: 'Solitaire Halo Ring', price: 48500 }}
         onClose={() => {}}
       />,
     );
@@ -84,5 +107,23 @@ describe('Checkout', () => {
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Done' }));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('sends guests to login with from on continue', async () => {
+    clearCustomerSession();
+    const onClose = vi.fn();
+    const page = await getGallery({ pageSize: 1 });
+    renderCheckout(
+      <Checkout
+        piece={{ id: page.results[0].id, name: 'Solitaire Halo Ring', price: 48000 }}
+        onClose={onClose}
+      />,
+      { path: '/collections/1' },
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(onClose).toHaveBeenCalled();
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/login?from=%2Fcollections%2F1',
+    );
   });
 });

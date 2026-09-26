@@ -1,10 +1,20 @@
 .logo {
+  display: inline-block;
+  flex-shrink: 0;
   margin: 0;
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: var(--text);
+  height: 40px;
+}
+
+.logo img {
+  display: block;
+  object-fit: contain;
+  object-position: center;
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  border: 1px solid var(--border);
 }
 
 .gem-mark {

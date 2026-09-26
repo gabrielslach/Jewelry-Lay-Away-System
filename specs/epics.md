@@ -1,13 +1,15 @@
 # Build guide — epics and features
 
-Step-by-step outline for the Sample Jewelry Co. React SPA. Visual and copy target is [`demo.html`](demo.html). Data contract is [`api-definition.md`](api-definition.md). Gaps and mocks are listed in [`tech-debt.md`](tech-debt.md). Spec edits are logged in [`CHANGELOG.md`](CHANGELOG.md).
+Step-by-step outline for the Mine Credit React SPA. Visual target is still [`demo.html`](demo.html). Live store identity is **Mine Credit** (**Epic 13**); the demo file still says Sample Jewelry Co. Data contract is [`api-definition.md`](api-definition.md). Gaps and mocks are listed in [`tech-debt.md`](tech-debt.md). Spec edits are logged in [`CHANGELOG.md`](CHANGELOG.md).
 
-**How we build:** pick **one feature id** (for example `SF-1`) → implement against the demo look + API or mock → reviewer on the real diff → Gabriel decides. Do not commit unless asked.
+**How we build:** pick **one feature id** → `ux` specifies → `developer` implements → `ux` then `reviewer` PASS/FAIL → Gabriel decides. Do not commit unless asked.
+
+**Mock API:** local HTTP fixtures live in **Epic 4**. Feature code talks to **Epic 6** services, not raw `fetch` in components and not new in-memory `src/data` stubs. Invented endpoints stay documented under Epic 4 until they exist on the live backend.
 
 **Mock API:** local HTTP fixtures live in **Epic 4**. Feature code talks to **Epic 6** services, not raw `fetch` in components and not new in-memory `src/data` stubs. Invented endpoints stay documented under Epic 4 until they exist on the live backend.
 
 **Product rules**
-- Match demo screens as closely as possible (layout and copy). Sample Jewelry Co. palette, fonts, and icons are the **default theme**, not values to repeat inside each epic.
+- Match demo screens as closely as possible (layout and copy). Cream/plum tokens and fonts are the **default theme**, not values to repeat inside each epic.
 - **Mobile-first:** unimplemented features are specified and built for a phone layout first, then `@media (min-width: …)` for tablet/desktop. Do not design desktop-only and squeeze down. Existing screens are retrofitted in **Epic 7**.
 - Mock anything the live API cannot back; record it in `tech-debt.md`.
 - The HTML demo’s Storefront / Admin switcher and landing chooser are **not** product features. The SPA uses routes.
@@ -55,11 +57,15 @@ Public marketing, gallery, piece detail, and lay-away checkout from `#publicView
 
 Sticky nav (logo, Collections / How Lay-Away Works / Reviews / Contact), My Account + Start a Lay-Away, hamburger + mobile panel, footer `#contact` (Shop / Support / Company columns, demo disclaimer).
 
+Hamburger **look** is **Epic 12** (NM-1–NM-3): section links collapse below **910px**; chrome My Account until **≤680px**. Destinations stay these.
+
 “Collections” in the nav goes to `/collections` once Epic 8 lands (until then, in-page `#collections` is fine).
 
 ### SF-2 Hero
 
 Eyebrow, headline, subcopy, Browse Collections, three stats (3,000+ pieces, 3 Mo. max term, Your Dates). Demo `.hero`.
+
+**Superseded for new work by Epic 11** (editorial home hero). Epic 10 (carousel) is also superseded.
 
 ### SF-3 Collections gallery
 
@@ -262,7 +268,7 @@ Customer object (login + orders context) includes mock-only `phone` and `member_
 `POST /api/admin/plans/:id/mark-next-paid` — marks the next unpaid installment paid and sets plan status on-track. Matches the one-click demo button (not confirm/reject + proof).
 
 **Settings persistence (AD-8)**  
-`GET` and `PUT /api/admin/settings`: `business_name`, `max_term_months`, `late_penalty_per_day`, `require_full_payment_before_release`, `sms_reminders`, `customer_selected_due_dates`. Default to demo values (Sample Jewelry Co., 3, 50, all toggles on). In-memory persist for the process lifetime.
+`GET` and `PUT /api/admin/settings`: `business_name`, `max_term_months`, `late_penalty_per_day`, `require_full_payment_before_release`, `sms_reminders`, `customer_selected_due_dates`. Default **Mine Credit**, 3, 50, all toggles on (**Epic 13**). In-memory persist for the process lifetime.
 
 ### MS-6 Seed data
 
@@ -359,3 +365,198 @@ Display name, category, barcode/`title` if useful, specs (material, stone, size,
 ### PD-3 Reserve
 
 Primary action starts checkout (existing Checkout flow) with this piece. Back link to `/collections`. `404` / service error copy on the page.
+
+---
+
+## Epic 10 — Home hero carousel
+
+**Superseded for new work by Epic 11** (editorial home hero). Do not extend the carousel.
+
+Replace the SF-2 text stack with a **three-slide carousel** so the pitch is easier to scan. Slides 1–2 use `public/hero-1.png` and `public/hero-2.png` (Higgsfield mark already cropped off). Slide 3 uses a solid color until a third photo exists. **No API.** **Mobile-first.** Home still owns this block; How-it-works and Reviews stay below as today.
+
+Copy stays the current Sample Jewelry Co. strings (same as SF-2 / demo). Do not invent a new slogan unless Gabriel asks.
+
+### HC-1 Carousel shell
+
+One `Hero` region at the top of `/`. Role `region` with an accessible name (e.g. “Featured”). Only **one slide** is in view.
+
+Controls:
+
+- **Dots** (required) — one per slide, `aria-current` on the active slide, labels like “Show slide 2 of 3”.
+- **Previous / Next** — visible from `min-width: 800px`; on a phone, swipe (touch) is enough plus dots. Buttons must have names (“Previous slide”, “Next slide”). Wrap from last to first.
+- Keyboard: Left/Right when the carousel is focused.
+
+Do **not** autoplay. Honor `prefers-reduced-motion` (no slide animation, instant swap).
+
+Reuse `Button` for CTAs. Do not add a carousel library.
+
+### HC-2 Slides (split the current hero)
+
+Three slides. Slide 3 is a solid `--surface-2` panel (swap in a photo later without changing copy):
+
+| Slide | Image | Copy (keep wording) | CTA |
+| --- | --- | --- | --- |
+| 1 — Hook | `/hero-1.png` | Eyebrow **Fine Jewelry, Paid Your Way**. Headline **Reserve the piece you love, pay for it on your schedule.** | **Browse Collections** → `/collections` |
+| 2 — Plan | `/hero-2.png` | Subcopy only: **Browse our curated jewelry collection and secure any piece with a flexible lay-away plan — up to 3 months, with payment dates you choose.** | **Start a Lay-Away** → `/collections` (same destination as the nav primary) |
+| 3 — Proof | solid color | The three stats only: **3,000+** Pieces Available · **3 Mo.** Max Lay-Away Term · **Your Dates** Flexible Due Days | **See how it works** → `/#how` |
+
+Copy **overlays** the photo on every width (object-fit cover). A dark scrim behind the type keeps `--on-accent` / `--primary` readable. Dark maroon CTAs keep white labels (existing button rule). Dots stay below the image.
+
+### HC-3 Tests
+
+`test/components/Hero.test.jsx` (and a small carousel primitive under `test/` if extracted). Assert: slide 1 heading + Browse Collections; activating next/dot 2 shows the plan subcopy and hides the stats; slide 3 shows **3,000+** / **3 Mo.** / **Your Dates** and **See how it works**. Image `src` is `/hero-1.png` then `/hero-2.png` as specified. No new services.
+
+---
+
+## Epic 11 — Editorial home hero
+
+Replace the Epic 10 carousel with a **single** editorial hero: `/hero-1.png`, approved copy (Aura-style, **no scrim**). Desktop is a full-bleed **16:9 overlay**; phone is **stacked** (see EH-1). **No API.** **No carousel.** **Mobile-first.** How-it-works and Reviews stay below. Copy is the block Gabriel approved (2026-09-27).
+
+### EH-1 Layout
+
+One `Hero` region at the top of `/`. Accessible name e.g. “Featured”.
+
+- Full-bleed `/hero-1.png` (`object-fit: cover`). Same stack as EH-2 (eyebrow → headline → body → CTA → stats). **No scrim / overlay background.** Reuse `Button` primary. Three stats under the CTA (wrap if needed). No icons required.
+- **Desktop (`min-width: 800px`):** `.hero-frame` is **16:9**. Copy sits **on** the photo, left-aligned. Type uses `--text` / `--text-soft` / `--primary` against the light side of the still-life (Aura-style).
+- **Phone (`< 800px`):** stacked — photo **16:9** on `.hero-media` only (`object-position: right center`), copy **below** on page `--bg`, **centered** (matches demo stacked hero). Frame height is image + copy; overflow must not clip the copy.
+
+### EH-2 Copy (approved)
+
+| Part | Text |
+| --- | --- |
+| Eyebrow | **Paid Your Way** |
+| Headline | **Reserve the Piece.** / **Pay on Your Terms.** (two lines) |
+| Body | **Secure any jewelry with a flexible lay-away — up to 3 months, on dates you choose.** |
+| CTA | **Browse Collections** → `/collections` |
+| Stats | **3,000+ pieces** · **Up to 3 months** · **Dates you choose** |
+
+### EH-3 Tests
+
+`test/components/Hero.test.jsx`. Assert: headline (both lines), body, Browse Collections → `/collections`, the three stats, `img` `src` `/hero-1.png`. No slide dots/prev/next. No new services.
+
+---
+
+## Epic 12 — Mobile nav menu
+
+Elevate SF-1 hamburger + `#mobile-panel`. **Same destinations.** **Start a Lay-Away** stays chrome-only. Tokens only (`--primary`, `--accent`, `--bg`, `--surface`, `--surface-2`, `--text`, `--text-soft`, `--border`, `--radius`, `--shadow`, `--font-display`, `--font-body`, `--nav-bg`; `--on-accent` / `--accent-hover` already on the CTA). **No API.** **Mobile-first.** Section links collapse into the hamburger **below 910px**. Chrome **My Account** stays until **phone (≤680px)**, then only in the sheet. Scope: hamburger, panel, overlay under sticky nav. Do not restyle the rest of the site.
+
+UX direction (2026-09-27): under-nav jewelry sheet (not a Material drawer); dim the page, keep the bar; hamburger becomes close.
+
+### NM-1 Look
+
+- **Hamburger (closed):** 38×38, radius **8px**, `--surface-2`, `--text`, `HamburgerIcon` 20px, `aria-label="Menu"`, `aria-controls="mobile-panel"`, `aria-expanded="false"`.
+- **Hamburger (open):** same hit target; background `--accent`; icon `--on-accent`; swap to `CloseIcon` 18px; `aria-label="Close menu"`; `aria-expanded="true"`.
+- **Panel:** still a child of sticky `.pv-nav`, full width, **not** a left/right drawer. Background `--surface-2`. Top edge: **1px `--primary`**. Padding **8px 16px 20px**. No `--shadow` on the sheet (nav already sticky).
+- **Section links** (Collections, How Lay-Away Works, Reviews, Contact): `--font-display`, **22px**, weight 500, `--text`. Block padding **12px 8px**, **min-height 44px**. **1px `--border`** between items. Hover/focus-visible: `--accent` (no underline). Current route (`/collections` when on that page): `--accent`.
+- **My Account:** after a **1px `--primary`** rule and **12px** top padding. Reuse **outline `Button` `sm`** to `/login` or `/account` (same session rule as chrome). Full width of the padded panel. Show this row **only ≤680px** (chrome My Account is visible from 681px). Do **not** add Start a Lay-Away in the panel.
+- **Overlay:** fixed, inset 0, **z-index below `.pv-nav` (100)** so bar stays on top. Fill `color-mix(in srgb, var(--text) 32%, transparent)`. Not in the tab order.
+- **681px–909px:** hamburger + sheet for section links; chrome still shows My Account and Start a Lay-Away.
+- **≥910px:** inline `.pv-links`; hamburger, panel, overlay **not shown**. No desktop menu.
+
+### NM-2 Motion / behavior
+
+- Toggle on hamburger click. Close on: overlay click, **Escape**, any panel link, logo, Start a Lay-Away, viewport **≥910px** (reset `menuOpen` so `aria-expanded` is false).
+- Open/close **~200ms** ease: overlay opacity 0→1; panel opacity + `translateY(-8px)`→0. `prefers-reduced-motion: reduce` → no transform/opacity animation.
+- While open: set **`inert`** on `main` and `footer`. Do not scroll-lock the document if inert is enough to ignore background; if the page still scrolls under the overlay, lock `body` overflow until close.
+- Focus: leave focus on the hamburger when opening. On Escape/close, focus the hamburger. Do not add a focus-trap library; inert + nav contents is the trap.
+- Keep closing on destination click. Hash links (`/#how` etc.) still close.
+
+### NM-3 Tests
+
+`test/layouts/StorefrontLayout.test.jsx` (extend). Assert:
+
+- Menu button `aria-controls="mobile-panel"`; closed → `aria-expanded="false"`, name **Menu**; open → `aria-expanded="true"`, name **Close menu**.
+- Open panel: Collections `/collections`, How Lay-Away Works `/#how`, Reviews `/#reviews`, Contact `/#contact`. **No** “Start a Lay-Away” inside `#mobile-panel`. My Account is in the panel markup (`/login` signed-out, `/account` signed-in) and is chrome-visible from 681px (CSS hides the panel row).
+- Overlay present when open; click overlay closes. Escape closes. Clicking a panel link closes.
+- Chrome still has Start a Lay-Away → `/collections` as primary.
+
+No new services.
+
+---
+
+## Epic 13 — Brand lockup and name
+
+Replace the Cormorant **Sample Jewelry Co.** wordmark with `public/store-logo.png` and SPA copy **Mine Credit**. **Same destinations.** F-1 catalog only (no `<img>` in layouts/pages). **No API** except seed `business_name`. **Mobile-first.** Do not restyle the hero or rewrite `specs/demo.html`.
+
+UX direction (2026-09-27): full square beige lockup as a small brand plate; no invert; no second typeset wordmark.
+
+### BR-1 Logo placement
+
+**Asset:** `public/store-logo.png` (opaque square). Only `src/theme/Logo.jsx` + `.logo` in `assets.css`.
+
+**`Logo`:** Wrapper `as` default `p` (layouts still `as="span"`). Renders `<img src="/store-logo.png" alt="Mine Credit" />`. No default children wordmark; do not render `children` as visible name. Accessible name = alt. Nav `Link` wrapping the logo unchanged. Admin sidebar: still not a link.
+
+**Img:** `display: block`; `object-fit: contain`; `object-position: center`; `width: auto`; height from context; `max-width` = same as height (square). `border-radius: 8px`; `border: 1px solid var(--border)`.
+
+| Surface | Height | Notes |
+| --- | --- | --- |
+| Storefront nav ≤680 | **36px** | Pad 12px 16px. `.pv-nav-inner` `flex-wrap: nowrap`. Drop text `font-size`/`white-space` on `.pv-nav .logo`. |
+| Nav 681–909 | **40px** | Hamburger still in chrome. Pad 16px 24px. |
+| Nav ≥910 | **48px** | Hamburger hidden; links inline. |
+| Footer | **88px** | On `--text`. Border `var(--footer-line)`. Drop `color: var(--on-accent)` on `.footer-inner .logo`. |
+| Admin sidebar | **72px** | Same plate. Drop on-accent text color on `.admin-sidebar .logo`. |
+
+Dark surfaces show the beige square. Do not knock out the field.
+
+**Not in this epic:** hero, piece cards, favicon, login/register, mobile-panel header.
+
+### BR-2 Name copy (SPA only)
+
+Replace **Sample Jewelry Co.** with **Mine Credit** in live SPA:
+
+- `index.html` `<title>` → `Mine Credit — Lay-Away`
+- Footer © line → keep the sample-data disclaimer; `© 2026 Mine Credit (fictional).`
+- Mock seed `business_name` → `Mine Credit`
+- Logo tests / settings field display value
+
+Leave hero/CTAs. Palette/fonts unchanged.
+
+### BR-3 Tests
+
+`test/theme/Logo.test.jsx`: img `src` `/store-logo.png`, accessible name **Mine Credit**; `className` on wrapper `.logo`; `as="h1"` heading named **Mine Credit**; no visible “Sample Jewelry Co.” or a second typeset “Mine Credit”.
+
+`test/layouts/StorefrontLayout.test.jsx`: nav home link contains that image; footer does too.
+
+`test/pages/admin/Settings.test.jsx` + `test/services/getAdminSettings.test.js`: default **Mine Credit**.
+
+No pixel-height asserts in JSDOM. No new services.
+
+## Epic 14 — Collections image fallback and empty specs
+
+When a piece image URL fails to load, show the demo gallery jewel icon. When Material / Stone / Size / Certification has no data from GET /api/gallery, show hyphen-minus `-`. Reuse GemMark and presentPiece. No new flows. F-1: no new raw brand hex.
+
+### CF-1 Image load failure → GemMark
+
+**Surfaces:** `PieceCard` (`.piece-media` on `/collections` and the home teaser — same component; do not restyle the hero) and piece page `/collections/:id` carousel main + thumbs.
+
+**Behavior:** Missing URL or `<img>` `onerror` → replace the broken image with existing `GemMark` from `src/theme/GemMark.jsx`. Do not add a second SVG.
+
+Display matches demo gallery `GEM_ICON` in `specs/demo.html`:
+
+- size 70, viewBox 0 0 24 24, fill none, strokeWidth 1.3, color `var(--primary)` via existing `.gem-mark { color: var(--primary) }`
+- paths already in GemMark
+- centered in the existing `.piece-media` (190px flex center). Do not recolor `.piece-media` and do not add raw hex `#EADFCB`.
+
+Carousel main: same GemMark default size 70, centered in the existing carousel well.
+
+Thumbs are 64×64 (`.thumb` in PiecePage.css). Show the same GemMark artwork fully visible inside the thumb (pass a size that fits, about 36), same stroke and paths. Do not drop a 70px icon into a 64px box so it gets cropped.
+
+When the carousel index changes, a new URL must be allowed to try loading again (reset failure state when `src` changes).
+
+Home product modal (`PieceDetail`): optional `onerror` so a broken URL is not a broken image, but keep `GemMark size={60}` (demo modal is 60 / stroke 1.4). Do not change GemMark’s default strokeWidth (gallery stays 1.3). Do not restyle the modal to the gallery gem. If adding onerror to the modal requires the shared component, pass `size={60}`.
+
+### CF-2 Empty description fields → `-`
+
+In `src/services/presentPiece.js` only (the live GET /api/gallery path), for material, stone, size, cert: missing, null, or blank after trim → ASCII hyphen-minus `"-"`, not em dash `—`.
+
+Unchanged: `name = item.name || item.title`; `category = item.category || 'Jewelry'`; price; images.
+
+There is a duplicate `presentPiece` in `src/data/gallery.js`. If the SPA UI no longer imports it, do not refactor that module. If you must touch it because tests or UI still depend on the em dash and you would otherwise leave two behaviors, only change the four fallback characters to `"-"` if that file is still used by the app. Prefer leaving unused data-layer code alone. Check imports first.
+
+### CF-3 Tests
+
+- Piece image fallback: URL present + fire error event → gem accessible image, the `<img>` is gone. Missing URL → gem. Successful URL → img.
+- Piece page: failed main and a failed thumb show GemMark; thumb button chrome remains.
+- presentPiece: omit / null / `""` / whitespace for the four fields → `"-"`; present values unchanged; name falls back to title; category stays `"Jewelry"` when absent.
+
+Tests under `test/` mirroring `src/`. Vitest + Testing Library. User-visible behavior.

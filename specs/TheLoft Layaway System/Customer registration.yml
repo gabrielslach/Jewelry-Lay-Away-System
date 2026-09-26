@@ -1,0 +1,22 @@
+info:
+  name: Customer registration
+  type: http
+
+http:
+  method: POST
+  url: https://honeydew-stork-999262.hostingersite.com/api/customers/register
+  body:
+    type: json
+    data: |-
+      {
+        "email": "omar@theloft.com",
+        "name": "Boss Omar",
+        "password": "Amy is number one"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

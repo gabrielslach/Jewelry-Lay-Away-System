@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import Button from '../components/Button.jsx';
 import Checkout from '../components/Checkout.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
-import { GemMark } from '../theme/assets.js';
+import PieceImage from '../components/PieceImage.jsx';
 import { ServiceError } from '../services/http.js';
 import { getGalleryPiece } from '../services/getGalleryPiece.js';
 import '../components/Gallery.css';
@@ -50,11 +50,11 @@ export default function PiecePage() {
         <div className="piece-layout">
           <div className="carousel">
             <div className="carousel-main">
-              {images[index]?.url ? (
-                <img src={images[index].url} alt={`${piece.name} photo ${index + 1}`} />
-              ) : (
-                <GemMark size={80} title={piece.name} />
-              )}
+              <PieceImage
+                src={images[index]?.url}
+                alt={`${piece.name} photo ${index + 1}`}
+                title={piece.name}
+              />
             </div>
             {images.length > 1 ? (
               <div className="carousel-thumbs">
@@ -66,7 +66,7 @@ export default function PiecePage() {
                     onClick={() => setIndex(thumbIndex)}
                     aria-label={`Show photo ${thumbIndex + 1}`}
                   >
-                    <img src={image.url} alt="" />
+                    <PieceImage src={image.url} title={piece.name} size={36} />
                   </button>
                 ))}
               </div>

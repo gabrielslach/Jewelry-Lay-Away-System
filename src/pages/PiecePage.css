@@ -51,6 +51,9 @@
   overflow: hidden;
   background: var(--surface);
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .thumb.active {

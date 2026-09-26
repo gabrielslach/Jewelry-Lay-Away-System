@@ -47,9 +47,7 @@ export default function Dashboard() {
           <h2>Collections — Last 6 Weeks</h2>
           <div className="bar-chart">
             {data.collections_last_6_weeks.map((height, index) => (
-              <div className="bar" key={index}>
-                <span style={{ '--h': `${height}%` }} />
-              </div>
+              <div className="bar" key={index} style={{ height: `${height}%` }} />
             ))}
           </div>
         </div>

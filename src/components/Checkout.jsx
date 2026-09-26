@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { CheckIcon } from '../theme/assets.js';
 import { createLayawayPlan, defaultDates } from '../services/createLayawayPlan.js';
 import { mockGatewayPayment } from '../services/mockGatewayPayment.js';
 import { ServiceError } from '../services/http.js';
+import { getCustomerToken } from '../services/session.js';
 import { formatPeso, splitAmount } from '../lib/money.js';
 import Button from './Button.jsx';
 import ErrorMessage from './ErrorMessage.jsx';
@@ -25,6 +27,8 @@ const PAY_METHODS = [
 
 export default function Checkout({ piece, onClose, onScheduled, onPayMethod }) {
   const { showToast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [step, setStep] = useState(1);
   const [payments, setPayments] = useState(6);
   const [dates, setDates] = useState(() => defaultDates(6));
@@ -51,6 +55,11 @@ export default function Checkout({ piece, onClose, onScheduled, onPayMethod }) {
     setError(null);
     try {
       if (step === 1) {
+        if (!getCustomerToken()) {
+          onClose();
+          navigate(`/login?from=${encodeURIComponent(location.pathname)}`);
+          return;
+        }
         const plan = await createLayawayPlan({
           productId: piece.id,
           paymentCount: payments,

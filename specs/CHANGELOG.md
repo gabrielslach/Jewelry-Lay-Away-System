@@ -2,6 +2,59 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-09-27 (bug reevaluation)
+
+- Struck fixed items in [`bugs.md`](bugs.md): BUG-1–9, 14–17. Still open: BUG-10, 12, 13 (need Gabriel) and BUG-11 (completed plan not rechecked on a fresh account).
+
+## 2026-09-27 (Epic 14 collections fallback)
+
+- **Epic 14** — image load failure → GemMark on PieceCard / piece carousel (main + thumbs); empty material/stone/size/cert from GET /api/gallery → `-` via `presentPiece`.
+
+## 2026-09-27 (Mine Credit lockup)
+
+- **Epic 13** — `public/store-logo.png` in theme `Logo`; SPA name **Mine Credit**. Demo.html identity unchanged. AD-8 default `business_name` is Mine Credit.
+
+## 2026-09-27 (hamburger at 910px)
+
+- Epic 12: section links collapse into the hamburger **below 910px**. Chrome **My Account** remains until **≤680px**.
+
+## 2026-09-27 (mobile nav menu)
+
+- **Epic 12** — phone hamburger sheet (`NM-1`–`NM-3`): under-nav panel, overlay, close icon; same SF-1 destinations; Start a Lay-Away stays chrome-only. SF-1 look of the panel points here.
+
+## 2026-09-27 (hero phone copy centered)
+
+- Epic 11 `EH-1`: phone copy under the photo is centered (demo stacked hero); desktop overlay stays left.
+
+## 2026-09-27 (hero phone stacked)
+
+- Epic 11 `EH-1`: phone is stacked (photo 16:9, copy below); desktop remains overlay 16:9.
+
+## 2026-09-27 (hero full-bleed 16:9)
+
+- Epic 11 layout: still-life spans the hero at **16:9**; approved copy overlays the left with **no scrim**.
+
+## 2026-09-27 (editorial hero)
+
+- **Epic 11** — single split home hero (`EH-1`–`EH-3`): approved copy, `/hero-1.png`, no carousel. Supersedes Epic 10.
+
+## 2026-09-26 (hero overlay)
+
+- Epic 10 layout: hero copy overlays the image with a scrim on all widths (no stacked or split panel).
+
+## 2026-09-26 (hero carousel epic)
+
+- **Epic 10** — home hero carousel (`HC-1`–`HC-3`): three slides; photos on 1–2 (`public/hero-1.png`, `public/hero-2.png`); slide 3 solid color + **See how it works** → `/#how`. SF-2 marked superseded for new work.
+
+## 2026-09-26 (gallery JSON)
+
+- Mock gallery is [`mock-server/gallery-items.json`](../mock-server/gallery-items.json); CDN image URLs are kept. Mock-only display fields (`name`, `category`, specs) are still merged on in [`mock-api.md`](mock-api.md).
+
+## 2026-09-26 (user stories + UX bugs)
+
+- Added [`user-stories.md`](user-stories.md): shopper US-1–US-14 and staff US-20–US-26.
+- Added [`bugs.md`](bugs.md): UX issues from a pass on the running SPA (storefront + admin, desktop and ~390px).
+
 ## 2026-09-26 (implementation)
 
 - Epic 4 mock server is live in `mock-server/` (`npm run dev` serves `/api`).

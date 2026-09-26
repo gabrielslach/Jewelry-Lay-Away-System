@@ -24,7 +24,9 @@ describe('gallery services', () => {
   });
 
   it('loads a single piece', async () => {
-    const piece = await getGalleryPiece(1);
+    const page = await getGallery({ pageSize: 1 });
+    const piece = await getGalleryPiece(page.results[0].id);
     expect(piece.name).toBe('Solitaire Halo Ring');
+    expect(piece.images[0].url).toContain('digitaloceanspaces.com');
   });
 });

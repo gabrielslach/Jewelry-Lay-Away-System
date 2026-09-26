@@ -19,7 +19,7 @@ describe('Home', () => {
     renderHome();
     expect(
       screen.getByRole('heading', {
-        name: /reserve the piece you love/i,
+        name: /reserve the piece\.\s*pay on your terms\./i,
       }),
     ).toBeInTheDocument();
     expect(

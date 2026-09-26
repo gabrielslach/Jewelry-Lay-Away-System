@@ -11,7 +11,7 @@ describe('App', () => {
       </MemoryRouter>,
     );
     expect(
-      screen.getByRole('heading', { name: /reserve the piece you love/i }),
+      screen.getByRole('heading', { name: /reserve the piece\.\s*pay on your terms\./i }),
     ).toBeInTheDocument();
     expect(
       await screen.findByRole('heading', { name: 'Solitaire Halo Ring' }),

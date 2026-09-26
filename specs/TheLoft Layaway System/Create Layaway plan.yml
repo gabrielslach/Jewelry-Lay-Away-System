@@ -1,0 +1,32 @@
+info:
+  name: Create Layaway plan
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: https://honeydew-stork-999262.hostingersite.com/api/layaway/plans
+  body:
+    type: json
+    data: |-
+      {
+        "product_id": 6694,
+        "term_months": 3,
+        "installment_dates": [
+        "2026-10-03",
+        "2026-10-17",
+        "2026-10-31",
+        "2026-11-14",
+        "2026-11-28",
+        "2026-12-12"
+      ]
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

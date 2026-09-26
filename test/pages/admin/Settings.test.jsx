@@ -10,8 +10,26 @@ describe('admin settings', () => {
         <App />
       </MemoryRouter>,
     );
-    expect(await screen.findByDisplayValue('Sample Jewelry Co.')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('Mine Credit')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
     expect(await screen.findByText('Settings saved.')).toBeInTheDocument();
+  });
+
+  it('names each settings switch from its row label', async () => {
+    render(
+      <MemoryRouter initialEntries={['/admin/settings']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByDisplayValue('Mine Credit')).toBeInTheDocument();
+    expect(
+      screen.getByRole('switch', { name: 'Require full payment before item release' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('switch', { name: 'Send SMS payment reminders' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('switch', { name: 'Allow customer-selected due dates' }),
+    ).toBeInTheDocument();
   });
 });
