@@ -14,12 +14,9 @@
   transition: 0.15s;
 }
 
-.btn-primary {
+.btn-primary,
+a.btn.btn-primary {
   background: var(--accent);
-  color: var(--on-accent);
-}
-
-a.btn-primary {
   color: var(--on-accent);
 }
 

@@ -28,6 +28,10 @@ describe('StorefrontLayout', () => {
       'href',
       '/collections',
     );
+    expect(screen.getByRole('link', { name: 'Start a Lay-Away' })).toHaveClass(
+      'btn',
+      'btn-primary',
+    );
     expect(screen.getByRole('contentinfo')).toHaveTextContent(
       /sample data shown for demonstration purposes only/i,
     );
