@@ -1,15 +1,22 @@
 import { MemoryRouter } from 'react-router-dom';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { ToastProvider } from '../components/ToastProvider.jsx';
 import Home from './Home.jsx';
+
+function renderHome() {
+  return render(
+    <MemoryRouter>
+      <ToastProvider>
+        <Home />
+      </ToastProvider>
+    </MemoryRouter>,
+  );
+}
 
 describe('Home', () => {
   it('renders the hero headline', async () => {
-    render(
-      <MemoryRouter>
-        <Home />
-      </MemoryRouter>,
-    );
+    renderHome();
     expect(
       screen.getByRole('heading', {
         name: /reserve the piece you love/i,
@@ -21,11 +28,7 @@ describe('Home', () => {
   });
 
   it('opens piece details from the gallery', async () => {
-    render(
-      <MemoryRouter>
-        <Home />
-      </MemoryRouter>,
-    );
+    renderHome();
     const buttons = await screen.findAllByRole('button', { name: 'View Details' });
     fireEvent.click(buttons[0]);
     expect(

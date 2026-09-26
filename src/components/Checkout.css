@@ -78,3 +78,35 @@
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 6%, var(--surface));
 }
+
+.confirm-box {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.confirm-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ok) 18%, var(--surface));
+  color: var(--ok);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.confirm-box h3 {
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.confirm-box p {
+  font-size: 14px;
+  color: var(--text-soft);
+}
+
+.checkout-done {
+  width: 100%;
+  justify-content: center;
+}

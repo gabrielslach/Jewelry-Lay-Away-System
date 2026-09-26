@@ -46,8 +46,9 @@ export function CheckIcon({ size = 16, title = 'Success' }) {
       fill="none"
       stroke="currentColor"
       strokeWidth="2"
-      role="img"
-      aria-label={title}
+      role={title ? 'img' : 'presentation'}
+      aria-hidden={title ? undefined : true}
+      aria-label={title || undefined}
     >
       <path d="M20 6 9 17l-5-5" />
     </svg>
