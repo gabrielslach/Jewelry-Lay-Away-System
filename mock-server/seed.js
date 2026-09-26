@@ -1,12 +1,7 @@
-const CATEGORIES = ['Rings', 'Necklaces', 'Earrings', 'Bracelets'];
-const MATERIALS = ['18K White Gold', '14K Rose Gold', '18K Yellow Gold', 'Sterling Silver'];
-const STONES = ['Diamond', 'Sapphire', 'Emerald', 'Pearl', 'Ruby'];
+import galleryPage from './gallery-items.json';
 
-const ORIGINALS = [
+const DISPLAY = [
   {
-    id: 1,
-    title: 'PJ17414',
-    price: '48500',
     name: 'Solitaire Halo Ring',
     category: 'Rings',
     material: '18K White Gold',
@@ -15,9 +10,6 @@ const ORIGINALS = [
     cert: 'GIA Certified',
   },
   {
-    id: 2,
-    title: 'PJ17415',
-    price: '32000',
     name: 'Vintage Rose Pendant',
     category: 'Necklaces',
     material: '14K Rose Gold',
@@ -26,9 +18,6 @@ const ORIGINALS = [
     cert: 'In-house Appraisal',
   },
   {
-    id: 3,
-    title: 'PJ17416',
-    price: '27500',
     name: 'Emerald Drop Earrings',
     category: 'Earrings',
     material: '18K Yellow Gold',
@@ -37,9 +26,6 @@ const ORIGINALS = [
     cert: 'GIA Certified',
   },
   {
-    id: 4,
-    title: 'PJ17417',
-    price: '65000',
     name: 'Classic Tennis Bracelet',
     category: 'Bracelets',
     material: '14K White Gold',
@@ -48,9 +34,6 @@ const ORIGINALS = [
     cert: 'GIA Certified',
   },
   {
-    id: 5,
-    title: 'PJ17418',
-    price: '39900',
     name: 'Sapphire Signet Ring',
     category: 'Rings',
     material: '18K Yellow Gold',
@@ -59,9 +42,6 @@ const ORIGINALS = [
     cert: 'In-house Appraisal',
   },
   {
-    id: 6,
-    title: 'PJ17419',
-    price: '21000',
     name: 'Pearl Drop Necklace',
     category: 'Necklaces',
     material: 'Sterling Silver',
@@ -71,39 +51,16 @@ const ORIGINALS = [
   },
 ];
 
-function imagesFor(id) {
-  const n = 2 + (id % 3);
-  return Array.from({ length: n }, (_, index) => ({
-    url: `/placeholders/${(index % 4) + 1}.svg`,
-    is_primary: index === 0,
-  }));
-}
-
 export function buildCatalog() {
-  const pieces = ORIGINALS.map((piece) => ({
-    ...piece,
-    currency: 'PHP',
-    in_stock: true,
-    images: imagesFor(piece.id),
-  }));
-  for (let id = 7; id <= 24; id += 1) {
-    const base = ORIGINALS[(id - 1) % 6];
-    pieces.push({
-      id,
-      title: `PJ17${400 + id}`,
-      price: String(18000 + id * 1100),
-      currency: 'PHP',
-      in_stock: true,
-      images: imagesFor(id),
-      name: `${base.name} ${id}`,
-      category: CATEGORIES[id % 4],
-      material: MATERIALS[id % 4],
-      stone: STONES[id % 5],
-      size: base.size,
-      cert: id % 2 ? 'GIA Certified' : 'In-house Appraisal',
-    });
-  }
-  return pieces;
+  return galleryPage.results.map((item, index) => {
+    const display = DISPLAY[index % DISPLAY.length];
+    return {
+      ...item,
+      ...display,
+      name:
+        index < DISPLAY.length ? display.name : `${display.name} ${item.title}`,
+    };
+  });
 }
 
 export function initialCustomers() {
@@ -164,8 +121,11 @@ export function planLabel(termMonths, paymentCount) {
   return `${termMonths} Mo. / ${paymentCount} Payments`;
 }
 
+function productByName(catalog, name) {
+  return catalog.find((piece) => piece.name === name) ?? catalog[0];
+}
+
 export function initialPlans(catalog) {
-  const byName = Object.fromEntries(catalog.map((p) => [p.name.replace(/ \d+$/, ''), p]));
   const specs = [
     {
       id: 'LA-1001',
@@ -215,7 +175,7 @@ export function initialPlans(catalog) {
   ];
 
   return specs.map((spec) => {
-    const product = byName[spec.item] ?? catalog[0];
+    const product = productByName(catalog, spec.item);
     const paidCount =
       spec.status === 'ok' ? Math.ceil(spec.payments / 2) : Math.floor(spec.payments / 3);
     const amount = Math.round(Number(product.price) / spec.payments);
@@ -249,11 +209,11 @@ export function initialPlans(catalog) {
 }
 
 export function initialCompletedPlan(catalog) {
-  const product = catalog.find((p) => p.id === 2);
+  const product = productByName(catalog, 'Vintage Rose Pendant');
   return {
     id: 'LA-0987',
     customer_id: 1,
-    product_id: 2,
+    product_id: product.id,
     item_name: 'Vintage Rose Pendant',
     plan_label: planLabel(2, 4),
     next_due: null,

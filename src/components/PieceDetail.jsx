@@ -22,7 +22,11 @@ export default function PieceDetail({ piece, onClose, onReserve }) {
       }
     >
       <div className="modal-media">
-        <GemMark size={60} title={piece.name} />
+        {piece.images?.[0]?.url ? (
+          <img src={piece.images[0].url} alt={piece.name} />
+        ) : (
+          <GemMark size={60} title={piece.name} />
+        )}
       </div>
       <div className="piece-cat">{piece.category}</div>
       <div className="piece-detail-price">{formatPeso(piece.price)}</div>

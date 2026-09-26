@@ -5,6 +5,7 @@ import Checkout from '../../src/components/Checkout.jsx';
 import { SessionProvider } from '../../src/components/SessionProvider.jsx';
 import { ToastProvider } from '../../src/components/ToastProvider.jsx';
 import { loginCustomer } from '../../src/services/loginCustomer.js';
+import { getGallery } from '../../src/services/getGallery.js';
 
 const piece = { id: 1, name: 'Solitaire Halo Ring', price: 48000 };
 
@@ -21,6 +22,8 @@ function renderCheckout(ui) {
 describe('Checkout', () => {
   beforeEach(async () => {
     await loginCustomer({ email: 'client@sampleemail.com', password: 'password' });
+    const page = await getGallery({ pageSize: 1 });
+    piece.id = page.results[0].id;
   });
   it('shows six payments for the three-month term', () => {
     renderCheckout(<Checkout piece={piece} onClose={() => {}} />);
@@ -37,7 +40,7 @@ describe('Checkout', () => {
   it('puts remainder pesos on the last installment', () => {
     renderCheckout(
       <Checkout
-        piece={{ id: 1, name: 'Solitaire Halo Ring', price: 48500 }}
+        piece={{ id: piece.id, name: 'Solitaire Halo Ring', price: 48500 }}
         onClose={() => {}}
       />,
     );
