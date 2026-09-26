@@ -1,6 +1,6 @@
 ---
 name: reviewer
-model: inherit
+model: grok-4.7[effort=medium,fast=false]
 description: Independent code review after implementation. Use proactively after code is written or modified, before the user pushes. Do not implement features.
 ---
 
