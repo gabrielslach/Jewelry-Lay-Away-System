@@ -1,15 +1,28 @@
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { SessionProvider } from '../../src/components/SessionProvider.jsx';
 import StorefrontLayout from '../../src/layouts/StorefrontLayout.jsx';
 import { loginCustomer } from '../../src/services/loginCustomer.js';
 
-function renderLayout() {
+function renderLayout(initialEntries = ['/']) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <SessionProvider>
-        <StorefrontLayout />
+        <Routes>
+          <Route element={<StorefrontLayout />}>
+            <Route
+              path="*"
+              element={
+                <>
+                  <div id="how">How</div>
+                  <div id="reviews">Reviews</div>
+                  <div id="collections">Collections</div>
+                </>
+              }
+            />
+          </Route>
+        </Routes>
       </SessionProvider>
     </MemoryRouter>,
   );
@@ -146,5 +159,47 @@ describe('StorefrontLayout', () => {
     const cta = within(nav).getByRole('link', { name: 'Start a Lay-Away' });
     expect(cta).toHaveAttribute('href', '/collections');
     expect(cta).toHaveClass('btn', 'btn-primary');
+  });
+
+  it('points section links at home hashes from collections', () => {
+    renderLayout(['/collections']);
+    const nav = screen.getByRole('navigation', { name: 'Storefront' });
+    expect(
+      within(nav).getByRole('link', { name: 'How Lay-Away Works' }),
+    ).toHaveAttribute('href', '/#how');
+    expect(within(nav).getByRole('link', { name: 'Reviews' })).toHaveAttribute(
+      'href',
+      '/#reviews',
+    );
+    expect(within(nav).getByRole('link', { name: 'Contact' })).toHaveAttribute(
+      'href',
+      '/#contact',
+    );
+
+    const footer = screen.getByRole('contentinfo');
+    expect(within(footer).getByRole('link', { name: 'Lay-Away Plans' })).toHaveAttribute(
+      'href',
+      '/#how',
+    );
+    expect(within(footer).getByRole('link', { name: 'Reviews' })).toHaveAttribute(
+      'href',
+      '/#reviews',
+    );
+    expect(within(footer).getAllByRole('link', { name: 'Contact Us' })[0]).toHaveAttribute(
+      'href',
+      '/#contact',
+    );
+  });
+
+  it('scrolls hash targets into view', () => {
+    const scrollIntoView = vi.fn();
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollIntoView;
+    try {
+      renderLayout(['/#how']);
+      expect(scrollIntoView).toHaveBeenCalled();
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
   });
 });

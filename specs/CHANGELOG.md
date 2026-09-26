@@ -2,6 +2,10 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-09-27 (bug reevaluation)
+
+- Struck fixed items in [`bugs.md`](bugs.md): BUG-1–9, 14–17. Still open: BUG-10, 12, 13 (need Gabriel) and BUG-11 (completed plan not rechecked on a fresh account).
+
 ## 2026-09-27 (Epic 14 collections fallback)
 
 - **Epic 14** — image load failure → GemMark on PieceCard / piece carousel (main + thumbs); empty material/stone/size/cert from GET /api/gallery → `-` via `presentPiece`.

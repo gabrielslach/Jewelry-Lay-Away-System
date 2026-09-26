@@ -71,11 +71,12 @@ export default function Settings() {
         />
       </div>
       <div className="toggle-row">
-        <span>Require full payment before item release</span>
+        <span id="setting-require-full">Require full payment before item release</span>
         <div
           className={form.require_full_payment_before_release ? 'switch on' : 'switch'}
           role="switch"
           aria-checked={form.require_full_payment_before_release}
+          aria-labelledby="setting-require-full"
           tabIndex={0}
           onClick={() => toggle('require_full_payment_before_release')}
           onKeyDown={(event) => {
@@ -86,11 +87,12 @@ export default function Settings() {
         />
       </div>
       <div className="toggle-row">
-        <span>Send SMS payment reminders</span>
+        <span id="setting-sms-reminders">Send SMS payment reminders</span>
         <div
           className={form.sms_reminders ? 'switch on' : 'switch'}
           role="switch"
           aria-checked={form.sms_reminders}
+          aria-labelledby="setting-sms-reminders"
           tabIndex={0}
           onClick={() => toggle('sms_reminders')}
           onKeyDown={(event) => {
@@ -101,11 +103,12 @@ export default function Settings() {
         />
       </div>
       <div className="toggle-row">
-        <span>Allow customer-selected due dates</span>
+        <span id="setting-customer-dates">Allow customer-selected due dates</span>
         <div
           className={form.customer_selected_due_dates ? 'switch on' : 'switch'}
           role="switch"
           aria-checked={form.customer_selected_due_dates}
+          aria-labelledby="setting-customer-dates"
           tabIndex={0}
           onClick={() => toggle('customer_selected_due_dates')}
           onKeyDown={(event) => {

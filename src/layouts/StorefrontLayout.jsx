@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import Button from '../components/Button.jsx';
 import { useSession } from '../components/useSession.js';
 import { CloseIcon, HamburgerIcon, Logo } from '../theme/assets.js';
@@ -12,10 +12,13 @@ const sectionLinks = [
   { href: '/#contact', label: 'Contact' },
 ];
 
+const hashSectionIds = new Set(['how', 'reviews', 'contact', 'collections']);
+
 export default function StorefrontLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const hamburgerRef = useRef(null);
   const { customer } = useSession();
+  const location = useLocation();
 
   function closeMenu() {
     setMenuOpen(false);
@@ -64,6 +67,14 @@ export default function StorefrontLayout() {
     };
   }, [menuOpen]);
 
+  useEffect(() => {
+    const id = location.hash.replace(/^#/, '');
+    if (!hashSectionIds.has(id)) {
+      return;
+    }
+    document.getElementById(id)?.scrollIntoView();
+  }, [location.pathname, location.hash]);
+
   const accountTo = customer ? '/account' : '/login';
 
   return (
@@ -76,9 +87,9 @@ export default function StorefrontLayout() {
           <div className="pv-links">
             {sectionLinks.map((link) =>
               link.href.startsWith('/#') ? (
-                <a key={link.href} href={link.href}>
+                <Link key={link.href} to={{ pathname: '/', hash: link.href.slice(1) }}>
                   {link.label}
-                </a>
+                </Link>
               ) : (
                 <Link key={link.href} to={link.href}>
                   {link.label}
@@ -123,9 +134,13 @@ export default function StorefrontLayout() {
           <div className="mobile-panel-links">
             {sectionLinks.map((link) =>
               link.href.startsWith('/#') ? (
-                <a key={link.href} href={link.href} onClick={closeMenu}>
+                <Link
+                  key={link.href}
+                  to={{ pathname: '/', hash: link.href.slice(1) }}
+                  onClick={closeMenu}
+                >
                   {link.label}
-                </a>
+                </Link>
               ) : (
                 <NavLink key={link.href} to={link.href} end onClick={closeMenu}>
                   {link.label}
@@ -172,17 +187,17 @@ export default function StorefrontLayout() {
             <div className="footer-col">
               <h4>Shop</h4>
               <Link to="/collections">Collections</Link>
-              <a href="/#how">Lay-Away Plans</a>
+              <Link to={{ pathname: '/', hash: '#how' }}>Lay-Away Plans</Link>
             </div>
             <div className="footer-col">
               <h4>Support</h4>
-              <a href="/#contact">Contact Us</a>
-              <a href="/#contact">FAQ</a>
+              <Link to={{ pathname: '/', hash: '#contact' }}>Contact Us</Link>
+              <Link to={{ pathname: '/', hash: '#contact' }}>FAQ</Link>
             </div>
             <div className="footer-col">
               <h4>Company</h4>
-              <a href="/#contact">About</a>
-              <a href="/#reviews">Reviews</a>
+              <Link to={{ pathname: '/', hash: '#contact' }}>About</Link>
+              <Link to={{ pathname: '/', hash: '#reviews' }}>Reviews</Link>
             </div>
           </div>
         </div>

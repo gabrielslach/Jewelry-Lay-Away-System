@@ -42,6 +42,7 @@
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, var(--surface-2), var(--border));
+  cursor: pointer;
 }
 
 .piece-body {
@@ -59,6 +60,7 @@
 .piece-body h3 {
   font-size: 19px;
   margin: 6px 0 4px;
+  cursor: pointer;
 }
 
 .piece-price {

@@ -24,4 +24,18 @@ describe('Modal', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('keeps the footer outside the scrolling body', () => {
+    const { container } = render(
+      <Modal title="Piece Name" footer={<button type="button">Reserve</button>} onClose={() => {}}>
+        Details
+      </Modal>,
+    );
+    const body = container.querySelector('.modal-body');
+    const foot = container.querySelector('.modal-foot');
+    expect(body).toBeTruthy();
+    expect(foot).toBeTruthy();
+    expect(body.contains(foot)).toBe(false);
+    expect(foot.previousElementSibling).toBe(body);
+  });
 });
