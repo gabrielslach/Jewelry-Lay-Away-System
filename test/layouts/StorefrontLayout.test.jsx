@@ -47,10 +47,10 @@ describe('StorefrontLayout', () => {
     const nav = screen.getByRole('navigation', { name: 'Storefront' });
     const home = within(nav).getByRole('link', { name: 'Mine Credit' });
     expect(home).toHaveAttribute('href', '/');
-    expect(within(home).getByRole('img', { name: 'Mine Credit' })).toHaveAttribute(
-      'src',
-      '/store-logo.png',
-    );
+    expect(within(home).getByText('Mine Credit')).toBeVisible();
+    const plate = home.querySelector('img');
+    expect(plate).toHaveAttribute('src', '/store-logo.png');
+    expect(plate).toHaveAttribute('alt', '');
     expect(
       within(screen.getByRole('contentinfo')).getByRole('img', {
         name: 'Mine Credit',

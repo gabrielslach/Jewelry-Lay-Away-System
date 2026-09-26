@@ -2,6 +2,10 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-09-27 (header Mine Credit wordmark)
+
+- Epic 13 **BR-4**: typeset **Mine Credit** beside the header lockup; footer and admin stay image-only.
+
 ## 2026-09-27 (Mine Credit lockup)
 
 - **Epic 13** — `public/store-logo.png` in theme `Logo`; SPA name **Mine Credit**. Demo.html identity unchanged. AD-8 default `business_name` is Mine Credit.

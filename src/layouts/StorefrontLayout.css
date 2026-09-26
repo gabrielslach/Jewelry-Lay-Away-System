@@ -265,6 +265,15 @@
     height: 36px;
   }
 
+  .pv-nav .logo--named {
+    gap: 6px;
+  }
+
+  .pv-nav .logo-name {
+    font-size: 16px;
+    letter-spacing: 0;
+  }
+
   .pv-account-chrome {
     display: none;
   }

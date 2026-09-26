@@ -28,4 +28,14 @@ describe('Logo', () => {
       screen.getByRole('heading', { name: 'Mine Credit' }),
     ).toBeInTheDocument();
   });
+
+  it('typesets Mine Credit once when withName is set', () => {
+    const { container } = render(<Logo withName />);
+    expect(container.firstChild).toHaveClass('logo', 'logo--named');
+    expect(screen.getByText('Mine Credit')).toHaveClass('logo-name');
+    expect(screen.getAllByText('Mine Credit')).toHaveLength(1);
+    const img = container.querySelector('img');
+    expect(img).toHaveAttribute('src', '/store-logo.png');
+    expect(img).toHaveAttribute('alt', '');
+  });
 });
