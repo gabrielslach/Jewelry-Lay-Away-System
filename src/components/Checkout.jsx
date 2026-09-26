@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
+import { CheckIcon } from '../theme/assets.js';
 import { createLayawayPlan, defaultDates } from '../data/plans.js';
 import { formatPeso, splitAmount } from '../lib/money.js';
 import Button from './Button.jsx';
 import Modal from './Modal.jsx';
+import { useToast } from './useToast.js';
 import './Checkout.css';
 import './PieceDetail.css';
 
@@ -19,6 +21,7 @@ const PAY_METHODS = [
 ];
 
 export default function Checkout({ piece, onClose, onScheduled, onPayMethod }) {
+  const { showToast } = useToast();
   const [step, setStep] = useState(1);
   const [payments, setPayments] = useState(6);
   const [dates, setDates] = useState(() => defaultDates(6));
@@ -50,7 +53,11 @@ export default function Checkout({ piece, onClose, onScheduled, onPayMethod }) {
       setStep(2);
       return;
     }
-    onPayMethod?.(method);
+    if (step === 2) {
+      onPayMethod?.(method);
+      showToast(`Reservation submitted for ${piece.name}.`);
+      setStep(3);
+    }
   }
 
   return (
@@ -58,14 +65,20 @@ export default function Checkout({ piece, onClose, onScheduled, onPayMethod }) {
       title="Reserve on Lay-Away"
       onClose={onClose}
       footer={
-        <>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
+        step < 3 ? (
+          <>
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleContinue}>
+              Continue
+            </Button>
+          </>
+        ) : (
+          <Button variant="primary" className="checkout-done" onClick={onClose}>
+            Done
           </Button>
-          <Button variant="primary" onClick={handleContinue}>
-            Continue
-          </Button>
-        </>
+        )
       }
     >
       {step === 1 ? (
@@ -98,7 +111,8 @@ export default function Checkout({ piece, onClose, onScheduled, onPayMethod }) {
             </div>
           </div>
         </>
-      ) : (
+      ) : null}
+      {step === 2 ? (
         <div className="plan-box">
           <h4>Choose Payment Method</h4>
           <div className="pay-method-list">
@@ -119,7 +133,16 @@ export default function Checkout({ piece, onClose, onScheduled, onPayMethod }) {
             ))}
           </div>
         </div>
-      )}
+      ) : null}
+      {step === 3 ? (
+        <div className="confirm-box">
+          <div className="confirm-icon">
+            <CheckIcon size={26} title="" />
+          </div>
+          <h3>Reservation Submitted</h3>
+          <p>Our team will confirm your payment schedule and hold the piece for you.</p>
+        </div>
+      ) : null}
     </Modal>
   );
 }
