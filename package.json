@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:live": "VITE_MOCK_API=false vite",
     "build": "vite build",
+    "build:pages": "VITE_API_BASE=https://honeydew-stork-999262.hostingersite.com vite build --base /Jewelry-Lay-Away-System/ && cp dist/index.html dist/404.html",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",

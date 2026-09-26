@@ -91,16 +91,50 @@ function galleryItem(piece) {
   };
 }
 
+function asIso(value) {
+  if (!value) {
+    return null;
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return `${value}T00:00:00.000Z`;
+  }
+  return value;
+}
+
+function orderNumericId(id) {
+  const digits = String(id).match(/\d+/);
+  return digits ? Number(digits[0]) : id;
+}
+
+function listStatusToContract(plan) {
+  if (plan.completed) {
+    return 'completed';
+  }
+  return plan.list_status === 'warn' ? 'overdue' : 'on_track';
+}
+
 function orderView(store, plan) {
   refreshPlan(store, plan);
   return {
-    id: plan.id,
+    id: orderNumericId(plan.id),
     item_name: plan.item_name,
+    term_months: plan.term_months,
     plan_label: plan.plan_label,
-    next_due: plan.next_due,
-    status: plan.completed ? 'completed' : plan.list_status,
-    completed_on: plan.completed_on,
-    installments: plan.installments,
+    installment_count: plan.installments.length,
+    next_due_date: asIso(plan.next_due),
+    total_price: plan.total_price,
+    currency: plan.currency,
+    status: listStatusToContract(plan),
+    plan_status: plan.completed ? 'completed' : 'active',
+    completed_on: plan.completed ? asIso(plan.completed_on) : null,
+    created_at: asIso(plan.created_at) ?? '2026-01-15T00:00:00.000Z',
+    installments: plan.installments.map((row, index) => ({
+      id: typeof row.id === 'number' ? row.id : index + 1,
+      due_date: asIso(row.due_date),
+      amount: row.amount,
+      status: row.status,
+      paid_at: asIso(row.paid_at),
+    })),
   };
 }
 
@@ -227,19 +261,15 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     return json(200, { ok: true });
   }
 
-  params = match(path, '/api/customers/:id/orders');
-  if (verb === 'GET' && params) {
+  if (verb === 'GET' && path === '/api/customers/orders') {
     const gate = requireCustomer(store, headers);
     if (gate.error) {
       return gate.error;
     }
-    if (gate.customer.id !== Number(params.id)) {
-      return json(403, { error: 'Forbidden' });
-    }
     const orders = store.plans
       .filter((p) => p.customer_id === gate.customer.id)
       .map((p) => orderView(store, p));
-    return json(200, { results: orders });
+    return json(200, orders);
   }
 
   if (verb === 'POST' && path === '/api/layaway/plans') {
@@ -494,7 +524,7 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     }
     if (plan && plan.installments.every((i) => i.status === 'paid')) {
       plan.completed = true;
-      plan.completed_on = store.now().toLocaleString('en-US', { month: 'short', year: 'numeric' });
+      plan.completed_on = todayIso(store);
     }
     store.ledger.push({ type: 'payment', plan_id: payment.plan_id, amount: inst?.amount });
     return json(200, { status: 'confirmed' });

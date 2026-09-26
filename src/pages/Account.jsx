@@ -28,7 +28,7 @@ export default function Account() {
       return undefined;
     }
     let cancelled = false;
-    getCustomerOrders(customer.id)
+    getCustomerOrders()
       .then((data) => {
         if (!cancelled) {
           setOrders(data);

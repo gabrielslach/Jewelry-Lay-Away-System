@@ -2,6 +2,15 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-09-27 (customer orders v1.9)
+
+- My Account uses `GET /api/customers/orders` (no `:id`, bare array). Service maps `on_track`/`overdue`/`completed`, Next Due as Mon D, Completed as Mon YYYY. AC-1 / AC-2 / MS-2 and tech-debt #1 updated.
+
+## 2026-09-27 (v1.9 tech-debt refresh)
+
+- `tech-debt.md` rewritten against `api-definition.md` v1.9 (Sep 26 update): new "Not yet built" table for the breaking `/api/customers/orders` path/shape change, the new `GET /api/customers/me`, admin's own access/refresh split, `DELETE /api/admin/customers/:id/sessions`, the confirmed confirm/reject-only "mark paid" path, and the now-live dashboard/customers/settings endpoints (field-name mismatches noted). Resolved rows (member since, badges, completed list, dashboard KPI/chart, customers directory, settings form) moved out of "Mocked to match the demo."
+- Root `package.json` / `vite.config.js`: added `npm run dev:live`, which skips `mock-server` and proxies `/api` to the sandbox base URL from `api-definition.md` Section 1.
+
 ## 2026-09-27 (signed-out chrome label)
 
 - **Epic 5 AU-5** — storefront account button reads **Sign in** (→ `/login`) when signed out and **My Account** (→ `/account`) when signed in; chrome and hamburger panel. SF-1, AU-3, and Epic 12 chrome/panel lines point here.
