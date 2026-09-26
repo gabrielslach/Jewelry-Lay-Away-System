@@ -2,6 +2,15 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-09-26 (implementation)
+
+- Epic 4 mock server is live in `mock-server/` (`npm run dev` serves `/api`).
+- Epic 5–9, 2, 3, 6, and 7 implemented in the SPA (auth, services, mobile-first storefront, collections, PDP, account, admin).
+
+## 2026-09-26 (later)
+
+- Implemented Epic 4 mock server (`mock-server/`) and documented invented routes in [`mock-api.md`](mock-api.md).
+
 ## 2026-09-26
 
 - Repo tests now `test/` mirroring `src/` (`test/setup.js`). Noted here because agents read this changelog with the specs.

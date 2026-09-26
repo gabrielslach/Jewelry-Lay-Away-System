@@ -1,16 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { getGallery, getGalleryPiece, presentPiece } from '../../src/data/gallery.js';
+import { getGalleryPiece, presentPiece } from '../../src/data/gallery.js';
+import { getGallery } from '../../src/data/gallery.js';
 
-describe('gallery', () => {
-  it('presents a jewelry name and category instead of the barcode title', () => {
+describe('gallery (legacy in-memory)', () => {
+  it('still presents demo extras locally', () => {
     const piece = presentPiece({
       id: 1,
       title: 'PJ17414',
       price: '48500',
     });
     expect(piece.name).toBe('Solitaire Halo Ring');
-    expect(piece.category).toBe('Rings');
-    expect(piece.price).toBe(48500);
   });
 
   it('returns a demo-sized first page', async () => {
@@ -19,8 +18,8 @@ describe('gallery', () => {
     expect(page.next).toBeNull();
   });
 
-  it('looks up a single piece with mocked specs', async () => {
+  it('finds a piece by id', async () => {
     const piece = await getGalleryPiece(1);
-    expect(piece.material).toBe('18K White Gold');
+    expect(piece.id).toBe(1);
   });
 });

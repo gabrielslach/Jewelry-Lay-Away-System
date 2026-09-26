@@ -1,15 +1,27 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Checkout from '../../src/components/Checkout.jsx';
+import { SessionProvider } from '../../src/components/SessionProvider.jsx';
 import { ToastProvider } from '../../src/components/ToastProvider.jsx';
+import { loginCustomer } from '../../src/services/loginCustomer.js';
 
 const piece = { id: 1, name: 'Solitaire Halo Ring', price: 48000 };
 
 function renderCheckout(ui) {
-  return render(<ToastProvider>{ui}</ToastProvider>);
+  return render(
+    <MemoryRouter>
+      <SessionProvider>
+        <ToastProvider>{ui}</ToastProvider>
+      </SessionProvider>
+    </MemoryRouter>,
+  );
 }
 
 describe('Checkout', () => {
+  beforeEach(async () => {
+    await loginCustomer({ email: 'client@sampleemail.com', password: 'password' });
+  });
   it('shows six payments for the three-month term', () => {
     renderCheckout(<Checkout piece={piece} onClose={() => {}} />);
     expect(screen.getAllByLabelText(/Payment \d+ date/)).toHaveLength(6);

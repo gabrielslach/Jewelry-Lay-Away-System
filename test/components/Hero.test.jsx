@@ -17,7 +17,7 @@ describe('Hero', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Browse Collections' })).toHaveAttribute(
       'href',
-      '/#collections',
+      '/collections',
     );
     expect(screen.getByText('3,000+')).toBeInTheDocument();
     expect(screen.getByText('3 Mo.')).toBeInTheDocument();

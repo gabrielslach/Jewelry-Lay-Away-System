@@ -8,6 +8,14 @@ import eslintConfigPrettier from 'eslint-config-prettier';
 export default [
   { ignores: ['dist', 'archive'] },
   {
+    files: ['mock-server/**/*.js', 'vite.config.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      globals: globals.node,
+      sourceType: 'module',
+    },
+  },
+  {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
       ecmaVersion: 2022,

@@ -1,12 +1,15 @@
 import { MemoryRouter } from 'react-router-dom';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { SessionProvider } from '../../src/components/SessionProvider.jsx';
 import StorefrontLayout from '../../src/layouts/StorefrontLayout.jsx';
 
 function renderLayout() {
   return render(
     <MemoryRouter>
-      <StorefrontLayout />
+      <SessionProvider>
+        <StorefrontLayout />
+      </SessionProvider>
     </MemoryRouter>,
   );
 }
@@ -19,11 +22,11 @@ describe('StorefrontLayout', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'My Account' })).toHaveAttribute(
       'href',
-      '/account',
+      '/login',
     );
     expect(screen.getByRole('link', { name: 'Start a Lay-Away' })).toHaveAttribute(
       'href',
-      '/#collections',
+      '/collections',
     );
     expect(screen.getByRole('contentinfo')).toHaveTextContent(
       /sample data shown for demonstration purposes only/i,
