@@ -1,0 +1,57 @@
+.modal-media {
+  height: 200px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--surface-2), var(--border));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.spec-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0 20px;
+}
+
+.spec-item {
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.spec-item span {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-soft);
+}
+
+.spec-item b {
+  font-size: 14px;
+}
+
+.plan-box {
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 18px;
+}
+
+.plan-box h4 {
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.plan-box p {
+  font-size: 13px;
+  color: var(--text-soft);
+}
+
+.piece-detail-price {
+  font-size: 20px;
+  margin: 6px 0 14px;
+  font-weight: 700;
+}

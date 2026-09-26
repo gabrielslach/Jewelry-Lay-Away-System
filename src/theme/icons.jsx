@@ -27,8 +27,9 @@ export function CloseIcon({ size = 16, title = 'Close' }) {
       fill="none"
       stroke="currentColor"
       strokeWidth="2"
-      role="img"
-      aria-label={title}
+      role={title ? 'img' : 'presentation'}
+      aria-hidden={title ? undefined : true}
+      aria-label={title || undefined}
     >
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
