@@ -406,16 +406,14 @@ Copy **overlays** the photo on every width (object-fit cover). A dark scrim behi
 
 ## Epic 11 — Editorial home hero
 
-Replace the Epic 10 carousel with a **single** split hero: copy on cream, still-life on the right (Aura-style proportions). Photo is `/hero-1.png` (`public/hero-2.png` kept for a later still-life). **No API.** **No carousel.** **Mobile-first.** How-it-works and Reviews stay below. Copy is the block Gabriel approved (2026-09-27).
+Replace the Epic 10 carousel with a **single** full-bleed 16:9 hero: `/hero-1.png` fills the band, approved copy overlays the left (Aura-style, **no scrim**). **No API.** **No carousel.** **Mobile-first.** How-it-works and Reviews stay below. Copy is the block Gabriel approved (2026-09-27).
 
 ### EH-1 Layout
 
 One `Hero` region at the top of `/`. Accessible name e.g. “Featured”.
 
-- Phone: copy first (left-aligned), photo under (`object-fit: cover`, ~40vh).
-- `min-width: 800px`: two columns — copy ~40–45% on `--bg`, photo fills the rest. No scrim, no text on the image. Type uses `--text` / `--text-soft` / `--primary` for the eyebrow.
-- Reuse `Button` primary for the CTA (white label on maroon).
-- Three stats in one row under the CTA (wrap on narrow widths). No icons required.
+- Full-bleed `/hero-1.png` (`object-fit: cover`) spanning the hero. The **section is always 16:9**. Copy sits **on** the photo, left-aligned, same stack as EH-2 (eyebrow → headline → body → CTA → stats). **No scrim / overlay background** — type uses `--text` / `--text-soft` / `--primary` against the light side of the still-life (Aura-style).
+- Phone and desktop share that overlay; scale type/padding so the block still fits the 16:9 frame. Reuse `Button` primary. Three stats in one row under the CTA (wrap if needed). No icons required.
 
 ### EH-2 Copy (approved)
 

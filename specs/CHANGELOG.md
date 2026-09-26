@@ -2,6 +2,10 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-09-27 (hero full-bleed 16:9)
+
+- Epic 11 layout: still-life spans the hero at **16:9**; approved copy overlays the left with **no scrim**.
+
 ## 2026-09-27 (editorial hero)
 
 - **Epic 11** — single split home hero (`EH-1`–`EH-3`): approved copy, `/hero-1.png`, no carousel. Supersedes Epic 10.

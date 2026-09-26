@@ -7,6 +7,9 @@ export default function Hero() {
   return (
     <section className="hero" aria-label="Featured">
       <div className="hero-frame">
+        <div className="hero-media">
+          <img src="/hero-1.png" alt="" />
+        </div>
         <div className="hero-copy">
           <div className="eyebrow">Paid Your Way</div>
           <h1>
@@ -26,9 +29,6 @@ export default function Hero() {
               <li key={stat}>{stat}</li>
             ))}
           </ul>
-        </div>
-        <div className="hero-media">
-          <img src="/hero-1.png" alt="" />
         </div>
       </div>
     </section>
