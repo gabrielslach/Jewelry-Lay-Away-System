@@ -6,7 +6,7 @@
   color: var(--text);
 }
 
-.storefront a {
+.storefront a:not(.btn) {
   color: inherit;
   text-decoration: none;
 }
