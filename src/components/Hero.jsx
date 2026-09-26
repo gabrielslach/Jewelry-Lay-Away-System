@@ -8,7 +8,7 @@ export default function Hero() {
     <section className="hero" aria-label="Featured">
       <div className="hero-frame">
         <div className="hero-media">
-          <img src="/hero-1.png" alt="" />
+          <img src={`${import.meta.env.BASE_URL}hero-1.png`} alt="" />
         </div>
         <div className="hero-copy">
           <div className="eyebrow">Paid Your Way</div>
