@@ -15,6 +15,8 @@ IDs skip US-15–US-19 so shopper and staff stay in separate ranges. Build seque
 ### US-1 Browse the storefront
 As a shopper, I want to land on the home page and see the brand, how lay-away works, and a sample of pieces, so I know I can reserve jewelry without paying in full today.
 
+When Epic 11 lands, the top of home is a single split hero (copy + still-life), not a carousel.
+
 ### US-2 Open the full catalog
 As a shopper, I want to open Collections and page through every piece, so I can find something beyond the home teaser.
 

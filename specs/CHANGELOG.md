@@ -2,6 +2,18 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-09-27 (editorial hero)
+
+- **Epic 11** — single split home hero (`EH-1`–`EH-3`): approved copy, `/hero-1.png`, no carousel. Supersedes Epic 10.
+
+## 2026-09-26 (hero overlay)
+
+- Epic 10 layout: hero copy overlays the image with a scrim on all widths (no stacked or split panel).
+
+## 2026-09-26 (hero carousel epic)
+
+- **Epic 10** — home hero carousel (`HC-1`–`HC-3`): three slides; photos on 1–2 (`public/hero-1.png`, `public/hero-2.png`); slide 3 solid color + **See how it works** → `/#how`. SF-2 marked superseded for new work.
+
 ## 2026-09-26 (gallery JSON)
 
 - Mock gallery is [`mock-server/gallery-items.json`](../mock-server/gallery-items.json); CDN image URLs are kept. Mock-only display fields (`name`, `category`, specs) are still merged on in [`mock-api.md`](mock-api.md).

@@ -1,0 +1,37 @@
+info:
+  name: Customer login
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: https://honeydew-stork-999262.hostingersite.com/api/customers/login
+  body:
+    type: json
+    data: |-
+      {
+        "email": "omar@theloft.com",
+        "name": "Boss Omar",
+        "password": "Amy is number one"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: bru.setEnvVar("token", res.body.token)
+  actions:
+    - type: set-variable
+      phase: after-response
+      selector:
+        expression: res.body.token
+        method: jsonq
+      variable:
+        name: token
+        scope: runtime
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
