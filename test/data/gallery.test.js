@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getGallery, getGalleryPiece, presentPiece } from './gallery.js';
+import { getGallery, getGalleryPiece, presentPiece } from '../../src/data/gallery.js';
 
 describe('gallery', () => {
   it('presents a jewelry name and category instead of the barcode title', () => {

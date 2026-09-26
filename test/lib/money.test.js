@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatPeso, splitAmount } from './money.js';
+import { formatPeso, splitAmount } from '../../src/lib/money.js';
 
 describe('formatPeso', () => {
   it('formats a peso amount with a grouping separator', () => {

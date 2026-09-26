@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import Reviews from './Reviews.jsx';
+import Reviews from '../../src/components/Reviews.jsx';
 
 describe('Reviews', () => {
   it('renders three customer testimonials', () => {

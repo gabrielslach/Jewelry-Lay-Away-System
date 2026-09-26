@@ -1,7 +1,7 @@
 import { MemoryRouter } from 'react-router-dom';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import StorefrontLayout from './StorefrontLayout.jsx';
+import StorefrontLayout from '../../src/layouts/StorefrontLayout.jsx';
 
 function renderLayout() {
   return render(

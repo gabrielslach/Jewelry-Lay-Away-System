@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import Gallery from './Gallery.jsx';
+import Gallery from '../../src/components/Gallery.jsx';
 
 describe('Gallery', () => {
   it('renders collection cards from the demo catalog', async () => {

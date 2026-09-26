@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import PieceDetail from './PieceDetail.jsx';
+import PieceDetail from '../../src/components/PieceDetail.jsx';
 
 const piece = {
   id: 1,

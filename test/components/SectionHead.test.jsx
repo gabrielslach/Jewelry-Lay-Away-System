@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import SectionHead from './SectionHead.jsx';
+import SectionHead from '../../src/components/SectionHead.jsx';
 
 describe('SectionHead', () => {
   it('renders the eyebrow, title, and supporting copy', () => {
