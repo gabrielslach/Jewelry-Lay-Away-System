@@ -11,19 +11,15 @@ http:
     data: |-
       {
         "product_id": 6694,
-        "term_months": 3,
+        "term_months": 1,
         "installment_dates": [
         "2026-10-03",
-        "2026-10-17",
-        "2026-10-31",
-        "2026-11-14",
-        "2026-11-28",
-        "2026-12-12"
+        "2026-10-17"
       ]
       }
   auth:
     type: bearer
-    token: "{{token}}"
+    token: '{{token}}'
 
 settings:
   encodeUrl: true

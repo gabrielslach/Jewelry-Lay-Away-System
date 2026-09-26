@@ -19,7 +19,9 @@ http:
 runtime:
   scripts:
     - type: after-response
-      code: bru.setEnvVar("token", res.body.token)
+      code: |-
+        bru.setEnvVar("refresh_token", res.body.refresh_token)
+        bru.setEnvVar("access_token", res.body.access_token)
   actions:
     - type: set-variable
       phase: after-response
