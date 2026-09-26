@@ -35,6 +35,11 @@ a.btn.btn-primary {
   color: var(--accent);
 }
 
+.btn-sm {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
 .btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;

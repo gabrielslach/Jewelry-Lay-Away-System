@@ -55,6 +55,8 @@ Public marketing, gallery, piece detail, and lay-away checkout from `#publicView
 
 Sticky nav (logo, Collections / How Lay-Away Works / Reviews / Contact), My Account + Start a Lay-Away, hamburger + mobile panel, footer `#contact` (Shop / Support / Company columns, demo disclaimer).
 
+Phone hamburger **look** is **Epic 12** (NM-1–NM-3). Destinations stay these.
+
 “Collections” in the nav goes to `/collections` once Epic 8 lands (until then, in-page `#collections` is fine).
 
 ### SF-2 Hero
@@ -406,14 +408,15 @@ Copy **overlays** the photo on every width (object-fit cover). A dark scrim behi
 
 ## Epic 11 — Editorial home hero
 
-Replace the Epic 10 carousel with a **single** full-bleed 16:9 hero: `/hero-1.png` fills the band, approved copy overlays the left (Aura-style, **no scrim**). **No API.** **No carousel.** **Mobile-first.** How-it-works and Reviews stay below. Copy is the block Gabriel approved (2026-09-27).
+Replace the Epic 10 carousel with a **single** editorial hero: `/hero-1.png`, approved copy (Aura-style, **no scrim**). Desktop is a full-bleed **16:9 overlay**; phone is **stacked** (see EH-1). **No API.** **No carousel.** **Mobile-first.** How-it-works and Reviews stay below. Copy is the block Gabriel approved (2026-09-27).
 
 ### EH-1 Layout
 
 One `Hero` region at the top of `/`. Accessible name e.g. “Featured”.
 
-- Full-bleed `/hero-1.png` (`object-fit: cover`) spanning the hero. The **section is always 16:9**. Copy sits **on** the photo, left-aligned, same stack as EH-2 (eyebrow → headline → body → CTA → stats). **No scrim / overlay background** — type uses `--text` / `--text-soft` / `--primary` against the light side of the still-life (Aura-style).
-- Phone and desktop share that overlay; scale type/padding so the block still fits the 16:9 frame. Reuse `Button` primary. Three stats in one row under the CTA (wrap if needed). No icons required.
+- Full-bleed `/hero-1.png` (`object-fit: cover`). Same stack as EH-2 (eyebrow → headline → body → CTA → stats). **No scrim / overlay background.** Reuse `Button` primary. Three stats under the CTA (wrap if needed). No icons required.
+- **Desktop (`min-width: 800px`):** `.hero-frame` is **16:9**. Copy sits **on** the photo, left-aligned. Type uses `--text` / `--text-soft` / `--primary` against the light side of the still-life (Aura-style).
+- **Phone (`< 800px`):** stacked — photo **16:9** on `.hero-media` only (`object-position: right center`), copy **below** on page `--bg`, **centered** (matches demo stacked hero). Frame height is image + copy; overflow must not clip the copy.
 
 ### EH-2 Copy (approved)
 
@@ -428,3 +431,40 @@ One `Hero` region at the top of `/`. Accessible name e.g. “Featured”.
 ### EH-3 Tests
 
 `test/components/Hero.test.jsx`. Assert: headline (both lines), body, Browse Collections → `/collections`, the three stats, `img` `src` `/hero-1.png`. No slide dots/prev/next. No new services.
+
+---
+
+## Epic 12 — Mobile nav menu
+
+Elevate SF-1 hamburger + `#mobile-panel` for phone only. **Same destinations.** **Start a Lay-Away** stays chrome-only. Tokens only (`--primary`, `--accent`, `--bg`, `--surface`, `--surface-2`, `--text`, `--text-soft`, `--border`, `--radius`, `--shadow`, `--font-display`, `--font-body`, `--nav-bg`; `--on-accent` / `--accent-hover` already on the CTA). **No API.** **Mobile-first.** Hidden from **681px**. Scope: hamburger, panel, overlay under sticky nav. Do not restyle the rest of the site.
+
+UX direction (2026-09-27): under-nav jewelry sheet (not a Material drawer); dim the page, keep the bar; hamburger becomes close.
+
+### NM-1 Look
+
+- **Hamburger (closed):** 38×38, radius **8px**, `--surface-2`, `--text`, `HamburgerIcon` 20px, `aria-label="Menu"`, `aria-controls="mobile-panel"`, `aria-expanded="false"`.
+- **Hamburger (open):** same hit target; background `--accent`; icon `--on-accent`; swap to `CloseIcon` 18px; `aria-label="Close menu"`; `aria-expanded="true"`.
+- **Panel:** still a child of sticky `.pv-nav`, full width, **not** a left/right drawer. Background `--surface-2`. Top edge: **1px `--primary`**. Padding **8px 16px 20px**. No `--shadow` on the sheet (nav already sticky).
+- **Section links** (Collections, How Lay-Away Works, Reviews, Contact): `--font-display`, **22px**, weight 500, `--text`. Block padding **12px 8px**, **min-height 44px**. **1px `--border`** between items. Hover/focus-visible: `--accent` (no underline). Current route (`/collections` when on that page): `--accent`.
+- **My Account:** after a **1px `--primary`** rule and **12px** top padding. Reuse **outline `Button` `sm`** to `/login` or `/account` (same session rule as chrome). Full width of the padded panel. Do **not** add Start a Lay-Away in the panel.
+- **Overlay:** fixed, inset 0, **z-index below `.pv-nav` (100)** so bar stays on top. Fill `color-mix(in srgb, var(--text) 32%, transparent)`. Not in the tab order.
+- **≥681px:** hamburger, panel, overlay **not shown** (existing breakpoint). No desktop menu.
+
+### NM-2 Motion / behavior
+
+- Toggle on hamburger click. Close on: overlay click, **Escape**, any panel link, logo, Start a Lay-Away, viewport **≥681px** (reset `menuOpen` so `aria-expanded` is false).
+- Open/close **~200ms** ease: overlay opacity 0→1; panel opacity + `translateY(-8px)`→0. `prefers-reduced-motion: reduce` → no transform/opacity animation.
+- While open: set **`inert`** on `main` and `footer`. Do not scroll-lock the document if inert is enough to ignore background; if the page still scrolls under the overlay, lock `body` overflow until close.
+- Focus: leave focus on the hamburger when opening. On Escape/close, focus the hamburger. Do not add a focus-trap library; inert + nav contents is the trap.
+- Keep closing on destination click. Hash links (`/#how` etc.) still close.
+
+### NM-3 Tests
+
+`test/layouts/StorefrontLayout.test.jsx` (extend). Assert:
+
+- Menu button `aria-controls="mobile-panel"`; closed → `aria-expanded="false"`, name **Menu**; open → `aria-expanded="true"`, name **Close menu**.
+- Open panel: five destinations — Collections `/collections`, How Lay-Away Works `/#how`, Reviews `/#reviews`, Contact `/#contact`, My Account `/login` (signed-out) or `/account` (signed-in). **No** “Start a Lay-Away” inside `#mobile-panel`.
+- Overlay present when open; click overlay closes. Escape closes. Clicking a panel link closes.
+- Chrome still has Start a Lay-Away → `/collections` as primary.
+
+No new services.

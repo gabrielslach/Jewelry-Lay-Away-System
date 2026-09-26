@@ -2,6 +2,18 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-09-27 (mobile nav menu)
+
+- **Epic 12** — phone hamburger sheet (`NM-1`–`NM-3`): under-nav panel, overlay, close icon; same SF-1 destinations; Start a Lay-Away stays chrome-only. SF-1 look of the panel points here.
+
+## 2026-09-27 (hero phone copy centered)
+
+- Epic 11 `EH-1`: phone copy under the photo is centered (demo stacked hero); desktop overlay stays left.
+
+## 2026-09-27 (hero phone stacked)
+
+- Epic 11 `EH-1`: phone is stacked (photo 16:9, copy below); desktop remains overlay 16:9.
+
 ## 2026-09-27 (hero full-bleed 16:9)
 
 - Epic 11 layout: still-life spans the hero at **16:9**; approved copy overlays the left with **no scrim**.
