@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import HowItWorks from './HowItWorks.jsx';
+import HowItWorks from '../../src/components/HowItWorks.jsx';
 
 describe('HowItWorks', () => {
   it('renders the three lay-away steps', () => {

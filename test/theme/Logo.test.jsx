@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import Logo from './Logo.jsx';
+import Logo from '../../src/theme/Logo.jsx';
 
 describe('Logo', () => {
   it('renders the default wordmark', () => {

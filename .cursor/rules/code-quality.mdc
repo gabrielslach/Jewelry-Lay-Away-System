@@ -1,5 +1,5 @@
 ---
-description: Lean, readable React — reusable components and colocated tests
+description: Lean, readable React — reusable components; tests live under test/
 alwaysApply: true
 ---
 
@@ -15,7 +15,7 @@ Prioritize **readability** over cleverness. Smallest clear implementation. No sp
 
 ## Tests
 
-- Every new or materially changed **component** and **page** needs a colocated unit test: `Foo.jsx` → `Foo.test.jsx`.
+- Every new or materially changed **component**, **page**, and **service** needs a unit test.
+- All tests live under `test/`. The folder tree **mirrors** `src/`: `src/components/Foo.jsx` → `test/components/Foo.test.jsx`. Do not put `*.test.*` files next to source.
 - Use Vitest + Testing Library. Assert user-visible behavior (roles, labels, text), not implementation details.
 - Run `npm test` and `npm run lint` before handing off. Code must pass the repo ESLint config (`eslint.config.js`). Do not disable rules to silence a failure unless Gabriel asks.
----

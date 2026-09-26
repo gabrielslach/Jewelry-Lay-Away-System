@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import Modal from './Modal.jsx';
+import Modal from '../../src/components/Modal.jsx';
 
 describe('Modal', () => {
   it('renders title, body, and footer', () => {

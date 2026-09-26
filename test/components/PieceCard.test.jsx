@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import PieceCard from './PieceCard.jsx';
+import PieceCard from '../../src/components/PieceCard.jsx';
 
 const piece = {
   id: 1,

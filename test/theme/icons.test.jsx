@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { CheckIcon, CloseIcon, HamburgerIcon } from './icons.jsx';
+import { CheckIcon, CloseIcon, HamburgerIcon } from '../../src/theme/icons.jsx';
 
 describe('icons', () => {
   it('renders the menu icon', () => {

@@ -1,7 +1,7 @@
 import { MemoryRouter } from 'react-router-dom';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import Hero from './Hero.jsx';
+import Hero from '../../src/components/Hero.jsx';
 
 describe('Hero', () => {
   it('renders the headline, CTA, and stats', () => {

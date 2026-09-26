@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import Checkout from './Checkout.jsx';
-import { ToastProvider } from './ToastProvider.jsx';
+import Checkout from '../../src/components/Checkout.jsx';
+import { ToastProvider } from '../../src/components/ToastProvider.jsx';
 
 const piece = { id: 1, name: 'Solitaire Halo Ring', price: 48000 };
 

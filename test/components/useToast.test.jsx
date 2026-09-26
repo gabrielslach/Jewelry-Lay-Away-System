@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { ToastProvider } from './ToastProvider.jsx';
-import { useToast } from './useToast.js';
+import { ToastProvider } from '../../src/components/ToastProvider.jsx';
+import { useToast } from '../../src/components/useToast.js';
 
 describe('useToast', () => {
   it('returns showToast inside the provider', () => {
