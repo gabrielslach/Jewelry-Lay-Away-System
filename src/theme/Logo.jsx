@@ -11,7 +11,7 @@ export default function Logo({
     .join(' ');
   return (
     <Tag className={classes} {...props}>
-      <img src="/store-logo.png" alt={withName ? '' : 'Mine Credit'} />
+      <img src={`${import.meta.env.BASE_URL}store-logo.png`} alt={withName ? '' : 'Mine Credit'} />
       {withName ? <span className="logo-name">Mine Credit</span> : null}
     </Tag>
   );
