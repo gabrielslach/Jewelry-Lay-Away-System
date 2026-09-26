@@ -6,10 +6,19 @@ export class ServiceError extends Error {
   }
 }
 
+const API_BASE = (import.meta.env.VITE_API_BASE ?? '').replace(/\/$/, '');
+
+function apiUrl(path) {
+  if (!API_BASE || !path.startsWith('/')) {
+    return path;
+  }
+  return `${API_BASE}${path}`;
+}
+
 export async function request(path, { method = 'GET', token, body, headers } = {}) {
   let response;
   try {
-    response = await fetch(path, {
+    response = await fetch(apiUrl(path), {
       method,
       headers: {
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),

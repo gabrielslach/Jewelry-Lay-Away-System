@@ -223,7 +223,7 @@ export function initialCompletedPlan(catalog) {
     currency: 'PHP',
     note: null,
     completed: true,
-    completed_on: 'Jul 2026',
+    completed_on: '2026-07-01',
     installments: Array.from({ length: 4 }, (_, index) => ({
       id: `LA-0987-i${index + 1}`,
       due_date: '2026-06-01',

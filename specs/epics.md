@@ -117,19 +117,19 @@ Same content as the demo My Account modal, as a full page. **Mobile-first.** Aft
 
 Page title “My Account”, summary grid: name, email, active lay-away count, member since.
 
-- **API / service:** `GET /api/customers/:id/orders` (Bearer token) after login (Epic 5).
-- **Mock:** `phone` / `member_since` until the live customer object includes them.
+- **API / service:** `GET /api/customers/orders` (Bearer; customer from the token — **v1.9**, no `/:id`).
+- **Mock:** jewelry `item_name` (live is barcode). `phone` / `member_since` on the cached customer until AC-1 uses `GET /api/customers/me`.
 
 ### AC-2 Active lay-aways
 
 Card per plan: item name, On Track / Overdue badge, plan label, order id, next due, installment schedule rows.
 
-- **API:** customer orders list + `GET /api/layaway/plans/:id` (`installments`, `status` including `overdue`).
-- **Mock:** list shape, badges, and schedule if the list payload is thinner than the demo cards.
+- **API:** the orders list itself now includes `installments`, `plan_label`, `next_due_date`, and rolled-up `status` (`on_track` / `overdue` / `completed`). No second `GET /api/layaway/plans/:id` for this page.
+- **Display:** `on_track` → On Track; `overdue` → Overdue. Next Due from `next_due_date` as **Mon D** (e.g. Oct 1). `Order #{id}` is the numeric id.
 
 ### AC-3 Completed lay-aways
 
-Completed rows (item, plan, “Completed {date}”) or empty copy from the demo.
+Completed rows (item, plan, “Completed {date}”) or empty copy from the demo. Date from `completed_on` as **Mon YYYY** (e.g. Jul 2026).
 
 ### AC-4 Empty states
 
@@ -220,7 +220,7 @@ Seed enough catalog and customers to fill Home, **Epic 8** pagination, **Epic 9*
 | POST | `/api/customers/login` | `{ access_token, refresh_token, customer }` (**Epic 15**); same rate limit. Seed **Sample Client**. |
 | POST | `/api/customers/refresh` | `{ refresh_token }` → `{ access_token }`; `401` if expired, revoked, or unknown (**Epic 15**). |
 | POST | `/api/customers/logout` | `{ refresh_token }` → revoke that one session (**Epic 15**). |
-| GET | `/api/customers/:id/orders` | Bearer for that customer; `401` / `403` otherwise. Include active **and** completed plans so AC-2 / AC-3 work. Mock-only list fields as needed: item name, plan label, next due, On Track / Overdue. |
+| GET | `/api/customers/orders` | Bearer; customer from the token (`401` without). Bare **array** (v1.9): `id`, `item_name`, `plan_label`, `next_due_date`, `status` (`on_track`/`overdue`/`completed`), `completed_on`, `installments[]`. Include active **and** completed. |
 
 **Demo display (mock-only fields on gallery objects):** `name`, `category`, `material`, `stone`, `size`, `cert` — same values as the demo `pieces` array for the original six; invented but consistent for extra catalog rows. Live API will not send these. Document as mock-only in `specs/mock-api.md`.
 

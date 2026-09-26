@@ -37,6 +37,9 @@ describe('Account', () => {
     expect(await screen.findByText('Sample Client')).toBeInTheDocument();
     expect(screen.getByText(/Solitaire Halo Ring/)).toBeInTheDocument();
     expect(screen.getByText(/Vintage Rose Pendant/)).toBeInTheDocument();
+    expect(screen.getByText('On Track')).toBeInTheDocument();
+    expect(screen.getByText(/Next Due Oct 25/)).toBeInTheDocument();
+    expect(screen.getByText(/Completed Jul 2026/)).toBeInTheDocument();
   });
 
   it('loads lay-aways in a new tab with only the stored refresh token', async () => {

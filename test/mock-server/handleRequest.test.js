@@ -36,23 +36,47 @@ describe('mock API', () => {
       body: { email: 'client@sampleemail.com', password: 'password' },
     });
     expect(login.body.customer.member_since).toBe('Jan 2026');
-    const orders = call(store, 'GET', '/api/customers/1/orders', {
+    expect(call(store, 'GET', '/api/customers/orders').status).toBe(401);
+    const orders = call(store, 'GET', '/api/customers/orders', {
       headers: { authorization: `Bearer ${login.body.access_token}` },
     });
     expect(orders.status).toBe(200);
-    expect(orders.body.results.some((row) => row.id === 'LA-1001')).toBe(true);
-    expect(orders.body.results.some((row) => row.id === 'LA-0987')).toBe(true);
+    expect(Array.isArray(orders.body)).toBe(true);
+    const active = orders.body.find((row) => row.id === 1001);
+    const completed = orders.body.find((row) => row.id === 987);
+    expect(active).toMatchObject({
+      item_name: 'Solitaire Halo Ring',
+      status: 'on_track',
+      plan_status: 'active',
+      next_due_date: '2026-10-25T00:00:00.000Z',
+    });
+    expect(completed).toMatchObject({
+      item_name: 'Vintage Rose Pendant',
+      status: 'completed',
+      completed_on: '2026-07-01T00:00:00.000Z',
+      next_due_date: null,
+    });
+    expect(active.installments[0]).toEqual(
+      expect.objectContaining({
+        id: expect.any(Number),
+        due_date: expect.stringMatching(/T/),
+        amount: expect.any(String),
+        status: expect.any(String),
+      }),
+    );
   });
 
-  it('rejects another customer token with 403', () => {
+  it('returns only the authenticated customer\'s orders', () => {
     const store = createStore();
     const login = call(store, 'POST', '/api/customers/login', {
       body: { email: 'buyer@sampleemail.com', password: 'password' },
     });
-    const orders = call(store, 'GET', '/api/customers/1/orders', {
+    const orders = call(store, 'GET', '/api/customers/orders', {
       headers: { authorization: `Bearer ${login.body.access_token}` },
     });
-    expect(orders.status).toBe(403);
+    expect(orders.status).toBe(200);
+    expect(orders.body.map((row) => row.id)).toEqual([1002]);
+    expect(orders.body[0].item_name).toBe('Emerald Drop Earrings');
   });
 
   it('creates a plan when authenticated and 501s the live gateway', () => {
@@ -105,7 +129,7 @@ describe('mock API', () => {
       body: { email: 'client@sampleemail.com', password: 'password' },
     });
     const orders = (token) =>
-      call(store, 'GET', '/api/customers/1/orders', {
+      call(store, 'GET', '/api/customers/orders', {
         headers: { authorization: `Bearer ${token}` },
       }).status;
     const refresh = () =>

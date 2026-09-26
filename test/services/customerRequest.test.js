@@ -8,7 +8,7 @@ import {
   setCustomerToken,
 } from '../../src/services/session.js';
 
-const ORDERS = '/api/customers/1/orders';
+const ORDERS = '/api/customers/orders';
 let fetchSpy;
 
 function callsTo(path) {
@@ -29,7 +29,7 @@ describe('customerRequest', () => {
   it('sends the stored access token as Bearer', async () => {
     await signIn();
     const data = await customerRequest(ORDERS);
-    expect(data.results.length).toBeGreaterThan(0);
+    expect(data.length).toBeGreaterThan(0);
     const [, init] = callsTo(ORDERS)[0];
     expect(init.headers.Authorization).toBe(`Bearer ${getCustomerToken()}`);
     expect(callsTo('/api/customers/refresh')).toHaveLength(0);
@@ -48,7 +48,7 @@ describe('customerRequest', () => {
     await signIn();
     setCustomerToken('expired');
     const data = await customerRequest(ORDERS);
-    expect(data.results.length).toBeGreaterThan(0);
+    expect(data.length).toBeGreaterThan(0);
     expect(callsTo('/api/customers/refresh')).toHaveLength(1);
     expect(callsTo(ORDERS)).toHaveLength(2);
     expect(getCustomerToken()).not.toBe('expired');
@@ -84,7 +84,12 @@ describe('customerRequest', () => {
   });
 
   it('does not refresh on 403', async () => {
-    await signIn('buyer@sampleemail.com');
+    await signIn();
+    fetchSpy.mockImplementationOnce(async () => ({
+      ok: false,
+      status: 403,
+      text: async () => JSON.stringify({ error: 'Forbidden' }),
+    }));
     await expect(customerRequest(ORDERS)).rejects.toMatchObject({ status: 403 });
     expect(callsTo('/api/customers/refresh')).toHaveLength(0);
   });
