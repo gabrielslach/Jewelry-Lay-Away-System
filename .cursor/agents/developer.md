@@ -11,7 +11,7 @@ When invoked:
 2. Follow `.cursor/rules/code-quality.mdc`:
    - No bloat (dead code, speculative abstractions, copy-paste UI).
    - Reusable, focused components; pages compose them.
-   - Colocate Vitest + Testing Library tests: `Foo.jsx` → `Foo.test.jsx` for every new or **materially changed** component and page (behavior, markup, or props—not a one-line typo). Run `npm test` and `npm run lint`. Fix all ESLint errors before handing off.
+   - Vitest + Testing Library tests for every new or **materially changed** component, page, and service (behavior, markup, or props—not a one-line typo). Tests live under `test/` mirroring `src/` (`src/components/Foo.jsx` → `test/components/Foo.test.jsx`). Run `npm test` and `npm run lint`. Fix all ESLint errors before handing off.
 3. Use the design-system tokens and asset catalog from the Foundation epic (`F-1` in `specs/epics.md`) — no new raw brand hex or font names in feature files.
 4. Match demo layout and copy from `specs/demo.html` unless the task is to change them.
 5. Summarize: files touched, what changed, leftover risk, and what you did not do.

@@ -1,0 +1,33 @@
+.section {
+  padding: 70px 24px;
+}
+
+.section-head {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto 42px;
+}
+
+.section-head .eyebrow {
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.section-head h2 {
+  font-size: 32px;
+}
+
+.section-head p {
+  color: var(--text-soft);
+  margin-top: 10px;
+  font-size: 15px;
+}
+
+.container {
+  max-width: 1180px;
+  margin: 0 auto;
+}

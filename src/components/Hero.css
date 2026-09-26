@@ -14,7 +14,7 @@
 }
 
 .hero h1 {
-  font-size: 48px;
+  font-size: 32px;
   max-width: 720px;
   margin: 0 auto 18px;
   line-height: 1.15;
@@ -49,8 +49,8 @@
   letter-spacing: 1px;
 }
 
-@media (max-width: 680px) {
+@media (min-width: 680px) {
   .hero h1 {
-    font-size: 34px;
+    font-size: 48px;
   }
 }

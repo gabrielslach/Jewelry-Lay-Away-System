@@ -1,10 +1,12 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { mockApiPlugin } from './mock-server/plugin.js';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), mockApiPlugin()],
   test: {
     environment: 'jsdom',
-    setupFiles: './src/test/setup.js',
+    setupFiles: './test/setup.js',
+    include: ['test/**/*.test.{js,jsx}'],
   },
 });

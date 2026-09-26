@@ -16,7 +16,9 @@ export default function Hero() {
         Browse our curated jewelry collection and secure any piece with a flexible
         lay-away plan — up to 3 months, with payment dates you choose.
       </p>
-      <Button to="/#collections">Browse Collections</Button>
+      <Button variant="primary" size="sm" to="/collections">
+        Browse Collections
+      </Button>
       <div className="hero-stats">
         {stats.map((stat) => (
           <div className="hero-stat" key={stat.label}>
