@@ -1,5 +1,5 @@
 import { MemoryRouter } from 'react-router-dom';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import App from '../../src/App.jsx';
 import { SessionProvider } from '../../src/components/SessionProvider.jsx';
@@ -19,8 +19,9 @@ function renderApp(path = '/account') {
   );
 }
 
-function accountLink() {
-  return screen.getAllByRole('link', { name: 'My Account' })[0];
+function chromeLink(name) {
+  const nav = screen.getByRole('navigation', { name: 'Storefront' });
+  return within(nav).getByRole('link', { name });
 }
 
 describe('Account', () => {
@@ -44,7 +45,7 @@ describe('Account', () => {
     renderApp();
     expect(screen.getByRole('heading', { name: 'My Account' })).toBeInTheDocument();
     expect(await screen.findByText(/Vintage Rose Pendant/)).toBeInTheDocument();
-    expect(accountLink()).toHaveAttribute('href', '/account');
+    expect(chromeLink('My Account')).toHaveAttribute('href', '/account');
   });
 
   it('sends the shopper to sign in when the refresh token is revoked', async () => {
@@ -53,7 +54,7 @@ describe('Account', () => {
     localStorage.setItem('customerRefreshToken', 'revoked');
     renderApp();
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
-    expect(accountLink()).toHaveAttribute('href', '/login');
+    expect(chromeLink('Sign in')).toHaveAttribute('href', '/login');
   });
 
   it('signs out to the sign-in page', async () => {
@@ -61,7 +62,7 @@ describe('Account', () => {
     renderApp();
     fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
-    expect(accountLink()).toHaveAttribute('href', '/login');
+    expect(chromeLink('Sign in')).toHaveAttribute('href', '/login');
     expect(getCustomer()).toBeNull();
   });
 
@@ -73,7 +74,7 @@ describe('Account', () => {
     fireEvent.click(signOut);
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(accountLink()).toHaveAttribute('href', '/login');
+    expect(chromeLink('Sign in')).toHaveAttribute('href', '/login');
     expect(getCustomer()).toBeNull();
   });
 

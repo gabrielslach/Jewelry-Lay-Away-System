@@ -2,6 +2,11 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-09-27 (signed-out chrome label)
+
+- **Epic 5 AU-5** — storefront account button reads **Sign in** (→ `/login`) when signed out and **My Account** (→ `/account`) when signed in; chrome and hamburger panel. SF-1, AU-3, and Epic 12 chrome/panel lines point here.
+- `bugs.md` **BUG-18** — My Account shows empty lay-away copy while orders load.
+
 ## 2026-09-27 (guest reserve gate)
 
 - **Epic 5 AU-4** — guests opening checkout see “Sign in to reserve” (Sign in / Create account) instead of being redirected after Continue; return to `/collections/:id?reserve=1` reopens checkout. Login/Register honour `from` only when it resolves to the same origin.
