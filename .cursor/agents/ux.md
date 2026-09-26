@@ -1,6 +1,6 @@
 ---
 name: ux
-model: inherit
+model: grok-4.7[effort=medium,fast=false]
 description: >-
   UX and UI direction for this jewelry lay-away SPA. Use proactively when
   Gabriel asks how something should look or feel, before a visual epic, after a
