@@ -1,8 +1,8 @@
 import { MemoryRouter } from 'react-router-dom';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { ToastProvider } from '../components/ToastProvider.jsx';
-import Home from './Home.jsx';
+import { ToastProvider } from '../../src/components/ToastProvider.jsx';
+import Home from '../../src/pages/Home.jsx';
 
 function renderHome() {
   return render(

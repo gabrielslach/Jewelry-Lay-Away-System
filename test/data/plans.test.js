@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createLayawayPlan, paymentCountToTermMonths } from './plans.js';
+import { createLayawayPlan, paymentCountToTermMonths } from '../../src/data/plans.js';
 
 describe('plans', () => {
   it('maps demo payment counts to API term_months', () => {

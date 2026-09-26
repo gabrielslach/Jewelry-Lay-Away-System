@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import Account from './Account.jsx';
+import Account from '../../src/pages/Account.jsx';
 
 describe('Account', () => {
   it('renders the account heading', () => {

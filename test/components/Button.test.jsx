@@ -1,7 +1,7 @@
 import { MemoryRouter } from 'react-router-dom';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import Button from './Button.jsx';
+import Button from '../../src/components/Button.jsx';
 
 describe('Button', () => {
   it('renders a button by default', () => {
