@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import ErrorMessage from '../../components/ErrorMessage.jsx';
+import Skeleton, { DashboardSkeleton } from '../../components/Skeleton.jsx';
 import { CashIcon, OrdersIcon, UsersIcon, WarnIcon } from '../../theme/icons.jsx';
 import { formatPeso } from '../../lib/money.js';
 import { ServiceError } from '../../services/http.js';
@@ -21,7 +22,11 @@ export default function Dashboard() {
     return <ErrorMessage>{error}</ErrorMessage>;
   }
   if (!data) {
-    return <p>Loading…</p>;
+    return (
+      <Skeleton>
+        <DashboardSkeleton />
+      </Skeleton>
+    );
   }
 
   const kpis = [

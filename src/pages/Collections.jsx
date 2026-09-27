@@ -3,6 +3,7 @@ import Button from '../components/Button.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
 import PieceCard from '../components/PieceCard.jsx';
 import SectionHead from '../components/SectionHead.jsx';
+import Skeleton, { PieceCardSkeletonGrid } from '../components/Skeleton.jsx';
 import { ServiceError } from '../services/http.js';
 import { getGallery } from '../services/getGallery.js';
 import '../components/Gallery.css';
@@ -12,6 +13,7 @@ import './AuthPage.css';
 export default function Collections() {
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ results: [], next: null, previous: null, count: 0 });
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -25,7 +27,13 @@ export default function Collections() {
       })
       .catch((err) => {
         if (!cancelled) {
+          setData((current) => ({ ...current, results: [] }));
           setError(err instanceof ServiceError ? err.message : 'Unable to load collections.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
         }
       });
     return () => {
@@ -42,20 +50,29 @@ export default function Collections() {
         </SectionHead>
         <ErrorMessage>{error}</ErrorMessage>
         <div className="gallery-grid">
-          {data.results.map((piece) => (
-            <PieceCard
-              key={piece.id}
-              piece={piece}
-              to={`/collections/${piece.id}`}
-            />
-          ))}
+          {loading ? (
+            <Skeleton>
+              <PieceCardSkeletonGrid count={12} />
+            </Skeleton>
+          ) : (
+            data.results.map((piece) => (
+              <PieceCard
+                key={piece.id}
+                piece={piece}
+                to={`/collections/${piece.id}`}
+              />
+            ))
+          )}
         </div>
         <nav className="pager" aria-label="Pagination">
           <Button
             variant="outline"
             size="sm"
-            disabled={!data.previous}
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
+            disabled={loading || !data.previous}
+            onClick={() => {
+              setLoading(true);
+              setPage((current) => Math.max(1, current - 1));
+            }}
           >
             Previous
           </Button>
@@ -63,8 +80,11 @@ export default function Collections() {
           <Button
             variant="outline"
             size="sm"
-            disabled={!data.next}
-            onClick={() => setPage((current) => current + 1)}
+            disabled={loading || !data.next}
+            onClick={() => {
+              setLoading(true);
+              setPage((current) => current + 1);
+            }}
           >
             Next
           </Button>

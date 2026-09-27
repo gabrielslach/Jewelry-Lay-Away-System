@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Button from '../../components/Button.jsx';
 import ErrorMessage from '../../components/ErrorMessage.jsx';
+import Skeleton, { OrdersTableSkeleton } from '../../components/Skeleton.jsx';
 import Modal from '../../components/Modal.jsx';
 import { useToast } from '../../components/useToast.js';
 import { ServiceError } from '../../services/http.js';
@@ -12,20 +13,27 @@ import '../../components/Checkout.css';
 export default function Orders() {
   const { showToast } = useToast();
   const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState(null);
   const [active, setActive] = useState(null);
 
-  function load() {
-    getAdminPlans()
-      .then(setPlans)
+  function refreshPlans() {
+    return getAdminPlans()
+      .then((data) => {
+        setPlans(data);
+        setError(null);
+      })
       .catch((err) => {
         setError(err instanceof ServiceError ? err.message : 'Unable to load orders.');
+      })
+      .finally(() => {
+        setLoading(false);
       });
   }
 
   useEffect(() => {
-    load();
+    refreshPlans();
   }, []);
 
   const rows = plans.filter((plan) => filter === 'all' || plan.status === filter);
@@ -35,7 +43,7 @@ export default function Orders() {
       await markNextPaid(active.id);
       showToast(`Payment marked as received for ${active.id}.`);
       setActive(null);
-      load();
+      refreshPlans();
     } catch (err) {
       setError(err instanceof ServiceError ? err.message : 'Unable to mark payment.');
     }
@@ -63,42 +71,48 @@ export default function Orders() {
         ))}
       </div>
       <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Order</th>
-              <th>Customer</th>
-              <th>Item</th>
-              <th>Plan</th>
-              <th>Next Due</th>
-              <th>Status</th>
-              <th> </th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((plan) => (
-              <tr key={plan.id}>
-                <td>
-                  <b>{plan.id}</b>
-                </td>
-                <td>{plan.customer_name}</td>
-                <td>{plan.item_name}</td>
-                <td>{plan.plan_label}</td>
-                <td>{plan.next_due}</td>
-                <td>
-                  <span className={plan.status === 'ok' ? 'badge badge-ok' : 'badge badge-warn'}>
-                    {plan.status === 'ok' ? 'On Track' : 'Overdue'}
-                  </span>
-                </td>
-                <td>
-                  <Button variant="outline" size="sm" onClick={() => setActive(plan)}>
-                    View
-                  </Button>
-                </td>
+        {loading && plans.length === 0 ? (
+          <Skeleton>
+            <OrdersTableSkeleton />
+          </Skeleton>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Customer</th>
+                <th>Item</th>
+                <th>Plan</th>
+                <th>Next Due</th>
+                <th>Status</th>
+                <th> </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((plan) => (
+                <tr key={plan.id}>
+                  <td>
+                    <b>{plan.id}</b>
+                  </td>
+                  <td>{plan.customer_name}</td>
+                  <td>{plan.item_name}</td>
+                  <td>{plan.plan_label}</td>
+                  <td>{plan.next_due}</td>
+                  <td>
+                    <span className={plan.status === 'ok' ? 'badge badge-ok' : 'badge badge-warn'}>
+                      {plan.status === 'ok' ? 'On Track' : 'Overdue'}
+                    </span>
+                  </td>
+                  <td>
+                    <Button variant="outline" size="sm" onClick={() => setActive(plan)}>
+                      View
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
       {active ? (
         <Modal
@@ -140,19 +154,19 @@ export default function Orders() {
                   Payment {index + 1} of {active.installments.length}
                 </b>
                 <span>₱{Number(row.amount).toLocaleString('en-US')}</span>
-                  <span
-                    className={
-                      row.status === 'paid'
-                        ? 'badge badge-ok'
-                        : 'badge badge-warn'
-                    }
-                  >
-                    {row.status === 'paid'
-                      ? 'Paid'
-                      : row.status === 'overdue'
-                        ? 'Overdue'
-                        : 'Pending'}
-                  </span>
+                <span
+                  className={
+                    row.status === 'paid'
+                      ? 'badge badge-ok'
+                      : 'badge badge-warn'
+                  }
+                >
+                  {row.status === 'paid'
+                    ? 'Paid'
+                    : row.status === 'overdue'
+                      ? 'Overdue'
+                      : 'Pending'}
+                </span>
               </div>
             ))}
           </div>

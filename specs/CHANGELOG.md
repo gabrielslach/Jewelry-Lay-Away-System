@@ -2,6 +2,10 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-09-27 (loading skeletons)
+
+- **Epic 16** — shimmer skeletons in the real layout while gallery, collections, piece, account, home modal, and admin screens load. Account must not show empty copy or an active count of 0 until orders settle (BUG-18).
+
 ## 2026-09-27 (customer orders v1.9)
 
 - My Account uses `GET /api/customers/orders` (no `:id`, bare array). Service maps `on_track`/`overdue`/`completed`, Next Due as Mon D, Completed as Mon YYYY. AC-1 / AC-2 / MS-2 and tech-debt #1 updated.

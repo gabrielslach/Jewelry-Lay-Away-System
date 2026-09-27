@@ -1,6 +1,11 @@
 import { Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import ErrorMessage from '../components/ErrorMessage.jsx';
+import Skeleton, {
+  AccountActiveSkeleton,
+  AccountCompletedSkeleton,
+  Bone,
+} from '../components/Skeleton.jsx';
 import { useSession } from '../components/useSession.js';
 import { ServiceError } from '../services/http.js';
 import { getCustomerOrders } from '../services/getCustomerOrders.js';
@@ -21,6 +26,7 @@ function badgeLabel(status) {
 export default function Account() {
   const { customer } = useSession();
   const [orders, setOrders] = useState({ active: [], completed: [] });
+  const [loadingOrders, setLoadingOrders] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -32,11 +38,17 @@ export default function Account() {
       .then((data) => {
         if (!cancelled) {
           setOrders(data);
+          setError(null);
         }
       })
       .catch((err) => {
         if (!cancelled) {
           setError(err instanceof ServiceError ? err.message : 'Unable to load your account.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoadingOrders(false);
         }
       });
     return () => {
@@ -68,7 +80,11 @@ export default function Account() {
         </div>
         <div className="spec-item">
           <span>Active Lay-Aways</span>
-          <b>{orders.active.length}</b>
+          {loadingOrders ? (
+            <Bone className="skeleton-bone-count" />
+          ) : (
+            <b>{orders.active.length}</b>
+          )}
         </div>
         <div className="spec-item">
           <span>Member Since</span>
@@ -76,7 +92,11 @@ export default function Account() {
         </div>
       </div>
       <h2>Active Lay-Aways</h2>
-      {orders.active.length ? (
+      {loadingOrders ? (
+        <Skeleton>
+          <AccountActiveSkeleton />
+        </Skeleton>
+      ) : orders.active.length ? (
         orders.active.map((plan) => (
           <div className="plan-box" key={plan.id}>
             <h3 className="plan-title">
@@ -105,7 +125,11 @@ export default function Account() {
         <p className="empty-copy">No active lay-aways right now.</p>
       )}
       <h2>Completed Lay-Aways</h2>
-      {orders.completed.length ? (
+      {loadingOrders ? (
+        <Skeleton>
+          <AccountCompletedSkeleton />
+        </Skeleton>
+      ) : orders.completed.length ? (
         orders.completed.map((plan) => (
           <div className="schedule-row" key={plan.id}>
             <span>{plan.item_name}</span>

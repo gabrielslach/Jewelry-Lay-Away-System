@@ -5,11 +5,13 @@ import { getGallery } from '../services/getGallery.js';
 import ErrorMessage from './ErrorMessage.jsx';
 import PieceCard from './PieceCard.jsx';
 import SectionHead from './SectionHead.jsx';
+import Skeleton, { PieceCardSkeletonGrid } from './Skeleton.jsx';
 import './Gallery.css';
 import './SectionHead.css';
 
 export default function Gallery({ onViewDetails }) {
   const [pieces, setPieces] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -18,11 +20,18 @@ export default function Gallery({ onViewDetails }) {
       .then((page) => {
         if (!cancelled) {
           setPieces(page.results);
+          setError(null);
         }
       })
       .catch((err) => {
         if (!cancelled) {
+          setPieces([]);
           setError(err instanceof ServiceError ? err.message : 'Unable to load collections.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
         }
       });
     return () => {
@@ -39,13 +48,19 @@ export default function Gallery({ onViewDetails }) {
         </SectionHead>
         <ErrorMessage>{error}</ErrorMessage>
         <div className="gallery-grid">
-          {pieces.map((piece) => (
-            <PieceCard
-              key={piece.id}
-              piece={piece}
-              onViewDetails={onViewDetails}
-            />
-          ))}
+          {loading ? (
+            <Skeleton>
+              <PieceCardSkeletonGrid count={6} />
+            </Skeleton>
+          ) : (
+            pieces.map((piece) => (
+              <PieceCard
+                key={piece.id}
+                piece={piece}
+                onViewDetails={onViewDetails}
+              />
+            ))
+          )}
         </div>
         <p className="gallery-more">
           <Link to="/collections">View all collections</Link>

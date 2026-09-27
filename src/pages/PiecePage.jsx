@@ -4,6 +4,7 @@ import Button from '../components/Button.jsx';
 import Checkout from '../components/Checkout.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
 import PieceImage from '../components/PieceImage.jsx';
+import Skeleton, { PiecePageSkeleton } from '../components/Skeleton.jsx';
 import { useSession } from '../components/useSession.js';
 import { ServiceError } from '../services/http.js';
 import { getGalleryPiece } from '../services/getGalleryPiece.js';
@@ -16,8 +17,18 @@ export default function PiecePage() {
   const { customer } = useSession();
   const [searchParams, setSearchParams] = useSearchParams();
   const [piece, setPiece] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [index, setIndex] = useState(0);
+  const [loadedId, setLoadedId] = useState(null);
+
+  if (loadedId !== id) {
+    setLoadedId(id);
+    setPiece(null);
+    setLoading(true);
+    setError(null);
+    setIndex(0);
+  }
   const [checkout, setCheckout] = useState(
     () => Boolean(customer) && searchParams.get('reserve') === '1',
   );
@@ -49,6 +60,11 @@ export default function PiecePage() {
           setPiece(null);
           setError(err instanceof ServiceError ? err.message : 'Unable to load this piece.');
         }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
       });
     return () => {
       cancelled = true;
@@ -63,7 +79,12 @@ export default function PiecePage() {
         Back to collections
       </Link>
       <ErrorMessage>{error}</ErrorMessage>
-      {piece ? (
+      {loading ? (
+        <Skeleton>
+          <PiecePageSkeleton />
+        </Skeleton>
+      ) : null}
+      {!loading && piece ? (
         <div className="piece-layout">
           <div className="carousel">
             <div className="carousel-main">
