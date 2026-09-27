@@ -16,38 +16,35 @@
 
 .skeleton-bone {
   display: block;
-  background: var(--surface-2);
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 0%,
+    var(--surface-2) 35%,
+    var(--surface) 50%,
+    var(--surface-2) 65%,
+    var(--surface-2) 100%
+  );
+  background-size: 220% 100%;
   border-radius: 6px;
   position: relative;
   overflow: hidden;
-}
-
-.skeleton-bone::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--border) 55%, transparent),
-    transparent
-  );
   animation: skeleton-shimmer 1.4s ease-in-out infinite;
 }
 
 @keyframes skeleton-shimmer {
   0% {
-    transform: translateX(-100%);
+    background-position: 100% 0;
   }
 
   100% {
-    transform: translateX(100%);
+    background-position: -100% 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .skeleton-bone::after {
+  .skeleton-bone {
     animation: none;
+    background: var(--surface-2);
   }
 }
 
