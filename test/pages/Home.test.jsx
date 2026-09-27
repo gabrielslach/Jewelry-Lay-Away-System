@@ -1,9 +1,10 @@
 import { MemoryRouter } from 'react-router-dom';
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SessionProvider } from '../../src/components/SessionProvider.jsx';
 import { ToastProvider } from '../../src/components/ToastProvider.jsx';
 import Home from '../../src/pages/Home.jsx';
+import * as getGalleryPieceModule from '../../src/services/getGalleryPiece.js';
 
 function renderHome() {
   return render(
@@ -18,6 +19,10 @@ function renderHome() {
 }
 
 describe('Home', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('renders the hero headline', async () => {
     renderHome();
     expect(
@@ -30,14 +35,44 @@ describe('Home', () => {
     ).toBeInTheDocument();
   });
 
-  it('opens piece details from the gallery', async () => {
+  it('opens the piece modal skeleton before the piece resolves', async () => {
+    let resolve;
+    vi.spyOn(getGalleryPieceModule, 'getGalleryPiece').mockReturnValue(
+      new Promise((done) => {
+        resolve = done;
+      }),
+    );
     renderHome();
     const buttons = await screen.findAllByRole('button', { name: 'View Details' });
     fireEvent.click(buttons[0]);
     expect(
-      await screen.findByRole('dialog', { name: 'Solitaire Halo Ring' }),
+      screen.getByRole('dialog', { name: 'Solitaire Halo Ring' }),
     ).toBeInTheDocument();
-    expect(screen.getByText('GIA Certified')).toBeInTheDocument();
+    expect(document.querySelector('.modal-body .skeleton[aria-busy="true"]')).toBeInTheDocument();
+    expect(screen.queryByText('GIA Certified')).not.toBeInTheDocument();
+    resolve({
+      id: 1,
+      name: 'Solitaire Halo Ring',
+      category: 'Rings',
+      price: 1000,
+      material: 'Gold',
+      stone: 'Diamond',
+      size: '6',
+      cert: 'GIA Certified',
+      images: [],
+    });
+    expect(await screen.findByText('GIA Certified')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('.modal-body .skeleton[aria-busy="true"]')).not.toBeInTheDocument();
+    });
+  });
+
+  it('opens piece details from the gallery', async () => {
+    renderHome();
+    const buttons = await screen.findAllByRole('button', { name: 'View Details' });
+    fireEvent.click(buttons[0]);
+    expect(await screen.findByText('GIA Certified')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Solitaire Halo Ring' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Reserve This Piece' }));
     expect(
       await screen.findByRole('dialog', { name: 'Reserve on Lay-Away' }),

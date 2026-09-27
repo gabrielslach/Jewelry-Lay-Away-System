@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Button from '../../components/Button.jsx';
 import ErrorMessage from '../../components/ErrorMessage.jsx';
+import Skeleton, { SettingsSkeleton } from '../../components/Skeleton.jsx';
 import { useToast } from '../../components/useToast.js';
 import { ServiceError } from '../../services/http.js';
 import { getAdminSettings } from '../../services/getAdminSettings.js';
@@ -34,7 +35,17 @@ export default function Settings() {
   }
 
   if (!form) {
-    return error ? <ErrorMessage>{error}</ErrorMessage> : <p>Loading…</p>;
+    return (
+      <div className="panel settings-form">
+        <h2>Business Settings</h2>
+        {error ? <ErrorMessage>{error}</ErrorMessage> : null}
+        {!error ? (
+          <Skeleton>
+            <SettingsSkeleton />
+          </Skeleton>
+        ) : null}
+      </div>
+    );
   }
 
   return (

@@ -652,3 +652,49 @@ Revokes **only this** refresh token. Other browsers stay signed in. Another tab 
 - Mock: expiry at 15 min / 24 h, logout revokes one session only, admin envelope unchanged.
 
 Tests under `test/` mirroring `src/`. Vitest + Testing Library.
+
+---
+
+## Epic 16 — Loading skeletons
+
+The demo has no loading state. While a fetch is in flight, show the **skeleton of that screen** with a shimmer, not a spinner and not a “Loading…” sentence. Empty and error copy appear only after the request settles. Closes **BUG-18**.
+
+### SK-1 Shared bone
+
+`src/components/Skeleton.jsx` + `Skeleton.css`. One region (`.skeleton`, `aria-busy="true"`) and bones (`.skeleton-bone`). Shimmer uses only `--surface`, `--surface-2`, and `--border`, about 1.4s. `prefers-reduced-motion: reduce` leaves bones still. One visually hidden **Loading** (`role="status"`). No new hex or fonts.
+
+Bones sit in the **same wrappers** the loaded UI uses (`piece-card`, `piece-layout`, `spec-grid`, `plan-box`, `kpi-row`, table `tbody`, and so on) so the page does not jump when data arrives.
+
+### SK-2 Storefront
+
+| Surface | Stays real | Skeleton while loading |
+| --- | --- | --- |
+| Home gallery | Section head, “View all…” | **6** piece-card shells (media + category, title, price bones) |
+| `/collections` | Section head, pager (disabled) | **12** of the same cards |
+| `/collections/:id` | Back link | Carousel well + **3** thumbs; category, title, price, **4** spec rows, primary button bone |
+| Home piece modal | Opens immediately; title is the card name | Modal media, category, price, **4** specs, plan box — then the real piece |
+
+### SK-3 My Account
+
+Head, Sign out, name, email, and member since stay. Active count is a bone, never **0**. One plan-box skeleton (title, meta, **3** payment rows) and **2** completed-row bones. Do not show “No active lay-aways right now.” or “No completed lay-aways yet.” until orders have settled.
+
+### SK-4 Admin
+
+| Surface | Skeleton |
+| --- | --- |
+| Dashboard | **4** KPI cards, **6** chart bars, **3** activity rows |
+| Orders | Real filter and table head; **5** body rows of cell bones |
+| Customers | Table head + **5** rows; open detail modal: **4** spec bones while that customer loads |
+| Settings | Title stays; **3** form rows, **3** toggle rows, Save bone |
+
+If a list is already on screen (mark payment received), keep that UI. Do not flash a full skeleton on refresh.
+
+### SK-5 Out of scope
+
+No skeleton on login, register, nav, checkout steps the shopper already filled, or toasts. No readable fake names or prices. Do not change empty or error copy.
+
+### SK-6 Tests
+
+Skeleton exposes busy + hidden “Loading”; reduced motion does not animate. Each surface above shows its bones while loading and the existing success, empty, or error UI after. Account never shows the empty sentences or an active count of 0 during load. Home **View Details** opens the modal skeleton before the piece resolves.
+
+Tests under `test/` mirroring `src/`. Vitest + Testing Library.

@@ -1,9 +1,10 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import galleryPage from '../../mock-server/gallery-items.json';
 import App from '../../src/App.jsx';
 import { loginCustomer } from '../../src/services/loginCustomer.js';
+import * as getGalleryPieceModule from '../../src/services/getGalleryPiece.js';
 
 function LocationDisplay() {
   const location = useLocation();
@@ -13,6 +14,46 @@ function LocationDisplay() {
 }
 
 describe('PiecePage', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('shows the piece skeleton and back link until the piece resolves', async () => {
+    const piece = galleryPage.results[0];
+    let resolve;
+    vi.spyOn(getGalleryPieceModule, 'getGalleryPiece').mockReturnValue(
+      new Promise((done) => {
+        resolve = done;
+      }),
+    );
+    render(
+      <MemoryRouter initialEntries={[`/collections/${piece.id}`]}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('link', { name: 'Back to collections' })).toBeInTheDocument();
+    expect(document.querySelector('.skeleton[aria-busy="true"]')).toBeInTheDocument();
+    expect(document.querySelector('.piece-layout')).toBeInTheDocument();
+    expect(document.querySelectorAll('.carousel-thumbs .skeleton-bone')).toHaveLength(3);
+    resolve({
+      id: piece.id,
+      name: 'Solitaire Halo Ring',
+      title: piece.title,
+      category: 'Rings',
+      priceLabel: '₱1',
+      perPaymentLabel: '₱1',
+      material: '-',
+      stone: '-',
+      size: '-',
+      cert: 'GIA Certified',
+      images: piece.images,
+    });
+    expect(await screen.findByRole('heading', { name: 'Solitaire Halo Ring' })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('.skeleton[aria-busy="true"]')).not.toBeInTheDocument();
+    });
+  });
+
   it('opens checkout on step 1 from ?reserve=1 and clears the param', async () => {
     await loginCustomer({ email: 'client@sampleemail.com', password: 'password' });
     const piece = galleryPage.results[0];
