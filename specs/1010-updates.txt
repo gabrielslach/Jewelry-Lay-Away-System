@@ -21,3 +21,12 @@ Only the receivables role and admins confirm or reject payments.
 Retry and cancel are admin only.
 
 All of these endpoints are live on the sandbox. Emails are sent by the backend, so no email templates are needed on your side.
+
+Bugs:
+- The Reserve on lay-away form should have a back button to allow selection of a new number of terms.
+- The Reserve on lay-away form "Pay downpayment" button should be "Proceed" instead. There should be text saying that clicking Proceed will bring the user to the payment form, and that to start the layaway a downpayment must be made. Once Proceed is confirmed, the payment form must open.
+- The payment form should be a reusable component.
+- The payment form should be a page or a dialog — UX must decide on the best approach.
+- The change password form must only show when the user clicks a button to change the password. The form should be on a dialog or a page.
+- The View proof button on the admin Pending payments page should open a dialog or a page showing the proof — it should not just redirect to the image asset directly.
+- The Due and overdue page "View" button should not redirect to the orders and installments page; it should open the dialog directly.

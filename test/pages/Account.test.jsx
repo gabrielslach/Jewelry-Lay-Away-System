@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App from '../../src/App.jsx';
 import { SessionProvider } from '../../src/components/SessionProvider.jsx';
+import { ToastProvider } from '../../src/components/ToastProvider.jsx';
 import Account from '../../src/pages/Account.jsx';
 import { loginCustomer } from '../../src/services/loginCustomer.js';
 import { getCustomer, setCustomerToken } from '../../src/services/session.js';
@@ -41,7 +42,9 @@ describe('Account', () => {
     render(
       <MemoryRouter>
         <SessionProvider>
-          <Account />
+          <ToastProvider>
+            <Account />
+          </ToastProvider>
         </SessionProvider>
       </MemoryRouter>,
     );
@@ -62,7 +65,9 @@ describe('Account', () => {
     render(
       <MemoryRouter>
         <SessionProvider>
-          <Account />
+          <ToastProvider>
+            <Account />
+          </ToastProvider>
         </SessionProvider>
       </MemoryRouter>,
     );
@@ -72,6 +77,25 @@ describe('Account', () => {
     expect(screen.getByText('On Track')).toBeInTheDocument();
     expect(screen.getByText(/Next Due Oct 25/)).toBeInTheDocument();
     expect(screen.getByText(/Completed Jul 2026/)).toBeInTheDocument();
+  });
+
+  it('opens change password in a dialog on demand', async () => {
+    await signIn();
+    render(
+      <MemoryRouter>
+        <SessionProvider>
+          <ToastProvider>
+            <Account />
+          </ToastProvider>
+        </SessionProvider>
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('Sample Client')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Current password')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveAccessibleName('Change password');
+    expect(within(dialog).getByLabelText('Current password')).toBeInTheDocument();
   });
 
   it('loads lay-aways in a new tab with only the stored refresh token', async () => {

@@ -1,4 +1,12 @@
-import { planLabel } from './seed.js';
+import {
+  confirmPayment,
+  createPlanFromProduct,
+  handleEpicRoutes,
+  paymentFieldErrors,
+  pendingRow,
+  pushAdminNotification,
+  rejectPayment,
+} from './epicRoutes.js';
 import {
   createStore,
   hitRate,
@@ -24,7 +32,10 @@ function todayIso(store) {
 function refreshPlan(store, plan) {
   const today = todayIso(store);
   for (const installment of plan.installments) {
-    if (installment.status === 'pending' && installment.due_date < today) {
+    if (
+      (installment.status === 'pending' || installment.status === 'rejected') &&
+      installment.due_date < today
+    ) {
       installment.status = 'overdue';
     }
   }
@@ -47,7 +58,15 @@ function refreshPlan(store, plan) {
 }
 
 function findPlan(store, id) {
-  return store.plans.find((p) => p.id === id);
+  const raw = String(id);
+  return store.plans.find((plan) => {
+    const planId = String(plan.id);
+    if (planId === raw) {
+      return true;
+    }
+    const numeric = String(orderNumericId(plan.id));
+    return numeric === raw || planId === `LA-${raw}` || `LA-${numeric}` === raw;
+  });
 }
 
 function customerById(store, id) {
@@ -122,18 +141,26 @@ function orderView(store, plan) {
     plan_label: plan.plan_label,
     installment_count: plan.installments.length,
     next_due_date: asIso(plan.next_due),
+    next_due: plan.next_due,
     total_price: plan.total_price,
+    down_payment_amount: plan.down_payment_amount,
+    down_payment_status: plan.down_payment_status ?? 'pending',
+    down_payment_rejection_reason: plan.down_payment_rejection_reason ?? null,
+    reservation_status: plan.reservation_status ?? 'none',
+    grace_period_days: plan.grace_period_days ?? store.settings.grace_period_days ?? null,
     currency: plan.currency,
     status: listStatusToContract(plan),
     plan_status: plan.completed ? 'completed' : 'active',
     completed_on: plan.completed ? asIso(plan.completed_on) : null,
     created_at: asIso(plan.created_at) ?? '2026-01-15T00:00:00.000Z',
     installments: plan.installments.map((row, index) => ({
-      id: typeof row.id === 'number' ? row.id : index + 1,
+      id: row.id,
+      term_number: row.term_number ?? index + 1,
       due_date: asIso(row.due_date),
       amount: row.amount,
       status: row.status,
       paid_at: asIso(row.paid_at),
+      rejection_reason: row.rejection_reason ?? null,
     })),
   };
 }
@@ -153,6 +180,9 @@ function adminPlanView(store, plan) {
     next_due: plan.next_due,
     status: plan.completed ? 'completed' : plan.list_status,
     customer_id: plan.customer_id,
+    reservation_status: plan.reservation_status ?? 'none',
+    reservation_error: plan.reservation_error ?? null,
+    down_payment_confirmed_at: plan.down_payment_confirmed_at ?? null,
     installments: plan.installments,
   };
 }
@@ -277,52 +307,9 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     if (gate.error) {
       return gate.error;
     }
-    const product = store.catalog.find((p) => p.id === Number(body?.product_id));
-    if (!product) {
-      return json(404, { error: 'Product not found' });
-    }
-    const termMonths = Number(body?.term_months);
-    if (!termMonths || termMonths > 3) {
-      return json(400, { error: 'term_months max 3' });
-    }
-    const dates = body?.installment_dates;
-    if (!Array.isArray(dates) || dates.length < 1) {
-      return json(400, { error: 'installment_dates required' });
-    }
-    const amount = Math.round(Number(product.price) / dates.length);
-    const id = `LA-${store.nextPlanSeq}`;
-    store.nextPlanSeq += 1;
-    const plan = {
-      id,
-      customer_id: gate.customer.id,
-      product_id: product.id,
-      item_name: product.name,
-      plan_label: planLabel(termMonths, dates.length),
-      next_due: dates[0],
-      list_status: 'ok',
-      term_months: termMonths,
-      total_price: product.price,
-      currency: product.currency,
-      note: 'Markup not applied (mock).',
-      completed: false,
-      completed_on: null,
-      installments: dates.map((due_date, index) => ({
-        id: `${id}-i${index + 1}`,
-        due_date,
-        amount: String(amount),
-        status: 'pending',
-        paid_at: null,
-      })),
-    };
-    store.plans.push(plan);
-    refreshPlan(store, plan);
-    return json(201, {
-      id: plan.id,
-      total_price: plan.total_price,
-      currency: plan.currency,
-      term_months: plan.term_months,
-      installments: plan.installments,
-      note: plan.note,
+    return createPlanFromProduct(store, gate, body, {
+      json,
+      refreshPlan,
     });
   }
 
@@ -336,17 +323,54 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     if (!plan || plan.customer_id !== gate.customer.id) {
       return json(404, { error: 'Not found' });
     }
+    const fieldError = paymentFieldErrors(body, store);
+    if (fieldError) {
+      const status = fieldError.includes('reference') ? 409 : 400;
+      return json(status, { error: fieldError });
+    }
+    const inst = plan.installments.find(
+      (i) =>
+        String(i.id) === String(body.installment_id) ||
+        String(i.term_number) === String(body.installment_id),
+    );
+    if (!inst) {
+      return json(400, { error: 'installment_id required' });
+    }
+    if (inst.status === 'submitted') {
+      return json(409, { error: 'Payment already awaiting confirmation' });
+    }
+    store.usedReferences.add(body.reference_number.trim());
     const payment = {
       id: store.nextPaymentId,
+      kind: 'installment',
       plan_id: plan.id,
-      installment_id: body?.installment_id,
-      bank_account_id: body?.bank_account_id,
+      installment_id: inst.id,
+      term_number: inst.term_number,
+      due_date: inst.due_date,
       status: 'submitted',
-      note: 'Awaiting admin confirmation',
+      expected_amount: inst.amount,
+      amount_submitted: body.amount,
+      reference_number: body.reference_number.trim(),
+      paid_on: body.paid_on,
+      proof_of_payment_url: body.proof_of_payment ? '/placeholders/1.svg' : null,
+      created_at: store.now().toISOString(),
     };
     store.nextPaymentId += 1;
     store.pendingPayments.push(payment);
-    return json(201, { id: payment.id, status: 'submitted', note: payment.note });
+    inst.status = 'submitted';
+    pushAdminNotification(store, {
+      kind: 'payment_submitted',
+      title: 'Installment submitted',
+      body: `${gate.customer.name} submitted payment ${inst.term_number} for ${plan.id}.`,
+      plan_id: plan.id,
+      payment_id: payment.id,
+    });
+    return json(201, {
+      id: payment.id,
+      status: 'submitted',
+      amount_matches_expected: Number(body.amount) === Number(inst.amount),
+      note: 'Awaiting admin confirmation',
+    });
   }
 
   params = match(path, '/api/layaway/plans/:id/payments/mock-gateway');
@@ -491,7 +515,11 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     if (gate.error) {
       return gate.error;
     }
-    return json(200, { results: store.pendingPayments.filter((p) => p.status === 'submitted') });
+    const results = store.pendingPayments
+      .filter((p) => p.status === 'submitted')
+      .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
+      .map((payment) => pendingRow(store, payment));
+    return json(200, { results });
   }
 
   params = match(path, '/api/admin/payments/:id/proof');
@@ -513,21 +541,15 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     if (!payment) {
       return json(404, { error: 'Not found' });
     }
-    payment.status = 'confirmed';
+    const result = confirmPayment(store, payment, body, {
+      json,
+      refreshPlan,
+      todayIso,
+    });
     const plan = findPlan(store, payment.plan_id);
-    const inst =
-      plan?.installments.find((i) => i.id === payment.installment_id) ||
-      plan?.installments.find((i) => i.status !== 'paid');
-    if (inst) {
-      inst.status = 'paid';
-      inst.paid_at = todayIso(store);
-    }
-    if (plan && plan.installments.every((i) => i.status === 'paid')) {
-      plan.completed = true;
-      plan.completed_on = todayIso(store);
-    }
+    const inst = plan?.installments.find((i) => i.id === payment.installment_id);
     store.ledger.push({ type: 'payment', plan_id: payment.plan_id, amount: inst?.amount });
-    return json(200, { status: 'confirmed' });
+    return result;
   }
 
   params = match(path, '/api/admin/payments/:id/reject');
@@ -540,9 +562,7 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     if (!payment) {
       return json(404, { error: 'Not found' });
     }
-    payment.status = 'rejected';
-    payment.reason = body?.reason ?? null;
-    return json(200, { status: 'rejected', reason: payment.reason });
+    return rejectPayment(store, payment, body, { json });
   }
 
   if (verb === 'GET' && path === '/api/admin/dashboard') {
@@ -629,6 +649,32 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
       store.settings = { ...store.settings, ...body };
     }
     return json(200, store.settings);
+  }
+
+  const epic = handleEpicRoutes({
+    store,
+    verb,
+    path,
+    params,
+    body,
+    headers,
+    query,
+    ip,
+    helpers: {
+      json,
+      requireCustomer,
+      requireAdmin,
+      todayIso,
+      findPlan,
+      refreshPlan,
+      orderView,
+      adminPlanView,
+      match,
+      hitRate,
+    },
+  });
+  if (epic) {
+    return epic;
   }
 
   if (path.startsWith('/api/')) {

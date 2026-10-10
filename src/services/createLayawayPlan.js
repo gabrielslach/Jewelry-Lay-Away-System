@@ -1,15 +1,11 @@
-import { paymentCountToTermMonths } from '../data/plans.js';
 import { customerRequest } from './customerRequest.js';
 
-export async function createLayawayPlan({ productId, paymentCount, dates }) {
+export async function createLayawayPlan({ productId, termMonths }) {
   return customerRequest('/api/layaway/plans', {
     method: 'POST',
     body: {
       product_id: productId,
-      term_months: paymentCountToTermMonths(paymentCount),
-      installment_dates: dates,
+      term_months: termMonths,
     },
   });
 }
-
-export { defaultDates } from '../data/plans.js';

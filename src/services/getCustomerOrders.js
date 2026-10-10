@@ -27,7 +27,12 @@ function presentOrder(row) {
     plan_label: row.plan_label,
     installments: row.installments ?? [],
     status: badgeStatus(row.status),
-    next_due: formatDate(row.next_due_date, NEXT_DUE),
+    next_due: formatDate(row.next_due_date ?? row.next_due, NEXT_DUE),
+    down_payment_amount: row.down_payment_amount,
+    down_payment_status: row.down_payment_status,
+    down_payment_rejection_reason: row.down_payment_rejection_reason,
+    reservation_status: row.reservation_status,
+    grace_period_days: row.grace_period_days,
     completed_on: formatDate(row.completed_on, COMPLETED_ON),
   };
 }

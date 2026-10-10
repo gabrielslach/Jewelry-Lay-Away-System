@@ -1,5 +1,5 @@
 import { MemoryRouter } from 'react-router-dom';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App from '../../../src/App.jsx';
 import * as getAdminSettingsModule from '../../../src/services/getAdminSettings.js';
@@ -25,7 +25,7 @@ describe('admin settings', () => {
     expect(screen.getByRole('heading', { name: 'Business Settings' })).toBeInTheDocument();
     expect(document.querySelector('.skeleton[aria-busy="true"]')).toBeInTheDocument();
     expect(document.querySelectorAll('.settings-form .form-row .skeleton-bone')).toHaveLength(6);
-    expect(document.querySelectorAll('.settings-form .toggle-row .skeleton-bone')).toHaveLength(6);
+    expect(document.querySelectorAll('.settings-form .toggle-row .skeleton-bone')).toHaveLength(8);
     expect(document.querySelector('.settings-form .skeleton-bone-btn')).toBeInTheDocument();
     expect(screen.queryByDisplayValue('Mine Credit')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save Changes' })).not.toBeInTheDocument();
@@ -63,5 +63,22 @@ describe('admin settings', () => {
     expect(
       screen.getByRole('switch', { name: 'Allow customer-selected due dates' }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole('switch', { name: 'Also send alerts to accounting accounts' }),
+    ).toBeInTheDocument();
+  });
+
+  it('opens change password in a dialog on demand', async () => {
+    render(
+      <MemoryRouter initialEntries={['/admin/settings']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByDisplayValue('Mine Credit')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Current password')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveAccessibleName('Change password');
+    expect(within(dialog).getByLabelText('Current password')).toBeInTheDocument();
   });
 });

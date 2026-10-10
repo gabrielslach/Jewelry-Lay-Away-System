@@ -63,8 +63,8 @@ describe('PiecePage', () => {
         <LocationDisplay />
       </MemoryRouter>,
     );
-    expect(await screen.findByLabelText('Lay-Away Term')).toHaveValue('6');
-    expect(screen.getAllByLabelText(/Payment \d+ date/)).toHaveLength(6);
+    expect(await screen.findByLabelText('Lay-Away Term')).toHaveValue('3');
+    expect(screen.queryByLabelText(/Payment \d+ date/)).not.toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(`/collections/${piece.id}`);
     expect(screen.getByTestId('location')).not.toHaveTextContent('reserve');
   });

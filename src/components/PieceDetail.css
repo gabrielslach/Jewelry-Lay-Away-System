@@ -15,6 +15,23 @@
   object-fit: cover;
 }
 
+.proof-preview {
+  max-height: min(70vh, 520px);
+  overflow: auto;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.proof-preview img {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
 .spec-grid {
   display: grid;
   grid-template-columns: 1fr;

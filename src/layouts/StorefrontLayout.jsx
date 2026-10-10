@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import Button from '../components/Button.jsx';
+import NotificationBell from '../components/NotificationBell.jsx';
 import { useSession } from '../components/useSession.js';
 import { CloseIcon, HamburgerIcon, Logo } from '../theme/assets.js';
 import './StorefrontLayout.css';
@@ -100,6 +101,7 @@ export default function StorefrontLayout() {
             )}
           </div>
           <div className="pv-nav-right">
+            {customer ? <NotificationBell /> : null}
             <Button
               className="pv-account-chrome"
               variant="outline"

@@ -52,8 +52,8 @@ export default function PieceDetail({ piece, onClose, onReserve }) {
       <div className="plan-box">
         <h4>Lay-Away Available</h4>
         <p>
-          Reserve this piece and pay over up to 3 months — you&apos;ll choose your
-          exact payment dates and payment method in the next step.
+          Reserve this piece and pay over up to 3 months with fixed 15-day installments. Bank
+          transfer is the payment method at checkout.
         </p>
       </div>
     </Modal>

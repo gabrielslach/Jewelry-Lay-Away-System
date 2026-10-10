@@ -24,9 +24,14 @@ export function createStore() {
     markupRules: [],
     penaltyRules: [],
     pendingPayments: [],
+    usedReferences: new Set(),
+    customerNotifications: [],
+    adminNotifications: [],
+    passwordResetTokens: new Map(),
     nextCustomerId: 6,
     nextPlanSeq: 1006,
     nextPaymentId: 1,
+    nextNotificationId: 1,
     now: () => new Date(),
   };
 }
@@ -42,7 +47,7 @@ export function publicCustomer(customer) {
 }
 
 export function publicAdmin(admin) {
-  return { id: admin.id, name: admin.name, email: admin.email };
+  return { id: admin.id, name: admin.name, email: admin.email, role: admin.role ?? 'admin' };
 }
 
 const ACCESS_TTL_MS = 15 * 60 * 1000;

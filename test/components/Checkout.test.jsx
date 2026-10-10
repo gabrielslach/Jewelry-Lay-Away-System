@@ -45,30 +45,14 @@ describe('Checkout', () => {
     const page = await getGallery({ pageSize: 1 });
     piece.id = page.results[0].id;
   });
-  it('shows six payments for the three-month term', () => {
+
+  it('shows the term select without a date picker', () => {
     renderCheckout(<Checkout piece={piece} onClose={() => {}} />);
-    expect(screen.getAllByLabelText(/Payment \d+ date/)).toHaveLength(6);
-    expect(screen.getAllByText('₱8,000')).toHaveLength(6);
+    expect(screen.getByLabelText('Lay-Away Term')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Payment \d+ date/)).not.toBeInTheDocument();
   });
 
-  it('rebuilds the schedule when the term changes', () => {
-    renderCheckout(<Checkout piece={piece} onClose={() => {}} />);
-    fireEvent.change(screen.getByLabelText('Lay-Away Term'), { target: { value: '2' } });
-    expect(screen.getAllByLabelText(/Payment \d+ date/)).toHaveLength(2);
-  });
-
-  it('puts remainder pesos on the last installment', () => {
-    renderCheckout(
-      <Checkout
-        piece={{ id: piece.id, name: 'Solitaire Halo Ring', price: 48500 }}
-        onClose={() => {}}
-      />,
-    );
-    expect(screen.getAllByText('₱8,083')).toHaveLength(5);
-    expect(screen.getByText('₱8,085')).toBeInTheDocument();
-  });
-
-  it('creates a mocked plan on continue', async () => {
+  it('creates a plan and shows the fixed schedule with Proceed', async () => {
     const onScheduled = vi.fn();
     renderCheckout(<Checkout piece={piece} onClose={() => {}} onScheduled={onScheduled} />);
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
@@ -76,37 +60,30 @@ describe('Checkout', () => {
       expect(onScheduled).toHaveBeenCalled();
     });
     expect(onScheduled.mock.calls[0][0].plan.term_months).toBe(3);
+    expect(await screen.findByRole('heading', { name: 'Down payment' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Payment schedule' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Proceed' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
+    expect(
+      screen.getByText(/Click Proceed to open the payment form/),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(/Payment \d+/)).toHaveLength(6);
   });
 
-  it('lets the shopper pick a mocked payment method', async () => {
-    const onPayMethod = vi.fn();
-    renderCheckout(<Checkout piece={piece} onClose={() => {}} onPayMethod={onPayMethod} />);
+  it('returns to term select from Back and opens payment from Proceed', async () => {
+    renderCheckout(<Checkout piece={piece} onClose={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
-    expect(await screen.findByText('GCash / E-Wallet')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('radio', { name: 'Bank Transfer' }));
+    expect(await screen.findByRole('button', { name: 'Proceed' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByLabelText('Lay-Away Term')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
-    expect(onPayMethod).toHaveBeenCalledWith('bank');
-  });
-
-  it('shows confirmation and a toast after the mocked payment method', async () => {
-    const onClose = vi.fn();
-    renderCheckout(<Checkout piece={piece} onClose={onClose} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
-    expect(await screen.findByText('GCash / E-Wallet')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Proceed' }));
     expect(
-      await screen.findByRole('heading', { name: 'Reservation Submitted' }),
+      await screen.findByText(/Step 1: transfer .+ to one of our accounts/),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        'Our team will confirm your payment schedule and hold the piece for you.',
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText('Reservation submitted for Solitaire Halo Ring.'),
-    ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
-    expect(onClose).toHaveBeenCalled();
+    expect(screen.getByRole('heading', { name: 'Pay down payment' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Reference number')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
   });
 
   it('creates the plan in a new tab without bouncing to login', async () => {
@@ -116,8 +93,9 @@ describe('Checkout', () => {
       path: '/collections/1',
     });
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
-    expect(await screen.findByText('GCash / E-Wallet')).toBeInTheDocument();
-    expect(onScheduled).toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(onScheduled).toHaveBeenCalled();
+    });
     expect(screen.getByTestId('location')).toHaveTextContent('/collections/1');
   });
 

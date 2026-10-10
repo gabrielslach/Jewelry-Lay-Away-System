@@ -46,6 +46,21 @@
   font-weight: 600;
 }
 
+.auth-notice {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ok) 14%, var(--surface));
+  color: var(--ok);
+  font-size: 14px;
+}
+
+.field-error {
+  color: var(--warn);
+  font-size: 0.9rem;
+  margin: 4px 0 0;
+}
+
 .wide-page {
   max-width: 1100px;
 }
