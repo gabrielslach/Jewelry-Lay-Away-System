@@ -14,6 +14,7 @@ import {
 import { ServiceError } from '../../services/http.js';
 import { getAdminSession } from '../../services/session.js';
 import '../../components/Checkout.css';
+import '../../components/PieceDetail.css';
 
 function canReview() {
   const role = getAdminSession()?.admin?.role ?? 'admin';
@@ -39,6 +40,13 @@ function confirmMessage(reservation) {
   return 'Payment confirmed.';
 }
 
+function isImageProof(url, contentType) {
+  if (contentType?.startsWith('image/')) {
+    return true;
+  }
+  return /\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(String(url ?? ''));
+}
+
 export default function PendingPayments() {
   const { showToast } = useToast();
   const [rows, setRows] = useState([]);
@@ -50,6 +58,7 @@ export default function PendingPayments() {
   const [reasonError, setReasonError] = useState(null);
   const [staffProof, setStaffProof] = useState(null);
   const [rejectInline, setRejectInline] = useState(null);
+  const [proofView, setProofView] = useState(null);
   const reviewer = canReview();
 
   function refresh() {
@@ -65,15 +74,21 @@ export default function PendingPayments() {
   }, []);
 
   async function viewProof(row) {
+    setProofView({ loading: true, url: null, error: null });
     try {
       const proof = await fetchPaymentProof(row.id);
       if (proof?.url) {
-        window.open(proof.url, '_blank', 'noopener,noreferrer');
+        setProofView({
+          loading: false,
+          url: proof.url,
+          contentType: proof.content_type ?? proof.contentType ?? null,
+          error: null,
+        });
       } else {
-        showToast('No proof uploaded.');
+        setProofView({ loading: false, url: null, error: 'No proof uploaded.' });
       }
     } catch {
-      showToast('No proof uploaded.');
+      setProofView({ loading: false, url: null, error: 'No proof uploaded.' });
     }
   }
 
@@ -185,6 +200,42 @@ export default function PendingPayments() {
         </table>
       </div>
       {!rows.length ? <p className="empty-copy">No payments waiting for confirmation.</p> : null}
+
+      {proofView ? (
+        <Modal
+          title="Proof of payment"
+          onClose={() => setProofView(null)}
+          footer={
+            <Button variant="outline" onClick={() => setProofView(null)}>
+              Close
+            </Button>
+          }
+        >
+          {proofView.loading ? <p>Loading proof…</p> : null}
+          {!proofView.loading && proofView.error ? (
+            <p className="empty-copy">{proofView.error}</p>
+          ) : null}
+          {!proofView.loading && proofView.url && isImageProof(proofView.url, proofView.contentType) ? (
+            <div className="proof-preview">
+              <img src={proofView.url} alt="Proof of payment" />
+            </div>
+          ) : null}
+          {!proofView.loading &&
+          proofView.url &&
+          !isImageProof(proofView.url, proofView.contentType) ? (
+            <div className="plan-notice">
+              <p>This proof cannot be previewed here.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(proofView.url, '_blank', 'noopener,noreferrer')}
+              >
+                Open in new tab
+              </Button>
+            </div>
+          ) : null}
+        </Modal>
+      ) : null}
 
       {confirmTarget ? (
         <Modal

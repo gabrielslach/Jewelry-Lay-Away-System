@@ -37,6 +37,12 @@ export default function Checkout({ piece, onClose, onScheduled }) {
     }
   }
 
+  function handleBack() {
+    setPlan(null);
+    setShowDownPaymentForm(false);
+    setError(null);
+  }
+
   if (!customer) {
     const from = encodeURIComponent(`/collections/${piece.id}?reserve=1`);
     return (
@@ -62,6 +68,23 @@ export default function Checkout({ piece, onClose, onScheduled }) {
     );
   }
 
+  if (showDownPaymentForm && plan) {
+    return (
+      <Modal title="Pay down payment" onClose={onClose}>
+        <ManualPaymentForm
+          planId={plan.id}
+          kind="down_payment"
+          expectedAmount={plan.down_payment_amount}
+          onCancel={() => setShowDownPaymentForm(false)}
+          onSuccess={() => {
+            setShowDownPaymentForm(false);
+            onClose();
+          }}
+        />
+      </Modal>
+    );
+  }
+
   const footer = !plan ? (
     <>
       <Button variant="outline" onClick={onClose}>
@@ -71,7 +94,16 @@ export default function Checkout({ piece, onClose, onScheduled }) {
         Continue
       </Button>
     </>
-  ) : null;
+  ) : (
+    <>
+      <Button variant="outline" onClick={handleBack}>
+        Back
+      </Button>
+      <Button variant="primary" onClick={() => setShowDownPaymentForm(true)}>
+        Proceed
+      </Button>
+    </>
+  );
 
   return (
     <Modal title="Reserve on Lay-Away" onClose={onClose} footer={footer}>
@@ -109,22 +141,10 @@ export default function Checkout({ piece, onClose, onScheduled }) {
               </div>
             ))}
           </div>
-          {!showDownPaymentForm ? (
-            <Button variant="primary" onClick={() => setShowDownPaymentForm(true)}>
-              Pay down payment
-            </Button>
-          ) : (
-            <ManualPaymentForm
-              planId={plan.id}
-              kind="down_payment"
-              expectedAmount={plan.down_payment_amount}
-              onCancel={() => setShowDownPaymentForm(false)}
-              onSuccess={() => {
-                setShowDownPaymentForm(false);
-                onClose();
-              }}
-            />
-          )}
+          <p className="field-hint">
+            Click Proceed to open the payment form. A down payment is required to start this
+            lay-away.
+          </p>
         </div>
       )}
     </Modal>

@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useCallback, useEffect, useState } from 'react';
-import ChangePasswordForm from '../components/ChangePasswordForm.jsx';
+import ChangePasswordModal from '../components/ChangePasswordModal.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
 import LayawayPlanCard from '../components/LayawayPlanCard.jsx';
 import Skeleton, {
@@ -120,14 +120,16 @@ export default function Account() {
           <b>{customer.member_since}</b>
         </div>
       </div>
-      <ChangePasswordForm
-        onSubmit={({ currentPassword, newPassword }) =>
-          changeCustomerPassword({
-            currentPassword,
-            newPassword,
-          })
-        }
-      />
+      <div className="account-actions">
+        <ChangePasswordModal
+          onSubmit={({ currentPassword, newPassword }) =>
+            changeCustomerPassword({
+              currentPassword,
+              newPassword,
+            })
+          }
+        />
+      </div>
       <h2>Active Lay-Aways</h2>
       {loadingOrders ? (
         <Skeleton>

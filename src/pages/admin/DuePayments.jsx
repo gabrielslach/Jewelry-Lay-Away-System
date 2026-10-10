@@ -1,15 +1,34 @@
 import { useEffect, useState } from 'react';
 import Button from '../../components/Button.jsx';
 import ErrorMessage from '../../components/ErrorMessage.jsx';
-import { formatDisplayDate } from '../../lib/dates.js';
+import Modal from '../../components/Modal.jsx';
+import { addDaysIso, formatDisplayDate, todayIsoLocal } from '../../lib/dates.js';
 import { formatPesoDecimals } from '../../lib/money.js';
 import { getAdminDuePayments } from '../../services/adminPayments.js';
 import { ServiceError } from '../../services/http.js';
+import '../../components/PieceDetail.css';
+import '../Account.css';
+
+function graceNotice(row) {
+  const graceDays = row.grace_period_days;
+  const graceEnd = row.grace_ends_on ?? (graceDays != null && row.due_date
+    ? addDaysIso(row.due_date, Number(graceDays))
+    : null);
+  if (!graceEnd || !(row.days_overdue > 0)) {
+    return null;
+  }
+  const today = todayIsoLocal();
+  if (graceEnd < today) {
+    return `Grace period expired ${formatDisplayDate(graceEnd)} — reconstructs on next daily run.`;
+  }
+  return `Grace period ends ${formatDisplayDate(graceEnd)}.`;
+}
 
 export default function DuePayments() {
   const [data, setData] = useState(null);
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState(null);
+  const [viewRow, setViewRow] = useState(null);
 
   useEffect(() => {
     getAdminDuePayments()
@@ -29,6 +48,7 @@ export default function DuePayments() {
 
   const dueCount = items.filter((row) => row.due_today).length;
   const overdueCount = items.filter((row) => row.days_overdue > 0).length;
+  const viewGrace = viewRow ? graceNotice(viewRow) : null;
 
   return (
     <div className="panel">
@@ -87,7 +107,7 @@ export default function DuePayments() {
                       : `${row.days_overdue} days overdue`}
                 </td>
                 <td>
-                  <Button variant="outline" size="sm" to={`/admin/orders?plan=${row.plan_id}`}>
+                  <Button variant="outline" size="sm" onClick={() => setViewRow(row)}>
                     View
                   </Button>
                 </td>
@@ -97,6 +117,54 @@ export default function DuePayments() {
         </table>
       </div>
       {!filtered.length ? <p className="empty-copy">Nothing due or overdue.</p> : null}
+
+      {viewRow ? (
+        <Modal
+          title={`Order #${viewRow.plan_id}`}
+          onClose={() => setViewRow(null)}
+          footer={
+            <Button variant="outline" onClick={() => setViewRow(null)}>
+              Close
+            </Button>
+          }
+        >
+          <div className="spec-grid">
+            <div className="spec-item">
+              <span>Customer</span>
+              <b>{viewRow.customer_name}</b>
+            </div>
+            <div className="spec-item">
+              <span>Piece</span>
+              <b>{viewRow.item_name ?? viewRow.piece_id ?? '—'}</b>
+            </div>
+            <div className="spec-item">
+              <span>Term</span>
+              <b>
+                Payment {viewRow.term_number} - {formatPesoDecimals(viewRow.amount)}
+              </b>
+            </div>
+            <div className="spec-item">
+              <span>Due date</span>
+              <b>{formatDisplayDate(viewRow.due_date)}</b>
+            </div>
+          </div>
+          {viewRow.awaiting_confirmation ? (
+            <div className="plan-notice">
+              <b>Payment awaiting confirmation</b>
+              <p>
+                A payment for this term is awaiting confirmation. Open Pending payments to confirm
+                or reject it.
+              </p>
+            </div>
+          ) : null}
+          {viewGrace ? (
+            <div className="plan-notice">
+              <b>Grace period</b>
+              <p>{viewGrace}</p>
+            </div>
+          ) : null}
+        </Modal>
+      ) : null}
     </div>
   );
 }

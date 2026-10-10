@@ -49,9 +49,10 @@ describe('ChangePasswordForm', () => {
 
   it('toasts success after a valid change', async () => {
     const onSubmit = vi.fn().mockResolvedValue({ ok: true });
+    const onSuccess = vi.fn();
     render(
       <ToastProvider>
-        <ChangePasswordForm onSubmit={onSubmit} />
+        <ChangePasswordForm onSubmit={onSubmit} onSuccess={onSuccess} />
       </ToastProvider>,
     );
     fireEvent.change(screen.getByLabelText('Current password'), {
@@ -68,5 +69,15 @@ describe('ChangePasswordForm', () => {
       expect(onSubmit).toHaveBeenCalled();
     });
     expect(screen.getByText('Password changed.')).toBeInTheDocument();
+    expect(onSuccess).toHaveBeenCalled();
+  });
+
+  it('omits the heading when heading is null', () => {
+    render(
+      <ToastProvider>
+        <ChangePasswordForm heading={null} onSubmit={vi.fn()} />
+      </ToastProvider>,
+    );
+    expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument();
   });
 });

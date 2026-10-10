@@ -58,6 +58,10 @@
   color: var(--text-soft);
 }
 
+.account-actions {
+  margin: 16px 0 8px;
+}
+
 .plan-notice {
   margin: 8px 0 12px;
   padding: 12px;

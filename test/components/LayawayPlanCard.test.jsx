@@ -46,7 +46,7 @@ describe('LayawayPlanCard', () => {
     expect(screen.queryByRole('button', { name: 'Pay' })).not.toBeInTheDocument();
   });
 
-  it('opens the pay form for a due installment', async () => {
+  it('opens the pay form in a dialog for a due installment', async () => {
     vi.spyOn(bankAccounts, 'getBankAccounts').mockResolvedValue([]);
     render(
       <ToastProvider>
@@ -55,6 +55,8 @@ describe('LayawayPlanCard', () => {
     );
     expect(screen.getByText('Due today')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Pay' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveAccessibleName('Pay Payment 1');
     expect(await screen.findByLabelText('Reference number')).toBeInTheDocument();
   });
 });

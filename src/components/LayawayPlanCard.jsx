@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import ManualPaymentForm from './ManualPaymentForm.jsx';
+import Modal from './Modal.jsx';
 import { formatPesoDecimals } from '../lib/money.js';
 import {
   downPaymentRowState,
@@ -53,6 +54,30 @@ export default function LayawayPlanCard({ plan, rejectionByPaymentId, onUpdated 
     return status === 'ok' || status === 'on_track' ? 'On Track' : 'Overdue';
   }
 
+  const payTitle =
+    openPay?.kind === 'down_payment'
+      ? 'Pay down payment'
+      : openPay?.kind === 'installment'
+        ? `Pay Payment ${openPay.termNumber}`
+        : null;
+  const payModal = openPay ? (
+    <Modal title={payTitle} onClose={() => setOpenPay(null)}>
+      <ManualPaymentForm
+        planId={plan.id}
+        kind={openPay.kind}
+        installmentId={openPay.installmentId}
+        expectedAmount={
+          openPay.kind === 'down_payment' ? plan.down_payment_amount : openPay.amount
+        }
+        onCancel={() => setOpenPay(null)}
+        onSuccess={() => {
+          setOpenPay(null);
+          onUpdated?.();
+        }}
+      />
+    </Modal>
+  ) : null;
+
   return (
     <div className="plan-box">
       <h3 className="plan-title">
@@ -77,14 +102,11 @@ export default function LayawayPlanCard({ plan, rejectionByPaymentId, onUpdated 
       <div className="schedule-list">
         <DownPaymentRow
           plan={plan}
-          openPay={openPay}
-          setOpenPay={setOpenPay}
-          onUpdated={onUpdated}
           suppressPay={waitingForStock}
+          onPay={() => setOpenPay({ kind: 'down_payment' })}
         />
         {installments.map((row) => {
           const state = installmentRowState(row, { gracePeriodDays: graceDays });
-          const payKey = `inst-${row.id}`;
           const termNumber = row.term_number ?? row.id;
           const canPay = state.showForm && !waitingForStock;
           return (
@@ -94,54 +116,40 @@ export default function LayawayPlanCard({ plan, rejectionByPaymentId, onUpdated 
               state={state}
               amount={row.amount}
             >
-              {canPay && !openPay ? (
-                <Button variant="outline" size="sm" onClick={() => setOpenPay(payKey)}>
+              {canPay ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setOpenPay({
+                      kind: 'installment',
+                      installmentId: row.id,
+                      termNumber,
+                      amount: row.amount,
+                    })
+                  }
+                >
                   {state.payLabel}
                 </Button>
-              ) : null}
-              {canPay && openPay === payKey ? (
-                <ManualPaymentForm
-                  planId={plan.id}
-                  kind="installment"
-                  installmentId={row.id}
-                  expectedAmount={row.amount}
-                  onCancel={() => setOpenPay(null)}
-                  onSuccess={() => {
-                    setOpenPay(null);
-                    onUpdated?.();
-                  }}
-                />
               ) : null}
             </ScheduleLine>
           );
         })}
       </div>
+      {payModal}
     </div>
   );
 }
 
-function DownPaymentRow({ plan, openPay, setOpenPay, onUpdated, suppressPay }) {
+function DownPaymentRow({ plan, suppressPay, onPay }) {
   const state = downPaymentRowState(plan);
-  const payKey = 'down-payment';
   const canPay = state.showForm && !suppressPay;
   return (
     <ScheduleLine title="Down payment" state={state} amount={plan.down_payment_amount}>
-      {canPay && !openPay ? (
-        <Button variant="outline" size="sm" onClick={() => setOpenPay(payKey)}>
+      {canPay ? (
+        <Button variant="outline" size="sm" onClick={onPay}>
           {state.payLabel ?? 'Pay'}
         </Button>
-      ) : null}
-      {canPay && openPay === payKey ? (
-        <ManualPaymentForm
-          planId={plan.id}
-          kind="down_payment"
-          expectedAmount={plan.down_payment_amount}
-          onCancel={() => setOpenPay(null)}
-          onSuccess={() => {
-            setOpenPay(null);
-            onUpdated?.();
-          }}
-        />
       ) : null}
     </ScheduleLine>
   );

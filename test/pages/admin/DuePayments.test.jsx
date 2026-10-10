@@ -1,11 +1,11 @@
 import { MemoryRouter } from 'react-router-dom';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import App from '../../../src/App.jsx';
 import * as adminPayments from '../../../src/services/adminPayments.js';
 
 describe('DuePayments', () => {
-  it('filters due-today and overdue rows', async () => {
+  it('filters due-today and overdue rows and opens a summary dialog', async () => {
     vi.spyOn(adminPayments, 'getAdminDuePayments').mockResolvedValue({
       items: [
         {
@@ -17,6 +17,9 @@ describe('DuePayments', () => {
           days_overdue: 0,
           due_today: true,
           awaiting_confirmation: false,
+          item_name: 'Solitaire Halo Ring',
+          grace_period_days: 7,
+          grace_ends_on: '2026-10-17',
           customer_name: 'Due Today Client',
           customer_email: 'due@example.com',
           customer_phone: '111',
@@ -30,6 +33,9 @@ describe('DuePayments', () => {
           days_overdue: 9,
           due_today: false,
           awaiting_confirmation: true,
+          item_name: 'Vintage Rose Pendant',
+          grace_period_days: 7,
+          grace_ends_on: '2026-10-08',
           customer_name: 'Overdue Client',
           customer_email: 'over@example.com',
           customer_phone: '222',
@@ -49,5 +55,16 @@ describe('DuePayments', () => {
     fireEvent.click(screen.getByRole('button', { name: /Overdue/ }));
     expect(screen.getByText('Overdue Client')).toBeInTheDocument();
     expect(screen.getByText('Payment awaiting confirmation')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'View' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveAccessibleName('Order #LA-2');
+    expect(within(dialog).getByText('Overdue Client')).toBeInTheDocument();
+    expect(within(dialog).getByText('Vintage Rose Pendant')).toBeInTheDocument();
+    expect(within(dialog).getByText(/Payment 2 -/)).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(/Open Pending payments to confirm or reject/),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'View' })).not.toBeInTheDocument();
   });
 });

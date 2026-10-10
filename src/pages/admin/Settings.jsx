@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Button from '../../components/Button.jsx';
-import ChangePasswordForm from '../../components/ChangePasswordForm.jsx';
+import ChangePasswordModal from '../../components/ChangePasswordModal.jsx';
 import ErrorMessage from '../../components/ErrorMessage.jsx';
 import Skeleton, { SettingsSkeleton } from '../../components/Skeleton.jsx';
 import { useToast } from '../../components/useToast.js';
@@ -162,7 +162,7 @@ export default function Settings() {
         </div>
       </div>
       <div className="panel">
-        <ChangePasswordForm
+        <ChangePasswordModal
           onSubmit={({ currentPassword, newPassword }) =>
             changeAdminPassword({
               currentPassword,

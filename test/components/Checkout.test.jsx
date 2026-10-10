@@ -52,7 +52,7 @@ describe('Checkout', () => {
     expect(screen.queryByLabelText(/Payment \d+ date/)).not.toBeInTheDocument();
   });
 
-  it('creates a plan and shows the fixed schedule with a pay down payment CTA', async () => {
+  it('creates a plan and shows the fixed schedule with Proceed', async () => {
     const onScheduled = vi.fn();
     renderCheckout(<Checkout piece={piece} onClose={() => {}} onScheduled={onScheduled} />);
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
@@ -62,18 +62,28 @@ describe('Checkout', () => {
     expect(onScheduled.mock.calls[0][0].plan.term_months).toBe(3);
     expect(await screen.findByRole('heading', { name: 'Down payment' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Payment schedule' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Pay down payment' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Proceed' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
+    expect(
+      screen.getByText(/Click Proceed to open the payment form/),
+    ).toBeInTheDocument();
     expect(screen.getAllByText(/Payment \d+/)).toHaveLength(6);
   });
 
-  it('opens the manual payment form from pay down payment', async () => {
+  it('returns to term select from Back and opens payment from Proceed', async () => {
     renderCheckout(<Checkout piece={piece} onClose={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Pay down payment' }));
+    expect(await screen.findByRole('button', { name: 'Proceed' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByLabelText('Lay-Away Term')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Proceed' }));
     expect(
       await screen.findByText(/Step 1: transfer .+ to one of our accounts/),
     ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pay down payment' })).toBeInTheDocument();
     expect(screen.getByLabelText('Reference number')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
   });
 
   it('creates the plan in a new tab without bouncing to login', async () => {

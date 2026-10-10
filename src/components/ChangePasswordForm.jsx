@@ -4,7 +4,11 @@ import ErrorMessage from './ErrorMessage.jsx';
 import { ServiceError } from '../services/http.js';
 import { useToast } from './useToast.js';
 
-export default function ChangePasswordForm({ onSubmit, heading = 'Change password' }) {
+export default function ChangePasswordForm({
+  onSubmit,
+  onSuccess,
+  heading = 'Change password',
+}) {
   const { showToast } = useToast();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -40,6 +44,7 @@ export default function ChangePasswordForm({ onSubmit, heading = 'Change passwor
       setNewPassword('');
       setConfirmPassword('');
       showToast('Password changed.');
+      onSuccess?.();
     } catch (err) {
       if (!(err instanceof ServiceError)) {
         setFormError('Unable to change password.');
@@ -59,7 +64,7 @@ export default function ChangePasswordForm({ onSubmit, heading = 'Change passwor
 
   return (
     <form className="auth-form" onSubmit={handleSubmit}>
-      <h2>{heading}</h2>
+      {heading ? <h2>{heading}</h2> : null}
       <ErrorMessage>{formError}</ErrorMessage>
       <div className="form-row">
         <label htmlFor="current-password">Current password</label>

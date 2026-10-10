@@ -1,5 +1,15 @@
 import { buildSchedule, markedUpTotal } from './finance.js';
 
+function addDaysIso(value, days) {
+  const [year, month, day] = String(value).slice(0, 10).split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  date.setDate(date.getDate() + Number(days));
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 function paymentFieldErrors(body, store) {
   const errors = [];
   if (!body?.bank_account_id) {
@@ -289,6 +299,8 @@ export function handleEpicRoutes(ctx) {
           if (!dueToday && daysOverdue <= 0) {
             return;
           }
+          const graceDays = plan.grace_period_days ?? store.settings.grace_period_days ?? 7;
+          const graceEnd = addDaysIso(inst.due_date, Number(graceDays));
           items.push({
             installment_id: inst.id,
             plan_id: plan.id,
@@ -298,6 +310,9 @@ export function handleEpicRoutes(ctx) {
             days_overdue: daysOverdue,
             due_today: dueToday,
             awaiting_confirmation: awaiting,
+            item_name: plan.item_name,
+            grace_period_days: graceDays,
+            grace_ends_on: graceEnd,
             customer_id: customer?.id,
             customer_name: customer?.name,
             customer_email: customer?.email,
