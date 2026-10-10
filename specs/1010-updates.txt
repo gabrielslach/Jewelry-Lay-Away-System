@@ -1,0 +1,23 @@
+What changed:
+Payment is bank transfer only for now. The online gateway is postponed, so there's no gateway checkout screen.
+Due dates are fixed by the system, 15 days apart. Customers don't pick them.
+A full bank-transfer payment flow, in-app notifications and password screens are now part of the project.
+
+Customer screens to add:
+Payment form for each installment and for the down payment. It shows the active bank accounts with QR, then takes the bank used, reference number, amount, date paid and an optional proof image.
+My Account notifications: receipts, a rejected payment with the reason, due-today notices, and plan reconstructed or closed notices. Also a "waiting for stock" tag on a plan whose piece is on order.
+Forgot password, reset password (the page reads a one-time token from the emailed link) and change password.
+
+Admin screens to add:
+Pending payments queue. It shows the customer's proof, expected and submitted amounts side by side with any mismatch highlighted, and Confirm and Reject. A rejection needs a reason. Both can carry an optional attachment and note that only staff see.
+Due-today and overdue list.
+Alerts badge and notification bell.
+Held pieces: reservation status (reserved, waiting for stock, problem) with Retry and Cancel. These are admin only, and Cancel needs a handoff confirmation and a reason.
+A settings switch to also send alerts to the accounting accounts.
+Change password for staff.
+
+Role rules:
+Only the receivables role and admins confirm or reject payments.
+Retry and cancel are admin only.
+
+All of these endpoints are live on the sandbox. Emails are sent by the backend, so no email templates are needed on your side.

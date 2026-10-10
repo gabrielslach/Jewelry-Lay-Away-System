@@ -66,6 +66,25 @@ As a signed-in shopper, I want to sign out, so the next person on this device do
 
 ---
 
+## Shopper — payments and security
+
+### US-15 Pay my down payment by bank transfer
+As a shopper, I want to see the store's bank accounts (with QR) and submit my bank reference, amount, and date paid for my down payment, so my piece gets held once accounting confirms it.
+
+### US-16 Pay an installment by bank transfer
+As a shopper, I want to submit the same bank-transfer details for any pending, due, or overdue installment, so I can keep my plan on track without a gateway.
+
+### US-17 See my payment status and fix a rejection
+As a shopper, I want each payment I submit to show Awaiting confirmation until accounting acts on it, and to see the reason if it's rejected so I can correct and resubmit.
+
+### US-18 See my notifications
+As a shopper, I want a notification bell with receipts, due-today reminders, and plan reconstructed/closed notices, so I don't have to rely on email alone to know what's happening with my plan.
+
+### US-19 Manage my password
+As a shopper, I want to reset a forgotten password from a link, and change my password from My Account, so I can keep my account secure.
+
+---
+
 ## Staff — admin
 
 ### US-20 Open the desk
@@ -91,8 +110,30 @@ As staff on the floor, I want the admin sidebar as an overlay on a small screen,
 
 ---
 
+## Staff — payment operations and held pieces
+
+### US-27 Review and decide a submitted payment
+As receivables staff (or an admin), I want a pending-payments queue showing the proof and the expected vs. submitted amount side by side, so I can confirm or reject with a reason in one place.
+
+### US-28 Chase due and overdue payments
+As staff, I want a due-today and overdue list that flags installments already awaiting confirmation, so I don't call a customer who already paid.
+
+### US-29 Get alerted to things needing attention
+As staff, I want a badge and notification bell for pending payments, due/overdue counts, and reservation problems, so I notice them without hunting through every screen.
+
+### US-30 Manage a held piece
+As an admin, I want to retry a failed reservation hold and, when a plan ends, cancel the hold with a reason and handoff confirmation, so inventory stays accurate.
+
+### US-31 Loop accounting into alerts
+As an admin, I want a settings switch that also sends alerts to the accounting accounts, so receivables/ledger/reporting staff see the same alerts admins do.
+
+### US-32 Change my own password
+As staff, I want to change my password from the admin panel, so I don't need an admin to reset it for me.
+
+---
+
 ## Out of scope for these stories (tracked elsewhere)
 
-- Shopper picking a real bank account, uploading proof, or paying through a live gateway (`501` / manual path in [`tech-debt.md`](tech-debt.md)).
+- Paying through a live gateway (still `501` — bank transfer is the only method, US-15/US-16).
 - Staff login screen (mock admin session).
 - Inventory provider, markup math, and ledger UI.
