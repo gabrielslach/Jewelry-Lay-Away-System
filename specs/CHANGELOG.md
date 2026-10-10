@@ -2,6 +2,13 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-10-10 (manual payments, notifications, password, admin ops)
+
+- `api-definition.md` updated to **v1.15** (fixed 15-day installment schedule, manual bank-transfer payments for both down payment and installments, customer and admin notifications, forgot/reset/change password, admin pending-payments queue and due/overdue list, held-piece reservation retry/cancel, `notify_accounting_roles` setting). See `specs/1010-updates.txt` for the plain-English summary and `specs/index-1010-updates.html` for the mock screens.
+- Added **Epic 17** (manual bank-transfer payments — supersedes SF-7's date picker with the fixed schedule), **Epic 18** (customer notifications), **Epic 19** (customer password management), **Epic 20** (admin payment operations: pending queue, confirm/reject, due/overdue list, alerts), **Epic 21** (held pieces and reservations: status, retry, cancel).
+- `user-stories.md`: filled the reserved shopper range with **US-15–US-19** (bank-transfer payments, payment status/rejection, notifications, password) and added staff **US-27–US-32** (pending-payments review, due/overdue, alerts, held-piece management, notify-accounting setting, staff change password). Removed the "bank transfer / proof / gateway" out-of-scope line now that it's in scope; the gateway itself (`501`) stays out of scope.
+- `tech-debt.md` and `mock-api.md` are stale against v1.15 as of this entry — still reflect v1.9. Needs a follow-up pass before Epic 17–21 implementation starts.
+
 ## 2026-09-27 (loading skeletons)
 
 - **Epic 16** — shimmer skeletons in the real layout while gallery, collections, piece, account, home modal, and admin screens load. Account must not show empty copy or an active count of 0 until orders settle (BUG-18).

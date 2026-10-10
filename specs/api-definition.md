@@ -1,6 +1,6 @@
 # Mine Credit — Internal Storefront API v1 (draft contract)
 
-**Status:** draft contract for frontend build-against (Sep 23, 2026) — backend is being built to this spec in parallel — **v1.9**
+**Status:** draft contract for frontend build-against (Sep 23, 2026) — backend is being built to this spec in parallel — **v1.15**
 **Audience:** Frontend Dev 1
 **Scope:** everything the storefront and admin panel need from The Loft's own backend
 
@@ -28,6 +28,9 @@
 | POST | `/api/customers/register` | ✅ Live | Customer registration. Body now also accepts `phone` (optional). Returns `{ access_token, refresh_token, customer }` — see Section 5 |
 | POST | `/api/customers/login` | ✅ Live | Customer login — returns `{ access_token, refresh_token, customer }` |
 | POST | `/api/customers/refresh` | ✅ Live (Sep 26) — no auth header, body: `{ refresh_token }` | Exchange a still-valid refresh token for a new `access_token`. Rate-limited the same as register/login. Returns `{ access_token }` |
+| POST | `/api/customers/forgot-password` | Live (Oct 8) - body: `{ email }` | Always answers 200 (it never says whether the email is registered). If it is, the customer gets an email with a link to `<storefront>/reset-password?token=...`. The link works once and expires in 1 hour. Rate limited like login. |
+| POST | `/api/customers/reset-password` | Live (Oct 8) - body: `{ token, password }` | Sets the new password (at least 8 characters), signs the customer out of every device, and emails a "password changed" notice. 400 if the link is invalid, used or expired. The storefront page reads `token` from the URL. |
+| POST | `/api/customers/change-password` | Live (Oct 8) - **requires auth** - body: `{ current_password, new_password }` | 401 if the current password is wrong, 400 if the new one is shorter than 8 characters or the same. Other devices stay signed in. |
 | POST | `/api/customers/logout` | ✅ Live (Sep 26) — body: `{ refresh_token }` | Revokes that one refresh token (that device/session only, not every session the customer has) |
 | GET | `/api/customers/me` | ✅ Live (Sep 26) — **requires** `Authorization: Bearer <access_token>` | New — the customer's own profile (same shape as `customer` in register/login). Id comes from the token |
 | GET | `/api/customers/orders` | ✅ Live — **requires** `Authorization: Bearer <access_token>` | **Path changed (Sep 26): no longer `/:id/orders` — the customer id now comes from the access token, not a route param.** Customer's lay-away order history (My Account page). **Enriched further (Sep 26):** each order now also nests an `installments` array (id, due_date, amount, status, paid_at) and adds `plan_label` (e.g. `"3 Mo. / 6 Payments"`) and `completed_on` (date of the last payment, once completed) — no per-plan fetch needed to render this page. Existing `on_track`/`overdue`/`completed` status values and numeric ids are unchanged. See Section 5 for the full shape. |
@@ -36,32 +39,84 @@
 
 | Method | Endpoint | Status | Purpose |
 |---|---|---|---|
-| POST | `/api/layaway/plans` | ✅ Live (Sep 23) — **requires auth** | Create a lay-away plan. Body: `{ product_id, term_months (max is now configurable — see `/api/admin/settings`, defaults to 3), installment_dates: [ "YYYY-MM-DD", ... ] }`. `customer_id` comes from the token, not the body. Returns `{ id, total_price, currency, term_months, installments, note? }` — `note` is present when no markup rule is configured yet, meaning `total_price` is still the raw unmarked-up price (WBS M1). Build the checkout flow against this now; the price shown may still shift once markup lands. **Fixed (Sep 26):** installment amounts are now guaranteed to sum exactly to `total_price` — only the last installment absorbs any rounding remainder (previously each installment rounded independently, which could leave the sum a centavo or two off). **`installment_dates` is now validated server-side (Sep 26):** any date in the past, non-ascending/duplicate dates, more than 24 installments, or a last date beyond `term_months` from today returns `400 { "error": "<specific reason>" }`. Build the date-picker UI to keep customers within these bounds rather than relying on the client to enforce them (they weren't checked server-side before today). |
-| GET | `/api/layaway/plans/:id` | ✅ Live | Plan detail — now includes an `installments` array (id, due_date, amount, status, paid_at). **`status` can now be `overdue`** (Sep 23 addition) — any `pending` installment past its `due_date` flips to `overdue` the moment this endpoint is read (no background job; it happens lazily on read). Show this distinctly from `pending` in the UI (e.g. My Account, checkout confirmation). |
+| POST | `/api/layaway/plans` | ✅ Live — **requires auth** — **breaking change, Oct 3, 2026** | Create a lay-away plan. **Body is now `{ product_id, term_months? }`** — `installment_dates` is gone; **remove the date-picker step from checkout entirely.** `term_months` is still customer-selectable (1 up to the admin-configured max, `/api/admin/settings`, default 3) — what's fixed is only the DATES, not the term length: installments now land every 15 days instead of on customer-picked dates, so `term_months` just sets how many 15-day installments there are (2 per month — 1 mo = 2 installments, 2 mo = 4, 3 mo = 6). A markup is applied to get the real selling price, 30% down payment is deducted, and the remaining balance is split across those installments with declining-balance interest (5%/term). `customer_id` comes from the token, not the body. Returns `{ id, total_price, down_payment_amount, financed_principal, currency, term_months, installments, schedule, note? }` — see Section 5 for the full shape. `note` is present only if no markup rule is configured, meaning `total_price` is the raw unmarked-up price (shouldn't happen in practice now that 30% is seeded, but defensive). **The old `installment_dates` validation (Sep 26) no longer applies — there's nothing for the frontend to validate on this call anymore; keep your term_months picker (1-3 months), just drop the date picker.** |
+| GET | `/api/layaway/plans/:id` | ✅ Live | Plan detail — includes an `installments` array (id, term_number, due_date, amount, principal_amount, interest_amount, status, paid_at). **`status` can now be `overdue`** (Sep 23 addition) — any `pending` installment past its `due_date` flips to `overdue` the moment this endpoint is read (no background job; it happens lazily on read). Show this distinctly from `pending` in the UI (e.g. My Account, checkout confirmation). **New (Oct 3):** if a plan misses its grace period, the backend silently reconstructs it — same read triggers it. The plan gains `is_reconstructed: true` and the `installments` array transparently shows a new, fixed 6-term/3-month schedule (old terms are kept internally as `superseded`, not returned here) — **this one case is always 6 terms regardless of the plan's original `term_months`.** No separate UI state needed, just re-fetch and show what comes back. `financed_principal` also updates to the reconstructed balance. Also returns a top-level `down_payment_amount` and `financed_principal` now (see Section 5). |
 | POST | `/api/layaway/plans/:id/payments` | 🚫 Returns `501` | **Gateway** path only — blocked on gateway confirmation (WBS M1) |
-| POST | `/api/layaway/plans/:id/payments/manual` | ✅ Live (Sep 23) — **requires auth**, `multipart/form-data` | **Manual bank-transfer path** (Sep 23 addition — runs alongside the gateway, not a replacement). Fields: `installment_id`, `bank_account_id`, `proof_of_payment` (image file). Returns `{ id, status: 'submitted', note }` — stays pending until an admin manually confirms it; poll/refresh the plan to see status change. **Confirmed (Sep 26): this confirm/reject-of-proof flow is the actual "mark payment received" feature — there is no separate no-proof admin action.** Every payment on the books goes through this path (`POST /api/admin/payments/:id/confirm` or `/reject`, Section 4). |
+| POST | `/api/layaway/plans/:id/payments/manual` | Live - **requires auth**, `multipart/form-data` | **Pay an installment by bank transfer** (the only payment method for now; the online gateway is postponed). Fields: `installment_id`, `bank_account_id`, `reference_number` (the bank reference, required, max 100 characters, cannot be reused), `amount` (what the customer paid, required), `paid_on` (date paid, `YYYY-MM-DD`, not in the future, required), `proof_of_payment` (image, **optional**). Returns `201 { id, status: "submitted", amount_matches_expected, note }`. `400` for a missing or invalid field; `409` if a payment for this installment is already awaiting confirmation or the reference was already used. The installment stays pending until accounting confirms it (the admin alert goes out by itself). If it is rejected the customer gets a notification with the reason (`GET /api/customers/notifications`) and can submit again. |
+| POST | `/api/layaway/plans/:id/down-payment/manual` | Live - **requires auth**, `multipart/form-data` | **Down payment by bank transfer.** Same fields as the installment payment above except `installment_id` (not used): `bank_account_id`, `reference_number`, `amount`, `paid_on`, optional `proof_of_payment`. `409` if the plan is not active, the down payment is already confirmed, a down payment is already awaiting confirmation, or the reference was already used. Accounting confirms it in the admin queue and **the piece is held for the customer at that moment** (or put on backorder if none is in stock). |
+| GET | `/api/customers/notifications` | Live (Oct 7) - **requires auth** | The signed-in customer's notifications, newest first: `{ unread, items: [{ id, kind, title, body, plan_id, payment_id, read_at, created_at }] }`. `?unread=1` for unread only, `?limit=` up to 200. `kind` is `payment_rejected` for now and the body carries the reason. Show a badge from `unread` and the list on My Account. |
+| POST | `/api/customers/notifications/read` | Live (Oct 7) - **requires auth** | Body `{ ids: [..] }` marks those read; an empty body marks everything read. |
 | GET | `/api/bank-accounts` | ✅ Live (Sep 23) — public, no auth | List of AlMar Corp's bank accounts for the manual payment path: `{ id, bank_name, account_name, account_number, qr_code_url }`. Show this on checkout as the manual-payment option alongside the gateway option |
+
+**Added Oct 7, 2026:** `POST /api/layaway/plans` returns `409` with `{ "error": "This item has no peso price yet and cannot be put on lay-away" }` if the item has no peso price. Show that message and let the customer pick another item. Pieces are held for a customer on the provider's side by our backend (not the frontend); nothing changes in these endpoints for that, and a customer-visible "held" state can be built on `down_payment_confirmed_at` (set when accounting confirms the down payment, which is also when the piece is held). See the down-payment row above and the admin reservation rows in Section 4.
+
+---
+
+**Manual payment flow (Oct 7, 2026) - what to build.** Bank transfer is the only payment method for now.
+
+1. **Customer, after creating a plan:** show the active `GET /api/bank-accounts`, let the customer pay it in their bank app, then collect `reference_number`, `amount`, `paid_on` and an optional screenshot and send them to the down-payment endpoint. The same form, plus `installment_id`, is used for every later installment. Show "waiting for confirmation" until the term turns paid.
+2. **If rejected:** the term stays unpaid, and `GET /api/customers/notifications` carries a `payment_rejected` item with the reason. Show it on My Account and let the customer submit again.
+3. **Admin/accounting:** a pending-payments queue (`GET /api/admin/payments/pending`) with the proof, the amounts side by side (highlight `amount_mismatch`), and Confirm / Reject. Both allow an optional reviewer attachment; Reject needs a reason. The due-today and overdue list is `GET /api/admin/payments/due`; the badge and dashboard counts are `GET /api/admin/alerts`; the bell is `GET /api/admin/notifications`. The settings screen gets a switch for `notify_accounting_roles`.
+4. **Held pieces (admin):** admin plan objects now carry `reservation_status` (`none`, `waiting_for_stock`, `reserved`, `completed`, `cancelled`), `reservation_error` (text when a provider step failed) and `down_payment_confirmed_at`. Show a "waiting for stock" tag and, when `reservation_error` is set, a Retry button (`POST .../reservation/retry`). Cancel (`POST .../reservation/cancel`) needs a reason and a tick for "termination handed off and agreed with the customer", and is admin only.
+
+**Customer emails (Oct 8, 2026).** Every email below is also stored as an in-app notification, so `GET /api/customers/notifications` shows the same title and text (use it for the bell on My Account). `kind` tells you which one it is:
+
+| `kind` | When | Contents |
+|---|---|---|
+| `plan_created` | Right after the plan is created | Plan details, down payment, term schedule, the bank accounts to pay |
+| `down_payment_confirmed` | Accounting confirms the down payment | Receipt, whether the piece is held or waiting for stock, the term schedule |
+| `payment_confirmed` | Accounting confirms a term | Receipt and the remaining schedule (or "fully paid" on the last one) |
+| `payment_rejected` | Accounting rejects a payment | The reason (existing) |
+| `due_today` | A term is due today | The amount, the grace period and its end date |
+| `plan_reconstructed` | A term is not settled within the grace period | The failure notice, the new balance and the new term schedule |
+| `plan_closed` | A term of the reconstructed plan is not settled within its grace period | The closure notice |
+
+Admins (and accounting when the switch is on) get `plan_reconstructed` and `plan_closed` alerts too, and the daily digest lists plans reconstructed or closed in the last day. Reconstruction and closure are applied by the same daily run (and whenever a plan is read), so the dates are exact even if nobody opens the app. Nothing new is needed on the storefront for these except showing the notification kinds above; the email text is plain text. Staff alert emails link to the admin panel at `<storefront>/admin` by default; tell us the real admin panel address and we will set it.
+
+**Password screens to build:** a "Forgot password" form (email) on login, a "Reset password" page at `/reset-password` that reads `token` from the URL and asks for the new password, and "Change password" on My Account (current and new). Staff get "Change password" in the admin panel.
+Nothing here sends customer details to the jewelry provider: it only receives an anonymous customer code.
+
+---
 
 ## 4. Admin panel endpoints
 
-All admin endpoints below now require an admin token — `POST /api/admin/login` returns `{ access_token, refresh_token, admin }` (Sep 26 — same access/refresh split as customer auth, above; separate token pair from customer auth). `POST /api/admin/refresh` and `POST /api/admin/logout` work the same way as their customer equivalents. Admin registration is bootstrap-only, see the backend README.
+All admin endpoints below now require an admin token — `POST /api/admin/login` returns `{ access_token, refresh_token, admin }` (Sep 26 — same access/refresh split as customer auth, above; separate token pair from customer auth). `POST /api/admin/refresh` and `POST /api/admin/logout` work the same way as their customer equivalents. `POST /api/admin/register` only creates the very first admin and is closed afterwards; every other account is created by an admin through `POST /api/admin/staff` (below).
+
+**Roles (Oct 5):** the login response's `admin.role` is one of `admin` (Alvin and the CEO, max 2 active), or the three accounting roles `receivables`, `ledger`, `reporting` (max 3 active). `admin` can do everything. Accounting roles can view plans, customers, the dashboard, settings, the pending-payments queue, receivables and the ledger. Only `receivables` (and `admin`) can confirm or reject payments. Only `ledger` and `reporting` (and `admin`) can see the profit report. Settings changes, markup/penalty rules, bank accounts, staff management and the audit log are admin-only. A request outside the caller's role returns `403 { error }`; a deactivated account returns `401`. Roles are checked live on every request, so the frontend should hide screens and buttons by `admin.role` but not rely on that for security. Re-fetch the login response's role after a staff change instead of caching it for long.
 
 | Method | Endpoint | Status | Purpose |
 |---|---|---|---|
-| GET | `/api/finance/ledger` | ✅ Live — **requires admin auth** | Finance/accounting ledger view |
-| GET | `/api/admin/plans` | ✅ Live (Sep 23, enriched Sep 26) — **requires admin auth** | All lay-away plans across every customer, with `customer_name`, `customer_email`, `overdue_count`/`pending_count`/`paid_count`, and now `item_name` and `next_due_date` per plan — this is the data source for the admin orders/dashboard page |
-| GET | `/api/admin/customers` | ✅ Live (Sep 26) — **requires admin auth** | New — admin customer directory. Returns every customer with `phone`, `member_since`, and `active_layaway_count`. See Section 5 for the shape |
-| GET | `/api/admin/dashboard` | ✅ Live (Sep 26) — **requires admin auth** | New — single call for the admin dashboard summary: `collected_this_month`, a 6-week collections trend, and a merged `recent_activity` feed (new reservations, payments received, overdue installments, new customers — newest 10). See Section 5 for the shape |
-| GET | `/api/admin/settings` | ✅ Live (Sep 26) — **requires admin auth** | New — business settings (single row): `business_name`, `max_term_months`, `penalty_per_day`, `require_full_payment_before_release`, `send_sms_reminders`, `allow_customer_selected_due_dates`. `max_term_months` is now the real cap enforced on plan creation (Section 3) |
-| PUT | `/api/admin/settings` | ✅ Live (Sep 26) — **requires admin auth** | New — update any subset of the fields above; only send the fields that changed |
-| POST/GET | `/api/admin/markup-rules` | ✅ Live — **requires admin auth** | Store/list markup rules (generic JSON — real values still pending WBS M1, but the mechanism works now) |
-| POST/GET | `/api/admin/penalty-rules` | ✅ Live — **requires admin auth** | Store/list penalty rules (same pattern) |
-| POST | `/api/bank-accounts` | ✅ Live — **requires admin auth**, `multipart/form-data` | Create a bank account for the manual payment path (Section 3). Fields: `bank_name`, `account_name`, `account_number`, `qr_code` (image file) |
-| GET | `/api/admin/payments/pending` | ✅ Live — **requires admin auth** | List manual payment submissions awaiting confirmation |
-| GET | `/api/admin/payments/:id/proof` | ✅ Live — **requires admin auth** | View a submission's uploaded proof-of-payment image |
-| POST | `/api/admin/payments/:id/confirm` | ✅ Live — **requires admin auth** | Confirm a submission — marks the installment paid, writes a ledger entry, and completes the plan if it was the last installment |
-| POST | `/api/admin/payments/:id/reject` | ✅ Live — **requires admin auth** | Reject a submission. Body: `{ reason? }` |
-| DELETE | `/api/admin/customers/:id/sessions` | ✅ Live (Sep 26) — **requires admin auth** | New — revoke every active refresh token for that customer (stolen device, disabled account, or a "log out everywhere" support request) |
+| GET | `/api/finance/ledger` | ✅ Live — **any staff role** | Finance/accounting ledger view. Oct 5: optional filters `?from=YYYY-MM-DD&to=YYYY-MM-DD&entry_type=payment\|penalty\|receivable&plan_id=N&limit=N&offset=N`; each row now includes `customer_name`; add `&format=csv` to download a CSV |
+| GET | `/api/admin/reports/receivables` | ✅ Live (Oct 5) — **any staff role** | Overdue and receivables report: `overdue {count, amount}`, `outstanding_receivable {count, amount}`, `aging` (three buckets: 1-7 days in grace, 8-30, 31+), and `items` (each overdue installment with customer name/email/phone, `days_overdue`, `amount`). `?format=csv` exports the items |
+| GET | `/api/admin/reports/profit` | ✅ Live (Oct 5) — **`ledger`, `reporting`, `admin`** | Profit report with the two sources kept separate: `interest_profit` (`realized`, `scheduled_remaining`) and `markup_profit` (`booked_on_new_plans`, `realized_on_installments`), plus `total_realized`, `principal_collected` and a `by_month` breakdown. Optional `?from=&to=` (default all time). Down payments are not tracked as payments yet, so their share of the markup only appears under `booked_on_new_plans`. Gateway fees are not counted as profit |
+| POST | `/api/admin/staff` | ✅ Live (Oct 5) — **admin only** | Create a staff account. Body: `{ name, email, password (8+ chars), role }`. `409` if the role's cap is full or the email exists |
+| GET | `/api/admin/staff` | ✅ Live (Oct 5) — **admin only** | List staff: `id`, `name`, `email`, `role`, `is_active`, `created_by`, `created_at` |
+| PATCH | `/api/admin/staff/:id` | ✅ Live (Oct 5) — **admin only** | Change `name`, `role`, `is_active` or reset `password` (send only what changes). Guardrails: you cannot change your own role or deactivate yourself, the last active admin cannot be demoted or deactivated, and caps are enforced (`403`/`409`). Deactivating, changing the role or resetting the password ends that person's sessions |
+| GET | `/api/admin/audit-log` | ✅ Live (Oct 5) — **admin only** | Who did what: payment confirm/reject, settings changes (old → new), markup/penalty rules, bank accounts, staff changes, customer session revocations. Newest first; optional `?action=&admin_id=&before_id=&limit=` (max 500) |
+| GET | `/api/admin/plans` | ✅ Live (Sep 23, enriched Sep 26) — **any staff role** | All lay-away plans across every customer, with `customer_name`, `customer_email`, `overdue_count`/`pending_count`/`paid_count`, and now `item_name` and `next_due_date` per plan — this is the data source for the admin orders/dashboard page |
+| GET | `/api/admin/customers` | ✅ Live (Sep 26) — **any staff role** | New — admin customer directory. Returns every customer with `phone`, `member_since`, and `active_layaway_count`. See Section 5 for the shape |
+| GET | `/api/admin/dashboard` | ✅ Live (Sep 26) — **any staff role** | New — single call for the admin dashboard summary: `collected_this_month`, a 6-week collections trend, and a merged `recent_activity` feed (new reservations, payments received, overdue installments, new customers — newest 10). See Section 5 for the shape |
+| GET | `/api/admin/settings` | ✅ Live (Sep 26, expanded Oct 3) — **any staff role** | Business settings (single row): `business_name`, `max_term_months`, `penalty_per_day`, `require_full_payment_before_release`, `send_sms_reminders`, `allow_customer_selected_due_dates` (no longer used; dates are fixed), and the lay-away fields `down_payment_percent`, `regular_interest_rate_percent`, `reconstructed_interest_rate_percent`, `installment_interval_days`, `installment_term_count` (the fixed term count used only when a plan is reconstructed), `grace_period_days` and `gateway_fee_percent` (`null` until the real rate is confirmed). See Section 5 for the shape. `max_term_months` is the real cap enforced on plan creation (Section 3) |
+| PUT | `/api/admin/settings` | ✅ Live (Sep 26, expanded Oct 3) — **admin only** | Update any subset of the fields above; only send the fields that changed. Rate and grace-period changes apply to **new plans only** — each plan keeps the rates it was created with. Every change is written to the audit log **Oct 7:** also accepts `notify_accounting_roles` (boolean, default false): when on, payment alerts and the daily email also go to the three accounting accounts; admins always receive them. |
+| POST/GET | `/api/admin/markup-rules` | ✅ Live — **admin only** | Store/list markup rules (generic JSON — the global rule is `{"percent":30}`) |
+| POST/GET | `/api/admin/penalty-rules` | ✅ Live — **admin only** | Store/list penalty rules (same pattern) |
+| POST | `/api/bank-accounts` | ✅ Live — **admin only**, `multipart/form-data` | Create a bank account for the manual payment path (Section 3). Fields: `bank_name`, `account_name`, `account_number`, `qr_code` (image file) |
+| GET | `/api/admin/payments/pending` | Live - **any staff role** | Payment submissions awaiting confirmation, oldest first. Each item: `id`, `kind` (`installment` or `down_payment`), `plan_id`, `customer_name`, `term_number` and `due_date` (installments only), `amount` (expected), `amount_submitted`, `amount_mismatch` (1 when they differ), `reference_number`, `paid_on`, `proof_of_payment_url` (may be null; open the image with `/api/admin/payments/:id/proof`). |
+| GET | `/api/admin/payments/:id/proof` | ✅ Live — **any staff role** | View a submission's uploaded proof-of-payment image |
+| POST | `/api/admin/payments/:id/confirm` | Live - **`receivables`, `admin`** | Confirm a payment. Send JSON or `multipart/form-data`; optional `note` and optional `confirmer_proof` (image: the reviewer's own proof, for example a bank statement screenshot, **staff-only**). Records who confirmed and when. An installment is marked paid and written to the ledger. A **down payment** (`kind: "down_payment"`) is recorded and the piece is then held, or put on backorder if none is in stock: the response carries `reservation: { ok, action, state, ... }` where `state` is `reserved` or `waiting_for_stock`. The last installment completes the plan and the sale (`reservation.action: "complete"`). A failed provider step never undoes the payment: it comes back as `reservation: { ok: false, error }`, is stored on the plan as `reservation_error`, and an admin can retry. |
+| POST | `/api/admin/payments/:id/reject` | Live - **`receivables`, `admin`** | Reject a payment. JSON or `multipart/form-data`; **`reason` is required** (the customer is notified with it) and an optional `confirmer_proof` image (staff-only). The term stays unpaid. |
+| GET | `/api/admin/payments/:id/confirmer-proof` | Live (Oct 7) - **any staff role** | The reviewer's own proof image for a confirmed or rejected payment (`404` if none). Never exposed to customers. |
+| GET | `/api/admin/payments/due` | Live (Oct 7) - **any staff role** | The daily list: every installment due today plus overdue ones on active plans, oldest first. `{ as_of, due_today: { count, amount }, overdue: { count, amount }, items: [{ installment_id, plan_id, term_number, due_date, amount, days_overdue, due_today, awaiting_confirmation, customer_id, customer_name, customer_email, customer_phone }] }`. `awaiting_confirmation` is true when a payment is already submitted for it. |
+| GET | `/api/admin/alerts` | Live (Oct 7) - **any staff role** | Counts for the badge and dashboard: `{ pending_payments, due_today, overdue, waiting_for_stock, reservation_problems, unread_notifications }`. Poll it about once a minute while the admin is open. |
+| GET | `/api/admin/notifications` | Live (Oct 7) - **any staff role** | This person's alerts, newest first: `{ unread, items: [...] }` (same shape as the customer one). `kind` is `payment_submitted`, `waiting_for_stock`, `piece_held` or `reservation_failed`. Alerts go to every admin; the setting `notify_accounting_roles` also sends them to the three accounting accounts. They are emailed too when mail is configured. `?unread=1`, `?limit=`. |
+| POST | `/api/admin/notifications/read` | Live (Oct 7) - **any staff role** | Body `{ ids: [..] }` marks those read; an empty body marks everything read. |
+| POST | `/api/admin/change-password` | Live (Oct 8) - any signed-in staff, own account - body: `{ current_password, new_password }` | 401 if the current password is wrong, 400 if the new one is shorter than 8 characters or the same. |
+| POST | `/api/admin/jobs/daily` | Live (Oct 8) - **`admin` only** | Run today's customer notices (overdue, reconstruction, closure, due-today emails) and the digest now. Each runs once per day; calling it again the same day does nothing. The app also runs them by itself the first time the alerts are loaded each day. |
+| POST | `/api/admin/notifications/digest` | Live (Oct 7) - **`admin` only** | Send today's due-today and overdue email now. It also goes out by itself once a day the first time the alerts are loaded; calling it again the same day does nothing. |
+| POST | `/api/admin/reservations/sync` | Live (Oct 7) - **`admin` only** | Check the plans waiting for stock now (also runs by itself about every 30 minutes while the alerts are loaded). Returns `{ checked, now_held, cancelled, errors }`. |
+| POST | `/api/admin/plans/:id/reservation/retry` | Live (Oct 7) - **`admin` only** | Re-attempt the hold (or the completion, if the plan is fully paid) after a failure, for example once a backordered piece has arrived. `200` with `{ ok: true, ... }`, or `409` with `{ ok: false, error }` if the provider still cannot. Plans in the admin plan list now carry `reservation_status` (`none`/`reserved`/`completed`/`cancelled`), `reservation_error` and `down_payment_confirmed_at`, so a failed hold can be shown and retried. It also re-checks a plan that is waiting for stock: the response `state` is `reserved`, or still `waiting_for_stock`. |
+| POST | `/api/admin/plans/:id/reservation/cancel` | Live (Oct 7) - **`admin` only** | Release the held piece. Body `{ reason, handoff_confirmed: true }`, both required (`400` otherwise). Manual only, never automatic: use it once a termination has been handed off and agreed with the customer. Holds do not expire on their own, so every plan that ends must be cancelled this way. |
+| DELETE | `/api/admin/customers/:id/sessions` | ✅ Live (Sep 26) — **admin only** | New — revoke every active refresh token for that customer (stolen device, disabled account, or a "log out everywhere" support request) |
 
 ---
 
@@ -71,17 +126,29 @@ All admin endpoints below now require an admin token — `POST /api/admin/login`
 
 ```json
 {
-  "count": 718,
-  "next": "/api/gallery?page=2&page_size=50",
+  "count": 15,
+  "next": null,
   "previous": null,
   "results": [
     {
-      "id": 6961,
-      "title": "PJ17414",
-      "price": "588.33",
-      "currency": "USD",
+      "id": 8015,
+      "title": "PJ19429",
+      "price": "24428.80",
+      "currency": "PHP",
       "in_stock": true,
-      "images": [{ "url": "https://...", "is_primary": true }]
+      "details": {
+        "item_form": "Pendants (PND)",
+        "item_form_code": "PND",
+        "category": "Gold",
+        "metal": "White gold 18K",
+        "metal_codes": "WG",
+        "purity": "18K",
+        "gold_weight_g": "1.2",
+        "diamond_weight_ct": null,
+        "diamonds": [],
+        "stones": []
+      },
+      "images": [{ "url": "https://...", "thumb_url": "https://...", "web_url": "https://...", "is_primary": true }]
     }
   ]
 }
@@ -91,7 +158,14 @@ All admin endpoints below now require an admin token — `POST /api/admin/login`
 
 **`GET /api/gallery/:id`** — the same single object shown inside `results` above.
 
-**Confirmed (Sep 24, 2026) — gallery field set is final for now:** `title` is the barcode/PJ number (never the provider's `name` field, which is a shared style label covering 100+ products, not a unique title). There is **no `category` field** — client confirmed category/colour/quality/stone/metal are placeholder/blank across essentially the whole catalog today and will be added back once that data is real. Don't build UI around a category filter or badge for now.
+**Updated Oct 7, 2026 — what the gallery returns now:**
+
+- **`price` is always the peso price** and `currency` is always `"PHP"`. Show `price` as-is; never convert anything on the frontend. (The provider prices some items in USD or JPY; our backend already converts to pesos.)
+- **Images — pick the size for the place:** `thumb_url` (480 px, about 30 KB) in grids and lists, `web_url` (1200 px WebP, about 40 KB) on the product page, and `url` (the full camera original, often 5–9 MB) only for a zoom view. Using `url` in a grid or on a page will make the site slow. Only a small share of the full catalog has a photo, so build a no-photo placeholder (all 15 current test items have photos).
+- **`details`** holds the jewelry specs. Every value can be `null`/empty, so render a row only when it has a value. `item_form_code` (ER, RN, NL, BR, PND, …) and `metal_codes` (SL, YG, WG, RG, …) are the steadiest for filtering. `category` is an **open list** (Gold, Silver, Gold Jewelry, Diamond, Loose Stone and more can appear): show it as a label and never hard-code a fixed set. `gold_weight_g` is the metal weight in grams for any metal. `diamonds` and `stones` list carats (`weight_ct`) and `count` per stone kind, and only about 16% of designs have them for now, so treat carats as optional.
+- **`title`** is still the barcode/PJ number, never the provider's shared style label.
+- **Item ids come from `GET /api/gallery`, never from hard-coded values.** Only a small curated set is visible for now (15 test items; the owner will replace it with the real selection), so the list will change. An id that is no longer listed returns 404 on `GET /api/gallery/:id`.
+- The old `supplier`, `supplier_code`, `supplier_name` and `tag_price` fields are gone from the provider and were never part of this API.
 
 **Known open issue, not a frontend concern:** `currency` is inconsistent across items (mostly `PHP`, some `USD`) — this is a client data question being raised with the client's team (WBS M1), not something to build a fix for yet. Just don't assume `currency` is always `PHP`.
 
@@ -149,6 +223,28 @@ Price/markup logic is still unresolved (WBS M1) — `price` above is the provide
 
 `status` is `on_track`, `overdue` (at least one installment past due), or `completed`. `next_due_date` is `null` once completed. `completed_on` is the date of the last installment paid, only set once `status` is `completed`. `plan_label` and each installment's fields are convenience/display fields — not new data, just avoiding a second fetch per plan.
 
+**`POST /api/layaway/plans`** (Oct 3, 2026 rebuild — shown here with `term_months: 3`; send 1 or 2 for a shorter term and the installment count below scales accordingly, 2 per month):
+
+```json
+{
+  "id": 21,
+  "total_price": 48620,
+  "down_payment_amount": 14586,
+  "financed_principal": 34034,
+  "currency": "PHP",
+  "term_months": 3,
+  "installments": 6,
+  "schedule": [
+    { "term_number": 1, "due_date": "2026-10-18", "principal_amount": 5672.33, "interest_amount": 1701.70, "amount": 7374.03 },
+    { "term_number": 2, "due_date": "2026-11-02", "principal_amount": 5672.33, "interest_amount": 1333.00, "amount": 7005.33 }
+  ]
+}
+```
+
+`total_price` already has the 30% markup applied — this is the real selling price, not the gallery's raw `price`. `down_payment_amount` is due immediately at checkout confirmation (same as before); `financed_principal` is what the schedule actually runs on. **Build the checkout confirmation screen off `down_payment_amount` + the first `schedule` entry, not off `total_price` divided evenly** — the terms are not equal amounts (declining-balance interest). `schedule` is the same data `GET /api/layaway/plans/:id`'s `installments` array will return afterward (minus `id`/`status`/`paid_at`, which only exist once persisted) — fine to render straight from this response on the confirmation screen rather than re-fetching.
+
+**Gateway fee note for later:** when the gateway path (`POST /api/layaway/plans/:id/payments`) goes live, a gateway-paid installment will cost the customer slightly more than `amount` (the gateway fee is added on top, confirmed by the client — never bank transfer). Not relevant yet since that endpoint still 501s, but don't hardcode an assumption that the customer always pays exactly `amount`.
+
 **`GET /api/admin/customers`** (Sep 26, array of these):
 
 ```json
@@ -192,10 +288,19 @@ Price/markup logic is still unresolved (WBS M1) — `price` above is the provide
   "penalty_per_day": null,
   "require_full_payment_before_release": 1,
   "send_sms_reminders": 0,
-  "allow_customer_selected_due_dates": 1,
-  "updated_at": "2026-09-25T17:56:54.000Z"
+  "allow_customer_selected_due_dates": 0,
+  "down_payment_percent": "30.00",
+  "regular_interest_rate_percent": "5.00",
+  "reconstructed_interest_rate_percent": "7.50",
+  "installment_interval_days": 15,
+  "installment_term_count": 6,
+  "grace_period_days": 7,
+  "gateway_fee_percent": null,
+  "updated_at": "2026-10-05T09:00:00.000Z"
 }
 ```
+
+`allow_customer_selected_due_dates` is kept for compatibility but no longer does anything (dates are fixed). Percent fields come back as strings (DECIMAL columns); send numbers when updating. `gateway_fee_percent` stays `null` until the real rate is confirmed.
 
 `penalty_per_day` is `null` until the real rate lands (WBS M1) — same placeholder pattern as `/api/admin/penalty-rules`.
 
@@ -211,6 +316,12 @@ Price/markup logic is still unresolved (WBS M1) — `price` above is the provide
 ---
 
 *This document is confidential and proprietary to The Loft IT Solutions.*
+*Version 1.15 - Updated Oct 8, 2026 (latest): customer emails and password screens. New endpoints: `POST /api/customers/forgot-password`, `/reset-password`, `/change-password`; `POST /api/admin/change-password`; `POST /api/admin/jobs/daily` (admin). New notification kinds on `GET /api/customers/notifications`: `plan_created`, `down_payment_confirmed`, `payment_confirmed`, `due_today`, `plan_reconstructed`, `plan_closed` (each also emailed). Admin alerts and the digest now include reconstructed and closed plans. Older plans whose installments had no term number now show their order in the plan (1, 2, 3) in the due list, the digest and the pending-payments queue. Needs the server to have `FRONTEND_URL` for the reset link, and the mail settings.*
+*Version 1.14 - Updated Oct 7, 2026: the online gateway is postponed; bank transfer is the only payment method. Customer payment forms now take `reference_number`, `amount`, `paid_on` and an optional proof (proof used to be required). Confirm and reject accept an optional reviewer attachment (staff-only) and a rejection needs a `reason`, which the customer sees through the new `/api/customers/notifications`. New admin endpoints: `/payments/due`, `/alerts`, `/notifications` (+ `/read`, `/digest`), `/reservations/sync`, `/payments/:id/confirmer-proof`. `notify_accounting_roles` added to the settings. A confirmed down payment holds the piece, or puts the plan on the provider's backorder list (`reservation_status: waiting_for_stock`) when none is in stock. See the "Manual payment flow" note before Section 4.*
+*Version 1.13 - Updated Oct 7, 2026 (later): the down payment is now a confirmed payment. New `POST /api/layaway/plans/:id/down-payment/manual` (customer proof upload); the pending-payments list and the confirm response gained `kind` and `reservation`; confirming a down payment holds the piece; two admin-only endpoints, `.../reservation/retry` and `.../reservation/cancel`; admin plan objects gained `reservation_status`, `reservation_error` and `down_payment_confirmed_at`. Frontend screens needed: down-payment upload on checkout, and retry/cancel on the admin plan view.*
+*Version 1.12 — Updated Oct 7, 2026: the provider's catalog update is live and our adapter now follows it. **Gallery changes (additive):** `price` is the peso price (it was the provider's own-currency price before, which could be USD or JPY), `currency` is always `"PHP"`, each image now also has `thumb_url` and `web_url` (use these instead of `url`), and a new `details` object carries item type, category, metal, purity, grams and carats. Item ids must come from the list (old ids can return 404). `POST /api/layaway/plans` gained a 409 for items without a peso price. No endpoint was removed or renamed.*
+*Version 1.11 — Updated Oct 5, 2026: (1) **Interest formula corrected** to the client's updated sheet: only the principal portion comes off the remaining balance, never the interest, so `schedule[].balance_after` is now plain remaining principal and ends at exactly `0` (e.g. 70,000 at 5%/term over 6 terms: total interest 12,250, installments 15,166.67 → 12,249.98). Interest per term is 5% of the balance before that payment. Nothing changes in the request or the field names; `interest_amount` and `amount` values are lower than before from term 2 onward. A reconstructed plan now restarts from the remaining principal after the last paid term. (2) **Admin roles**: `admin.role` is now one of `admin`, `receivables`, `ledger`, `reporting`, enforced per endpoint (Section 4); a wrong-role call returns `403`, a deactivated account `401`. `POST /api/admin/register` is bootstrap-only and closed once an admin exists. (3) **New admin endpoints**: `POST/GET/PATCH /api/admin/staff`, `GET /api/admin/audit-log`, `GET /api/admin/reports/receivables`, `GET /api/admin/reports/profit`. `GET /api/finance/ledger` gained filters, `customer_name` and `?format=csv`. (4) Section 4's settings docs now list the lay-away fields added in Oct 3 (they were missing). Rate changes in settings apply to new plans only.*
+*Version 1.10 — Updated Oct 3, 2026: **breaking change** — `POST /api/layaway/plans` no longer takes `installment_dates`; the backend now generates the schedule itself at fixed 15-day intervals (30% markup applied to get the real selling price, 30% down payment, declining-balance interest at 5%/term). Remove the checkout date-picker step — but `term_months` stays customer-selectable (1-3 months, same as before); it just now controls how many 15-day installments there are (2/month) rather than customer-picked dates. Response gained `down_payment_amount`, `financed_principal`, and `schedule` (array of `term_number`/`due_date`/`principal_amount`/`interest_amount`/`amount`) — the old flat-rounding `installment_dates` validation no longer applies, there's nothing left for the frontend to validate on this call. `GET /api/layaway/plans/:id`'s `installments` gained `term_number`/`principal_amount`/`interest_amount`, and the plan can now silently reconstruct itself (gains `is_reconstructed: true`, schedule regenerates as a fixed 6-term/3-month schedule regardless of the original term_months) if a term's grace period lapses — no new UI state needed, just re-fetch and render what comes back. Gateway-fee-on-top-of-`amount` flagged as a heads-up for later, not yet relevant since the gateway payment endpoint still 501s.*
 *Version 1.9 — Updated Sep 26, 2026 (Frontend Dev 1 flagged): `POST /api/layaway/plans` now validates `installment_dates` server-side — previously fully client-trusted, so a modified client could submit backdated dates, a schedule past the max term, or an excessive installment count. Rejects with `400` and a specific message: dates in the past, non-ascending/duplicate dates, more than 24 installments, or a last date beyond `term_months` from today. No change to valid requests.*
 *Version 1.8 — Updated Sep 26, 2026 (Frontend Dev 1 request): **breaking change** — `register`/`login` now return `{ access_token, refresh_token, customer }` instead of `{ token, customer }`; added `POST /api/customers/refresh` and `/logout`; added `GET /api/customers/me`. **Path change** — `GET /api/customers/:id/orders` is now `GET /api/customers/orders` (id comes from the access token). `/orders` now nests an `installments` array per plan and adds `plan_label`/`completed_on` — kept existing numeric ids and `on_track`/`overdue`/`completed` status values rather than the frontend's mockup format. Admin login/refresh/logout got the same access/refresh split, plus a new `DELETE /api/admin/customers/:id/sessions` to revoke a customer's sessions.*
 *Version 1.7 — Updated Sep 26, 2026: removed two client contact names that had slipped into Section 5 and the v1.5 changelog entry — no content/behavior change, redaction only.*

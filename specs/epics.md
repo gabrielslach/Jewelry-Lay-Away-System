@@ -698,3 +698,136 @@ No skeleton on login, register, nav, checkout steps the shopper already filled, 
 Skeleton exposes busy + hidden “Loading”; reduced motion does not animate. Each surface above shows its bones while loading and the existing success, empty, or error UI after. Account never shows the empty sentences or an active count of 0 during load. Home **View Details** opens the modal skeleton before the piece resolves.
 
 Tests under `test/` mirroring `src/`. Vitest + Testing Library.
+
+---
+
+## Epic 17 — Manual bank-transfer payments
+
+The online gateway (SF-8's GCash/card radios) is postponed; **bank transfer is the only payment method for now.** This epic also lands the backend's fixed 15-day schedule, which removes SF-7's date picker. **Mobile-first.** Mock screens: `specs/index-1010-updates.html` (`payModal`).
+
+### PM-1 Fixed installment schedule (supersedes the SF-7 date picker)
+
+`POST /api/layaway/plans` body is now `{ product_id, term_months? }` — `installment_dates` is gone. **Remove the date-picker step from checkout entirely**; keep the term select (1 up to `max_term_months`, same as today) — it now only sets how many 15-day installments there are (2 per month), not the dates. Build the confirmation screen off `down_payment_amount` + the first `schedule` entry, **not** `total_price` divided evenly — terms are not equal amounts (declining-balance interest). `schedule` is renderable straight from the create response; no refetch needed.
+
+- **API:** `POST /api/layaway/plans` (Oct 3 breaking change) — see `api-definition.md` Section 3.
+- **Mock:** Epic 4 MS-3 stops requiring/validating `installment_dates`; returns `down_payment_amount`, `financed_principal`, `schedule`.
+
+### PM-2 Down payment by bank transfer
+
+Once a plan exists and the down payment is not yet confirmed, show the active `GET /api/bank-accounts` (bank name, account name, account number, QR) and collect: bank used, `reference_number` (required, max 100 chars, cannot be reused), `amount`, `paid_on` (not in the future), optional `proof_of_payment` image. Submit `POST /api/layaway/plans/:id/down-payment/manual`. Show "waiting for confirmation" until accounting confirms it — confirming is what holds the piece (or backorders it, **HP-1**).
+
+- **API:** `GET /api/bank-accounts`, `POST /api/layaway/plans/:id/down-payment/manual`.
+- **Validation copy:** `400` per missing/invalid field; `409` when the plan isn't active, the down payment is already confirmed or awaiting confirmation, or the reference was reused — show inline, not a generic toast.
+
+### PM-3 Pay an installment by bank transfer
+
+Same form as PM-2, reused per pending/overdue/rejected row in My Account (**AC-2**), plus `installment_id`. Submit `POST /api/layaway/plans/:id/payments/manual`. Same `400`/`409` handling as PM-2.
+
+### PM-4 Payment status on the schedule row
+
+Each schedule row shows one state: Paid, Awaiting confirmation, Rejected (reason from **NT-2**), Due today, Overdue (with the grace-period end date from `grace_period_days`). A Rejected or Due/Overdue row opens the PM-2/PM-3 form to pay or resubmit; a Paid or Awaiting row does not.
+
+- **Mock:** amend AC-2 / Epic 4 to persist submissions and flip status realistically (`submitted` → `paid`/`rejected` via a mock admin action, Epic 20 **AP-2**).
+
+---
+
+## Epic 18 — Customer notifications
+
+Every customer email is also stored as an in-app notification (`GET /api/customers/notifications`). My Account gets a bell/list so a shopper doesn't have to rely on email alone. **Mobile-first.** Mock screens: `specs/index-1010-updates.html` (`notifsH`).
+
+### NT-1 Notification bell and list
+
+Nav bell on My Account (and the storefront chrome once signed in) shows an unread count from `unread`; a Notifications screen lists `items` newest-first (icon by `kind`, title, body, relative time). `POST /api/customers/notifications/read` marks selected or all read. Poll or refetch on page focus — no hard real-time requirement.
+
+- **API:** `GET /api/customers/notifications` (`?unread=1`, `?limit=`), `POST .../read`.
+- **Kinds to render distinctly:** `plan_created`, `down_payment_confirmed`, `payment_confirmed`, `payment_rejected`, `due_today`, `plan_reconstructed`, `plan_closed`. Copy mirrors the email text already sent server-side; don't invent new wording per kind — reuse `title`/`body`.
+
+### NT-2 Rejected payment reason and resubmit
+
+A `payment_rejected` notification carries the rejection reason in `body`. Surface the same reason on the affected schedule row in My Account (**PM-4**) and let the shopper resubmit through **PM-3** — no separate "appeal" flow.
+
+### NT-3 Waiting-for-stock tag
+
+A plan whose piece is on order (`reservation_status: waiting_for_stock` from the orders/plan data) shows a "Waiting for stock" tag on its My Account plan box, replacing the pay action until held/backordered status resolves (see **HP-1**).
+
+---
+
+## Epic 19 — Customer password management
+
+Forgot/reset/change password screens the HTML demo never had — needed because bank-transfer payments now put real money on the line. **Mobile-first.** No email templates needed on the frontend; the backend sends them.
+
+### PW-1 Forgot password (`/login` link)
+
+Email field only. `POST /api/customers/forgot-password` always answers `200` — show one neutral "if that email is registered, we sent a link" message regardless of outcome (never reveal whether the email exists). Same `429` copy pattern as login/register.
+
+### PW-2 Reset password (`/reset-password`)
+
+Page reads `token` from the query string, asks for a new password (8+ chars, with a confirm field) and submits `POST /api/customers/reset-password` with `{ token, password }`. `400` means the link is invalid, used, or expired — show a message with a link back to **PW-1**, not a validation-style inline error. Success signs the shopper out everywhere; route to `/login` with a "password updated" notice, not an auto sign-in.
+
+### PW-3 Change password (My Account)
+
+Current password + new password (+confirm) form. `POST /api/customers/change-password`. `401` on a wrong current password, `400` when the new one is under 8 characters or identical to the current one. Other devices/sessions are unaffected — no "signed out everywhere" copy here (that's PW-2 only).
+
+- **Admin analog:** `POST /api/admin/change-password` is the same shape for staff — see **AP-6**.
+
+---
+
+## Epic 20 — Admin payment operations
+
+Accounting's working queue for the manual-payment flow (Epic 17), plus the alerts that tell staff something needs attention. **Mobile-first** (existing AD-1 sidebar pattern). Mock screens: `specs/index-1010-updates.html` (`dueH`, `anotifH`, `setH`).
+
+**Role rule (api-definition.md Section 4, Oct 5):** only `receivables` and `admin` confirm or reject payments. Any staff role can view the queue, the due list, and alerts.
+
+### AP-1 Pending payments queue
+
+Table/list, oldest first: kind (installment vs down payment), plan, customer, term/due date (installments), expected `amount` vs `amount_submitted` with `amount_mismatch` highlighted, reference number, paid-on date, and the uploaded proof (open via `GET /api/admin/payments/:id/proof`).
+
+- **API:** `GET /api/admin/payments/pending`, `GET /api/admin/payments/:id/proof`.
+
+### AP-2 Confirm or reject a payment
+
+Confirm and Reject actions, **receivables/admin only** — elsewhere greyed out (consistent with AD-8's role gating pattern). Both accept an optional reviewer-only attachment (`confirmer_proof`, never shown to the customer — `GET /api/admin/payments/:id/confirmer-proof`). Reject requires a `reason` (shown to the customer via **NT-2**). Confirming a down payment surfaces the `reservation` result (held vs waiting-for-stock, see **HP-1**); confirming the last installment completes the plan.
+
+- **API:** `POST /api/admin/payments/:id/confirm`, `/reject`, `GET .../confirmer-proof`.
+
+### AP-3 Due-today and overdue list
+
+A list of every installment due today plus overdue ones on active plans, with days overdue, whether a payment is already `awaiting_confirmation` (so staff don't chase someone who already paid), and customer contact info. Filters All / Due today / Overdue.
+
+- **API:** `GET /api/admin/payments/due`.
+
+### AP-4 Alerts badge and notification bell
+
+Topbar bell (same slot as the existing decorative AD-1 bell) shows an unread count and a list: `payment_submitted`, `waiting_for_stock`, `piece_held`, `reservation_failed`. A sidebar badge shows the same counts as `GET /api/admin/alerts` (`pending_payments`, `due_today`, `overdue`, `waiting_for_stock`, `reservation_problems`, `unread_notifications`). Poll about once a minute while admin is open.
+
+- **API:** `GET /api/admin/alerts`, `GET /api/admin/notifications`, `POST .../read`.
+
+### AP-5 Notify-accounting setting
+
+Settings (**AD-8**) gains a toggle: "Also send alerts to the accounting accounts" (`notify_accounting_roles`). Admins always receive alerts regardless of this switch.
+
+- **API:** `PUT /api/admin/settings` with `notify_accounting_roles`.
+
+### AP-6 Admin change password
+
+Same shape as **PW-3** for any signed-in staff member, own account only: current + new password, `POST /api/admin/change-password`.
+
+---
+
+## Epic 21 — Held pieces and reservations
+
+Admin visibility and control over the hold a confirmed down payment creates on the inventory provider's side. **Admin only** — no customer-facing screen beyond the `waiting_for_stock` tag (**NT-3**). Mock screens: `specs/index-1010-updates.html` plan/order detail pattern (**AD-5**).
+
+### HP-1 Reservation status display
+
+Admin plan objects/rows (**AD-4**, **AD-5**) show `reservation_status` (`none`, `waiting_for_stock`, `reserved`, `completed`, `cancelled`) as a badge, `down_payment_confirmed_at`, and — when `reservation_error` is set — the error text plus a **Retry** action (**HP-2**).
+
+- **API:** fields already present on `GET /api/admin/plans` / plan detail.
+
+### HP-2 Retry a failed or pending hold
+
+**Admin only.** Retry button calls `POST /api/admin/plans/:id/reservation/retry` (re-attempts the hold, or the completion if the plan is already fully paid, or re-checks a `waiting_for_stock` plan). Show the returned `state`; a `409` means the provider still can't — keep the Retry button, don't dead-end.
+
+### HP-3 Cancel a reservation
+
+**Admin only, manual, never automatic.** Cancel opens a confirmation requiring a `reason` and a tick for "termination handed off and agreed with the customer" (`handoff_confirmed: true`) — both required, `400` otherwise. Calls `POST /api/admin/plans/:id/reservation/cancel`. Holds never expire on their own, so this is the only way to close out a held piece.
