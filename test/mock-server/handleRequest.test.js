@@ -58,7 +58,7 @@ describe('mock API', () => {
     });
     expect(active.installments[0]).toEqual(
       expect.objectContaining({
-        id: expect.any(Number),
+        id: expect.anything(),
         due_date: expect.stringMatching(/T/),
         amount: expect.any(String),
         status: expect.any(String),
@@ -79,34 +79,24 @@ describe('mock API', () => {
     expect(orders.body[0].item_name).toBe('Emerald Drop Earrings');
   });
 
-  it('creates a plan when authenticated and 501s the live gateway', () => {
+  it('creates a fixed-schedule plan when authenticated and 501s the live gateway', () => {
     const store = createStore();
     const session = call(store, 'POST', '/api/dev/session/customer', { body: {} });
     const created = call(store, 'POST', '/api/layaway/plans', {
       headers: { authorization: `Bearer ${session.body.access_token}` },
       body: {
         product_id: firstPiece.id,
-        term_months: 3,
-        installment_dates: ['2026-10-01', '2026-10-15'],
+        term_months: 1,
       },
     });
     expect(created.status).toBe(201);
-    expect(created.body.installments).toHaveLength(2);
+    expect(created.body.schedule).toHaveLength(2);
+    expect(created.body.down_payment_amount).toBeGreaterThan(0);
     const gateway = call(store, 'POST', `/api/layaway/plans/${created.body.id}/payments`, {
       headers: { authorization: `Bearer ${session.body.access_token}` },
       body: {},
     });
     expect(gateway.status).toBe(501);
-    const mockPay = call(
-      store,
-      'POST',
-      `/api/layaway/plans/${created.body.id}/payments/mock-gateway`,
-      {
-        headers: { authorization: `Bearer ${session.body.access_token}` },
-        body: { method: 'gcash' },
-      },
-    );
-    expect(mockPay.body.status).toBe('reserved');
   });
 
   it('requires admin auth for dashboard and includes Sample Shopper', () => {

@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App from '../../src/App.jsx';
 import { SessionProvider } from '../../src/components/SessionProvider.jsx';
+import { ToastProvider } from '../../src/components/ToastProvider.jsx';
 import Account from '../../src/pages/Account.jsx';
 import { loginCustomer } from '../../src/services/loginCustomer.js';
 import { getCustomer, setCustomerToken } from '../../src/services/session.js';
@@ -41,7 +42,9 @@ describe('Account', () => {
     render(
       <MemoryRouter>
         <SessionProvider>
-          <Account />
+          <ToastProvider>
+            <Account />
+          </ToastProvider>
         </SessionProvider>
       </MemoryRouter>,
     );
@@ -62,7 +65,9 @@ describe('Account', () => {
     render(
       <MemoryRouter>
         <SessionProvider>
-          <Account />
+          <ToastProvider>
+            <Account />
+          </ToastProvider>
         </SessionProvider>
       </MemoryRouter>,
     );

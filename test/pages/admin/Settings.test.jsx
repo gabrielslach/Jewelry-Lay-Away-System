@@ -25,7 +25,7 @@ describe('admin settings', () => {
     expect(screen.getByRole('heading', { name: 'Business Settings' })).toBeInTheDocument();
     expect(document.querySelector('.skeleton[aria-busy="true"]')).toBeInTheDocument();
     expect(document.querySelectorAll('.settings-form .form-row .skeleton-bone')).toHaveLength(6);
-    expect(document.querySelectorAll('.settings-form .toggle-row .skeleton-bone')).toHaveLength(6);
+    expect(document.querySelectorAll('.settings-form .toggle-row .skeleton-bone')).toHaveLength(8);
     expect(document.querySelector('.settings-form .skeleton-bone-btn')).toBeInTheDocument();
     expect(screen.queryByDisplayValue('Mine Credit')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save Changes' })).not.toBeInTheDocument();
@@ -62,6 +62,9 @@ describe('admin settings', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('switch', { name: 'Allow customer-selected due dates' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('switch', { name: 'Also send alerts to accounting accounts' }),
     ).toBeInTheDocument();
   });
 });

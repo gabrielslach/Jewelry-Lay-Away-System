@@ -1,28 +1,58 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Button from '../../components/Button.jsx';
 import ErrorMessage from '../../components/ErrorMessage.jsx';
 import Skeleton, { OrdersTableSkeleton } from '../../components/Skeleton.jsx';
 import Modal from '../../components/Modal.jsx';
 import { useToast } from '../../components/useToast.js';
+import { formatDisplayDate } from '../../lib/dates.js';
 import { ServiceError } from '../../services/http.js';
 import { getAdminPlans } from '../../services/getAdminPlans.js';
-import { markNextPaid } from '../../services/markNextPaid.js';
+import {
+  cancelReservation,
+  retryReservation,
+} from '../../services/adminReservations.js';
+import { getAdminSession } from '../../services/session.js';
 import '../Account.css';
 import '../../components/Checkout.css';
 
+const RESERVATION_LABELS = {
+  waiting_for_stock: 'Waiting for stock',
+  reserved: 'Reserved',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+};
+
+function isAdminRole() {
+  return (getAdminSession()?.admin?.role ?? 'admin') === 'admin';
+}
+
 export default function Orders() {
   const { showToast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const openPlanId = useRef(searchParams.get('plan'));
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState(null);
   const [active, setActive] = useState(null);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [handoffConfirmed, setHandoffConfirmed] = useState(false);
+  const [cancelErrors, setCancelErrors] = useState({});
+  const admin = isAdminRole();
 
   function refreshPlans() {
     return getAdminPlans()
       .then((data) => {
         setPlans(data);
         setError(null);
+        setActive((current) => {
+          if (!current) {
+            return null;
+          }
+          return data.find((plan) => plan.id === current.id) ?? null;
+        });
       })
       .catch((err) => {
         setError(err instanceof ServiceError ? err.message : 'Unable to load orders.');
@@ -33,20 +63,104 @@ export default function Orders() {
   }
 
   useEffect(() => {
-    refreshPlans();
-  }, []);
+    getAdminPlans()
+      .then((data) => {
+        setPlans(data);
+        setError(null);
+        const planId = openPlanId.current;
+        openPlanId.current = null;
+        if (planId) {
+          const fromQuery = data.find((plan) => String(plan.id) === String(planId));
+          if (fromQuery) {
+            setActive(fromQuery);
+            setSearchParams(
+              (current) => {
+                if (!current.has('plan')) {
+                  return current;
+                }
+                const next = new URLSearchParams(current);
+                next.delete('plan');
+                return next;
+              },
+              { replace: true },
+            );
+            return;
+          }
+        }
+        setActive(null);
+      })
+      .catch((err) => {
+        setError(err instanceof ServiceError ? err.message : 'Unable to load orders.');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [setSearchParams]);
 
   const rows = plans.filter((plan) => filter === 'all' || plan.status === filter);
 
-  async function handleMarkPaid() {
+  async function handleRetry() {
     try {
-      await markNextPaid(active.id);
-      showToast(`Payment marked as received for ${active.id}.`);
+      const result = await retryReservation(active.id);
+      showToast(
+        result.state
+          ? `Reservation updated: ${RESERVATION_LABELS[result.state] ?? result.state}.`
+          : 'Reservation retry sent.',
+      );
+      refreshPlans();
+    } catch (err) {
+      if (err instanceof ServiceError && err.status === 409) {
+        setError(err.message);
+        refreshPlans();
+        return;
+      }
+      setError(err instanceof ServiceError ? err.message : 'Unable to retry reservation.');
+    }
+  }
+
+  async function handleCancel() {
+    const nextErrors = {};
+    if (!cancelReason.trim()) {
+      nextErrors.reason = 'A reason is required.';
+    }
+    if (!handoffConfirmed) {
+      nextErrors.handoff = 'Confirm the handoff with the customer.';
+    }
+    if (Object.keys(nextErrors).length) {
+      setCancelErrors(nextErrors);
+      return;
+    }
+    try {
+      await cancelReservation(active.id, {
+        reason: cancelReason.trim(),
+        handoffConfirmed: true,
+      });
+      showToast('Reservation cancelled.');
+      setCancelOpen(false);
+      setCancelReason('');
+      setHandoffConfirmed(false);
+      setCancelErrors({});
       setActive(null);
       refreshPlans();
     } catch (err) {
-      setError(err instanceof ServiceError ? err.message : 'Unable to mark payment.');
+      if (err instanceof ServiceError && err.status === 400) {
+        setCancelErrors({ form: err.message });
+        return;
+      }
+      setError(err instanceof ServiceError ? err.message : 'Unable to cancel reservation.');
     }
+  }
+
+  function reservationBadge(status) {
+    const label = RESERVATION_LABELS[status];
+    if (!label) {
+      return null;
+    }
+    return (
+      <span className={status === 'waiting_for_stock' ? 'badge badge-warn' : 'badge badge-ok'}>
+        {label}
+      </span>
+    );
   }
 
   return (
@@ -85,6 +199,7 @@ export default function Orders() {
                 <th>Plan</th>
                 <th>Next Due</th>
                 <th>Status</th>
+                <th>Hold</th>
                 <th> </th>
               </tr>
             </thead>
@@ -103,6 +218,7 @@ export default function Orders() {
                       {plan.status === 'ok' ? 'On Track' : 'Overdue'}
                     </span>
                   </td>
+                  <td>{reservationBadge(plan.reservation_status)}</td>
                   <td>
                     <Button variant="outline" size="sm" onClick={() => setActive(plan)}>
                       View
@@ -123,9 +239,22 @@ export default function Orders() {
               <Button variant="outline" onClick={() => setActive(null)}>
                 Close
               </Button>
-              <Button variant="primary" onClick={handleMarkPaid}>
-                Mark Next Payment Received
-              </Button>
+              {active.reservation_error ||
+              active.reservation_status === 'waiting_for_stock' ? (
+                <Button variant="primary" onClick={handleRetry} disabled={!admin}>
+                  Retry
+                </Button>
+              ) : null}
+              {active.reservation_status === 'reserved' ||
+              active.reservation_status === 'waiting_for_stock' ? (
+                <Button
+                  variant="outline"
+                  onClick={() => setCancelOpen(true)}
+                  disabled={!admin}
+                >
+                  Cancel reservation
+                </Button>
+              ) : null}
             </>
           }
         >
@@ -146,30 +275,95 @@ export default function Orders() {
               <span>Status</span>
               <b>{active.status === 'ok' ? 'On Track' : 'Overdue'}</b>
             </div>
+            {active.reservation_status && active.reservation_status !== 'none' ? (
+              <div className="spec-item">
+                <span>Reservation</span>
+                <b>{RESERVATION_LABELS[active.reservation_status] ?? active.reservation_status}</b>
+              </div>
+            ) : null}
+            {active.down_payment_confirmed_at ? (
+              <div className="spec-item">
+                <span>Down payment confirmed</span>
+                <b>{formatDisplayDate(active.down_payment_confirmed_at)}</b>
+              </div>
+            ) : null}
           </div>
+          {active.reservation_error ? (
+            <p className="plan-notice">
+              <b>Reservation error</b>
+              <br />
+              {active.reservation_error}
+            </p>
+          ) : null}
           <div className="schedule-list">
             {active.installments.map((row, index) => (
               <div className="schedule-row" key={row.id}>
                 <b>
-                  Payment {index + 1} of {active.installments.length}
+                  Payment {row.term_number ?? index + 1} of {active.installments.length}
                 </b>
                 <span>₱{Number(row.amount).toLocaleString('en-US')}</span>
                 <span
                   className={
-                    row.status === 'paid'
-                      ? 'badge badge-ok'
-                      : 'badge badge-warn'
+                    row.status === 'paid' ? 'badge badge-ok' : 'badge badge-warn'
                   }
                 >
                   {row.status === 'paid'
                     ? 'Paid'
                     : row.status === 'overdue'
                       ? 'Overdue'
-                      : 'Pending'}
+                      : row.status === 'submitted' || row.status === 'awaiting_confirmation'
+                        ? 'Awaiting confirmation'
+                        : 'Pending'}
                 </span>
               </div>
             ))}
           </div>
+        </Modal>
+      ) : null}
+
+      {cancelOpen && active ? (
+        <Modal
+          title="Cancel reservation"
+          onClose={() => {
+            setCancelOpen(false);
+            setCancelErrors({});
+          }}
+          footer={
+            <>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setCancelOpen(false);
+                  setCancelErrors({});
+                }}
+              >
+                Close
+              </Button>
+              <Button variant="primary" onClick={handleCancel} disabled={!admin}>
+                Cancel reservation
+              </Button>
+            </>
+          }
+        >
+          <ErrorMessage>{cancelErrors.form}</ErrorMessage>
+          <div className="form-row">
+            <label htmlFor="cancel-reason">Reason</label>
+            <textarea
+              id="cancel-reason"
+              value={cancelReason}
+              onChange={(event) => setCancelReason(event.target.value)}
+            />
+            {cancelErrors.reason ? <p className="field-error">{cancelErrors.reason}</p> : null}
+          </div>
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={handoffConfirmed}
+              onChange={(event) => setHandoffConfirmed(event.target.checked)}
+            />
+            <span>Termination handed off and agreed with the customer</span>
+          </label>
+          {cancelErrors.handoff ? <p className="field-error">{cancelErrors.handoff}</p> : null}
         </Modal>
       ) : null}
     </div>

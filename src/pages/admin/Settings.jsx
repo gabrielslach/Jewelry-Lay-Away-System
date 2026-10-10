@@ -1,17 +1,48 @@
 import { useEffect, useState } from 'react';
 import Button from '../../components/Button.jsx';
+import ChangePasswordForm from '../../components/ChangePasswordForm.jsx';
 import ErrorMessage from '../../components/ErrorMessage.jsx';
 import Skeleton, { SettingsSkeleton } from '../../components/Skeleton.jsx';
 import { useToast } from '../../components/useToast.js';
 import { ServiceError } from '../../services/http.js';
+import { changeAdminPassword } from '../../services/adminPassword.js';
 import { getAdminSettings } from '../../services/getAdminSettings.js';
 import { putAdminSettings } from '../../services/putAdminSettings.js';
+import { getAdminSession } from '../../services/session.js';
 import '../../components/Checkout.css';
+import '../AuthPage.css';
+
+function SettingsSwitch({ id, label, checked, disabled, onToggle }) {
+  return (
+    <div className="toggle-row">
+      <span id={id}>{label}</span>
+      <div
+        className={checked ? 'switch on' : 'switch'}
+        role="switch"
+        aria-checked={checked}
+        aria-labelledby={id}
+        aria-disabled={disabled || undefined}
+        tabIndex={disabled ? -1 : 0}
+        onClick={() => {
+          if (!disabled) {
+            onToggle();
+          }
+        }}
+        onKeyDown={(event) => {
+          if (!disabled && (event.key === 'Enter' || event.key === ' ')) {
+            onToggle();
+          }
+        }}
+      />
+    </div>
+  );
+}
 
 export default function Settings() {
   const { showToast } = useToast();
   const [form, setForm] = useState(null);
   const [error, setError] = useState(null);
+  const isAdmin = (getAdminSession()?.admin?.role ?? 'admin') === 'admin';
 
   useEffect(() => {
     getAdminSettings()
@@ -49,91 +80,97 @@ export default function Settings() {
   }
 
   return (
-    <div className="panel settings-form">
-      <h2>Business Settings</h2>
-      <ErrorMessage>{error}</ErrorMessage>
-      <div className="form-row">
-        <label htmlFor="biz-name">Business Name</label>
-        <input
-          id="biz-name"
-          value={form.business_name}
-          onChange={(event) => setForm({ ...form, business_name: event.target.value })}
+    <>
+      <div className="panel settings-form">
+        <h2>Business Settings</h2>
+        <ErrorMessage>{error}</ErrorMessage>
+        {!isAdmin ? (
+          <p className="page-lead">
+            Only admins can change settings. The switch is shown disabled for this role.
+          </p>
+        ) : null}
+        <div className="form-row">
+          <label htmlFor="biz-name">Business Name</label>
+          <input
+            id="biz-name"
+            value={form.business_name}
+            disabled={!isAdmin}
+            onChange={(event) => setForm({ ...form, business_name: event.target.value })}
+          />
+        </div>
+        <div className="form-row">
+          <label htmlFor="max-term">Maximum Lay-Away Term (Months)</label>
+          <input
+            id="max-term"
+            value={form.max_term_months}
+            disabled={!isAdmin}
+            onChange={(event) =>
+              setForm({ ...form, max_term_months: Number(event.target.value) })
+            }
+          />
+        </div>
+        <div className="form-row">
+          <label htmlFor="penalty">Late Payment Penalty (per day)</label>
+          <input
+            id="penalty"
+            value={`₱${form.late_penalty_per_day}`}
+            disabled={!isAdmin}
+            onChange={(event) =>
+              setForm({
+                ...form,
+                late_penalty_per_day: Number(String(event.target.value).replace(/[^\d]/g, '')),
+              })
+            }
+          />
+        </div>
+        <SettingsSwitch
+          id="setting-require-full"
+          label="Require full payment before item release"
+          checked={form.require_full_payment_before_release}
+          disabled={!isAdmin}
+          onToggle={() => toggle('require_full_payment_before_release')}
         />
-      </div>
-      <div className="form-row">
-        <label htmlFor="max-term">Maximum Lay-Away Term (Months)</label>
-        <input
-          id="max-term"
-          value={form.max_term_months}
-          onChange={(event) => setForm({ ...form, max_term_months: Number(event.target.value) })}
+        <SettingsSwitch
+          id="setting-sms-reminders"
+          label="Send SMS payment reminders"
+          checked={form.sms_reminders}
+          disabled={!isAdmin}
+          onToggle={() => toggle('sms_reminders')}
         />
+        <SettingsSwitch
+          id="setting-customer-dates"
+          label="Allow customer-selected due dates"
+          checked={form.customer_selected_due_dates}
+          disabled={!isAdmin}
+          onToggle={() => toggle('customer_selected_due_dates')}
+        />
+        <SettingsSwitch
+          id="setting-notify-accounting"
+          label="Also send alerts to accounting accounts"
+          checked={Boolean(form.notify_accounting_roles)}
+          disabled={!isAdmin}
+          onToggle={() => toggle('notify_accounting_roles')}
+        />
+        <p className="field-hint">
+          Admins always receive alerts. Turn this on to include receivables, ledger and reporting
+          accounts, by email and in their bell.
+        </p>
+        <div style={{ marginTop: 18 }}>
+          <Button variant="primary" onClick={handleSave} disabled={!isAdmin}>
+            Save Changes
+          </Button>
+        </div>
       </div>
-      <div className="form-row">
-        <label htmlFor="penalty">Late Payment Penalty (per day)</label>
-        <input
-          id="penalty"
-          value={`₱${form.late_penalty_per_day}`}
-          onChange={(event) =>
-            setForm({
-              ...form,
-              late_penalty_per_day: Number(String(event.target.value).replace(/[^\d]/g, '')),
+      <div className="panel">
+        <ChangePasswordForm
+          onSubmit={({ currentPassword, newPassword }) =>
+            changeAdminPassword({
+              currentPassword,
+              newPassword,
             })
           }
         />
       </div>
-      <div className="toggle-row">
-        <span id="setting-require-full">Require full payment before item release</span>
-        <div
-          className={form.require_full_payment_before_release ? 'switch on' : 'switch'}
-          role="switch"
-          aria-checked={form.require_full_payment_before_release}
-          aria-labelledby="setting-require-full"
-          tabIndex={0}
-          onClick={() => toggle('require_full_payment_before_release')}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              toggle('require_full_payment_before_release');
-            }
-          }}
-        />
-      </div>
-      <div className="toggle-row">
-        <span id="setting-sms-reminders">Send SMS payment reminders</span>
-        <div
-          className={form.sms_reminders ? 'switch on' : 'switch'}
-          role="switch"
-          aria-checked={form.sms_reminders}
-          aria-labelledby="setting-sms-reminders"
-          tabIndex={0}
-          onClick={() => toggle('sms_reminders')}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              toggle('sms_reminders');
-            }
-          }}
-        />
-      </div>
-      <div className="toggle-row">
-        <span id="setting-customer-dates">Allow customer-selected due dates</span>
-        <div
-          className={form.customer_selected_due_dates ? 'switch on' : 'switch'}
-          role="switch"
-          aria-checked={form.customer_selected_due_dates}
-          aria-labelledby="setting-customer-dates"
-          tabIndex={0}
-          onClick={() => toggle('customer_selected_due_dates')}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              toggle('customer_selected_due_dates');
-            }
-          }}
-        />
-      </div>
-      <div style={{ marginTop: 18 }}>
-        <Button variant="primary" onClick={handleSave}>
-          Save Changes
-        </Button>
-      </div>
-    </div>
+    </>
   );
 }

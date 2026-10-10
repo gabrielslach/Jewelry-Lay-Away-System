@@ -26,12 +26,26 @@
 }
 
 .sb-link {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   color: var(--footer-muted);
   text-decoration: none;
   padding: 10px 12px;
   border-radius: 8px;
   margin-top: 6px;
+}
+
+.sb-badge {
+  min-width: 1.5rem;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--warn);
+  color: var(--on-accent);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
 }
 
 .sb-link.active,

@@ -1,76 +1,37 @@
-import { useMemo, useState } from 'react';
-import { CheckIcon } from '../theme/assets.js';
-import { createLayawayPlan, defaultDates } from '../services/createLayawayPlan.js';
-import { mockGatewayPayment } from '../services/mockGatewayPayment.js';
+import { useState } from 'react';
+import { createLayawayPlan } from '../services/createLayawayPlan.js';
+import { termMonthOptions } from '../data/plans.js';
 import { ServiceError } from '../services/http.js';
-import { formatPeso, splitAmount } from '../lib/money.js';
+import { formatDisplayDate } from '../lib/dates.js';
+import { formatPesoDecimals } from '../lib/money.js';
 import Button from './Button.jsx';
 import ErrorMessage from './ErrorMessage.jsx';
+import ManualPaymentForm from './ManualPaymentForm.jsx';
 import Modal from './Modal.jsx';
 import { useSession } from './useSession.js';
-import { useToast } from './useToast.js';
 import './Checkout.css';
 import './PieceDetail.css';
 
-const TERMS = [
-  { payments: 6, label: '3 Months (6 payments)' },
-  { payments: 4, label: '2 Months (4 payments)' },
-  { payments: 2, label: '1 Month (2 payments)' },
-];
+const TERM_OPTIONS = termMonthOptions(3);
 
-const PAY_METHODS = [
-  { id: 'gcash', label: 'GCash / E-Wallet' },
-  { id: 'bank', label: 'Bank Transfer' },
-  { id: 'card', label: 'Credit / Debit Card' },
-];
-
-export default function Checkout({ piece, onClose, onScheduled, onPayMethod }) {
-  const { showToast } = useToast();
+export default function Checkout({ piece, onClose, onScheduled }) {
   const { customer } = useSession();
-  const [step, setStep] = useState(1);
-  const [payments, setPayments] = useState(6);
-  const [dates, setDates] = useState(() => defaultDates(6));
-  const [method, setMethod] = useState('gcash');
-  const [planId, setPlanId] = useState(null);
+  const [termMonths, setTermMonths] = useState(TERM_OPTIONS[0].termMonths);
+  const [plan, setPlan] = useState(null);
   const [error, setError] = useState(null);
+  const [showDownPaymentForm, setShowDownPaymentForm] = useState(false);
 
-  const amounts = useMemo(
-    () => splitAmount(piece.price, payments),
-    [piece.price, payments],
-  );
-
-  function handleTermChange(event) {
-    const count = Number(event.target.value);
-    setPayments(count);
-    setDates(defaultDates(count));
-  }
-
-  function handleDateChange(index, value) {
-    setDates((current) => current.map((date, i) => (i === index ? value : date)));
-  }
+  const schedule = plan?.schedule ?? [];
 
   async function handleContinue() {
     setError(null);
     try {
-      if (step === 1) {
-        const plan = await createLayawayPlan({
-          productId: piece.id,
-          paymentCount: payments,
-          dates,
-        });
-        setPlanId(plan.id);
-        onScheduled?.({ plan, payments, dates, amounts });
-        setStep(2);
-        return;
-      }
-      if (step === 2) {
-        if (method !== 'bank' && planId) {
-          await mockGatewayPayment({ planId, method });
-        }
-        onPayMethod?.(method);
-        showToast(`Reservation submitted for ${piece.name}.`);
-        setStep(3);
-      }
+      const created = await createLayawayPlan({
+        productId: piece.id,
+        termMonths,
+      });
+      setPlan(created);
+      onScheduled?.({ plan: created, termMonths });
     } catch (err) {
       setError(err instanceof ServiceError ? err.message : 'Unable to continue checkout.');
     }
@@ -101,90 +62,71 @@ export default function Checkout({ piece, onClose, onScheduled, onPayMethod }) {
     );
   }
 
+  const footer = !plan ? (
+    <>
+      <Button variant="outline" onClick={onClose}>
+        Cancel
+      </Button>
+      <Button variant="primary" onClick={handleContinue}>
+        Continue
+      </Button>
+    </>
+  ) : null;
+
   return (
-    <Modal
-      title="Reserve on Lay-Away"
-      onClose={onClose}
-      footer={
-        step < 3 ? (
-          <>
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button variant="primary" onClick={handleContinue}>
-              Continue
-            </Button>
-          </>
-        ) : (
-          <Button variant="primary" className="checkout-done" onClick={onClose}>
-            Done
-          </Button>
-        )
-      }
-    >
+    <Modal title="Reserve on Lay-Away" onClose={onClose} footer={footer}>
       <ErrorMessage>{error}</ErrorMessage>
-      {step === 1 ? (
-        <>
-          <div className="form-row">
-            <label htmlFor="plan-term">Lay-Away Term</label>
-            <select id="plan-term" value={payments} onChange={handleTermChange}>
-              {TERMS.map((term) => (
-                <option key={term.payments} value={term.payments}>
-                  {term.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="plan-box">
-            <h4>Choose Each Payment Date</h4>
-            <div className="schedule-list">
-              {dates.map((date, index) => (
-                <div className="schedule-row" key={index}>
-                  <span>Payment {index + 1}</span>
-                  <input
-                    type="date"
-                    value={date}
-                    aria-label={`Payment ${index + 1} date`}
-                    onChange={(event) => handleDateChange(index, event.target.value)}
-                  />
-                  <b>{formatPeso(amounts[index])}</b>
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
-      ) : null}
-      {step === 2 ? (
+      {!plan ? (
+        <div className="form-row">
+          <label htmlFor="plan-term">Lay-Away Term</label>
+          <select
+            id="plan-term"
+            value={termMonths}
+            onChange={(event) => setTermMonths(Number(event.target.value))}
+          >
+            {TERM_OPTIONS.map((term) => (
+              <option key={term.termMonths} value={term.termMonths}>
+                {term.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : (
         <div className="plan-box">
-          <h4>Choose Payment Method</h4>
-          <div className="pay-method-list">
-            {PAY_METHODS.map((option) => (
-              <label
-                className={method === option.id ? 'pay-method selected' : 'pay-method'}
-                key={option.id}
-              >
-                <input
-                  type="radio"
-                  name="payMethod"
-                  value={option.id}
-                  checked={method === option.id}
-                  onChange={() => setMethod(option.id)}
-                />
-                <span>{option.label}</span>
-              </label>
+          <h4>Down payment</h4>
+          <div className="schedule-row">
+            <span>Due now</span>
+            <b>{formatPesoDecimals(plan.down_payment_amount)}</b>
+          </div>
+          <h4>Payment schedule</h4>
+          <div className="schedule-list">
+            {schedule.map((row) => (
+              <div className="schedule-row" key={row.term_number}>
+                <span>
+                  Payment {row.term_number} · {formatDisplayDate(row.due_date)}
+                </span>
+                <b>{formatPesoDecimals(row.amount)}</b>
+              </div>
             ))}
           </div>
+          {!showDownPaymentForm ? (
+            <Button variant="primary" onClick={() => setShowDownPaymentForm(true)}>
+              Pay down payment
+            </Button>
+          ) : (
+            <ManualPaymentForm
+              planId={plan.id}
+              kind="down_payment"
+              expectedAmount={plan.down_payment_amount}
+              onCancel={() => setShowDownPaymentForm(false)}
+              onSuccess={() => {
+                setShowDownPaymentForm(false);
+                onClose();
+              }}
+            />
+          )}
         </div>
-      ) : null}
-      {step === 3 ? (
-        <div className="confirm-box">
-          <div className="confirm-icon">
-            <CheckIcon size={26} title="" />
-          </div>
-          <h3>Reservation Submitted</h3>
-          <p>Our team will confirm your payment schedule and hold the piece for you.</p>
-        </div>
-      ) : null}
+      )}
     </Modal>
   );
 }

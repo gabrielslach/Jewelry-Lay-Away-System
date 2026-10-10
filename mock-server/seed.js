@@ -114,6 +114,7 @@ export function initialAdmin() {
     name: 'Sample Admin',
     email: 'admin@samplejewelry.example',
     password: 'password',
+    role: 'admin',
   };
 }
 
@@ -203,7 +204,18 @@ export function initialPlans(catalog) {
       note: 'Markup not applied (mock).',
       completed: false,
       completed_on: null,
-      installments,
+      down_payment_amount: Math.round(Number(product.price) * 1.3 * 0.3),
+      down_payment_status: 'paid',
+      down_payment_rejection_reason: null,
+      reservation_status: 'reserved',
+      reservation_error: null,
+      down_payment_confirmed_at: '2026-08-01',
+      grace_period_days: 7,
+      installments: installments.map((row, index) => ({
+        ...row,
+        term_number: index + 1,
+        rejection_reason: null,
+      })),
     };
   });
 }
@@ -254,5 +266,7 @@ export function initialSettings() {
     require_full_payment_before_release: true,
     sms_reminders: true,
     customer_selected_due_dates: true,
+    notify_accounting_roles: false,
+    grace_period_days: 7,
   };
 }

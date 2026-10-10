@@ -14,6 +14,7 @@ export default function Login() {
   const location = useLocation();
   const fromParam = new URLSearchParams(location.search).get('from');
   const from = returnPath(fromParam);
+  const notice = location.state?.notice;
   const [email, setEmail] = useState('client@sampleemail.com');
   const [password, setPassword] = useState('password');
   const [error, setError] = useState(null);
@@ -43,6 +44,7 @@ export default function Login() {
     <section className="page-block">
       <h1>Sign in</h1>
       <p className="page-lead">Access your lay-away plans with your customer account.</p>
+      {notice ? <p className="auth-notice">{notice}</p> : null}
       <ErrorMessage>{error}</ErrorMessage>
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="form-row">
@@ -66,6 +68,9 @@ export default function Login() {
             autoComplete="current-password"
             required
           />
+          <p className="auth-switch">
+            <Link to="/forgot-password">Forgot password?</Link>
+          </p>
         </div>
         <Button variant="primary" type="submit">
           Sign in

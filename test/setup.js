@@ -13,11 +13,20 @@ beforeEach(() => {
   vi.stubGlobal('fetch', async (input, init = {}) => {
     const url = typeof input === 'string' ? input : input.url;
     const headers = init.headers || {};
+    let body;
+    if (init.body instanceof FormData) {
+      body = {};
+      init.body.forEach((value, key) => {
+        body[key] = value;
+      });
+    } else if (init.body) {
+      body = JSON.parse(init.body);
+    }
     const result = handleRequest(store, {
       method: init.method || 'GET',
       url,
       headers,
-      body: init.body ? JSON.parse(init.body) : undefined,
+      body,
     });
     if (!result) {
       return {
