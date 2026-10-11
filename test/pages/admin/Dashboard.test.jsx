@@ -1,12 +1,18 @@
 import { MemoryRouter } from 'react-router-dom';
 import { render, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../../../src/App.jsx';
+import { signInAdmin, signOutAdmin } from '../../helpers/adminAuth.js';
 import * as getAdminDashboardModule from '../../../src/services/getAdminDashboard.js';
 
 describe('admin dashboard', () => {
+  beforeEach(async () => {
+    await signInAdmin();
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
+    signOutAdmin();
   });
 
   it('shows KPI, chart, and activity skeleton bones until the dashboard loads', async () => {

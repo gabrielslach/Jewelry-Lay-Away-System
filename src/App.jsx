@@ -15,6 +15,7 @@ import AccountNotifications from './pages/AccountNotifications.jsx';
 import Customers from './pages/admin/Customers.jsx';
 import Dashboard from './pages/admin/Dashboard.jsx';
 import DuePayments from './pages/admin/DuePayments.jsx';
+import AdminLogin from './pages/admin/Login.jsx';
 import AdminNotifications from './pages/admin/Notifications.jsx';
 import Orders from './pages/admin/Orders.jsx';
 import PendingPayments from './pages/admin/PendingPayments.jsx';
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="/account" element={<Account />} />
             <Route path="/account/notifications" element={<AccountNotifications />} />
           </Route>
+          <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="orders" element={<Orders />} />

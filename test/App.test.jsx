@@ -1,9 +1,18 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../src/App.jsx';
+import { signInAdmin, signOutAdmin } from './helpers/adminAuth.js';
 
 describe('App', () => {
+  beforeEach(async () => {
+    await signInAdmin();
+  });
+
+  afterEach(() => {
+    signOutAdmin();
+  });
+
   it('renders the home page', async () => {
     render(
       <MemoryRouter>
@@ -25,6 +34,16 @@ describe('App', () => {
       </MemoryRouter>,
     );
     expect(screen.getByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
+  });
+
+  it('sends signed-out admin visits to admin login', () => {
+    signOutAdmin();
+    render(
+      <MemoryRouter initialEntries={['/admin']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('heading', { name: 'Admin sign in' })).toBeInTheDocument();
   });
 
   it('renders the admin dashboard', async () => {

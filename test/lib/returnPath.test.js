@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { returnPath } from '../../src/lib/returnPath.js';
+import { adminReturnPath, returnPath } from '../../src/lib/returnPath.js';
 
 describe('returnPath', () => {
   it('keeps a same-site path with its query', () => {
@@ -12,6 +12,10 @@ describe('returnPath', () => {
 
   it('falls back to the account page for a missing from', () => {
     expect(returnPath(null)).toBe('/account');
+  });
+
+  it('uses a custom fallback when provided', () => {
+    expect(returnPath(null, '/admin')).toBe('/admin');
   });
 
   it.each([
@@ -28,5 +32,17 @@ describe('returnPath', () => {
     '/./\\evil.com',
   ])('falls back to the account page for %j', (from) => {
     expect(returnPath(from)).toBe('/account');
+  });
+});
+
+describe('adminReturnPath', () => {
+  it('keeps admin destinations', () => {
+    expect(adminReturnPath('/admin/orders')).toBe('/admin/orders');
+  });
+
+  it('falls back for storefront or login paths', () => {
+    expect(adminReturnPath('/account')).toBe('/admin');
+    expect(adminReturnPath('/admin/login')).toBe('/admin');
+    expect(adminReturnPath(null)).toBe('/admin');
   });
 });

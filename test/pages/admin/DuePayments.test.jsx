@@ -1,10 +1,20 @@
 import { MemoryRouter } from 'react-router-dom';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../../../src/App.jsx';
+import { signInAdmin, signOutAdmin } from '../../helpers/adminAuth.js';
 import * as adminPayments from '../../../src/services/adminPayments.js';
 
 describe('DuePayments', () => {
+  beforeEach(async () => {
+    await signInAdmin();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    signOutAdmin();
+  });
+
   it('filters due-today and overdue rows and opens a summary dialog', async () => {
     vi.spyOn(adminPayments, 'getAdminDuePayments').mockResolvedValue({
       items: [
