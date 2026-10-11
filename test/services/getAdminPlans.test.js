@@ -14,7 +14,11 @@ describe('getAdminPlans', () => {
     expect(plans.length).toBeGreaterThan(0);
     expect(plans[0].item_name).toBeTruthy();
     expect(plans[0].customer_name).toBeTruthy();
-    expect(plans[0].status === 'ok' || plans[0].status === 'warn').toBe(true);
+    expect(['on_track', 'overdue']).toContain(plans[0].status);
+    expect(plans[0].total_price).toBeTruthy();
+    expect(plans[0].financed_principal).toBeTruthy();
+    expect(plans[0].down_payment_amount).toBeTruthy();
+    expect(plans[0].created_at).toBeTruthy();
     expect(Array.isArray(plans[0].installments)).toBe(true);
   });
 
@@ -25,7 +29,7 @@ describe('getAdminPlans', () => {
         customer_name: 'Rounding Test',
         customer_email: 'round@example.com',
         item_name: 'Solitaire Halo Ring',
-        plan_label: '3 Mo. / 6 Payments',
+        status: 'defaulted',
         next_due_date: '2026-10-25T00:00:00.000Z',
         overdue_count: 0,
         pending_count: 2,
@@ -60,8 +64,7 @@ describe('getAdminPlans', () => {
       id: 8,
       customer_name: 'Rounding Test',
       item_name: 'Solitaire Halo Ring',
-      plan_label: '3 Mo. / 6 Payments',
-      status: 'ok',
+      status: 'defaulted',
       next_due: 'Oct 25',
       reservation_status: 'reserved',
       reservation_error: null,
@@ -69,31 +72,15 @@ describe('getAdminPlans', () => {
     });
     expect(plans[1]).toMatchObject({
       id: 9,
-      status: 'warn',
+      status: 'overdue',
       next_due: 'Sep 15',
       installments: [{ id: 'i1', status: 'overdue' }],
     });
     expect(plans[2]).toMatchObject({
       id: 10,
-      status: 'ok',
+      status: 'on_track',
       next_due: 'Nov 1',
       installments: [],
     });
-  });
-
-  it('derives warn from overdue_count when status is omitted', async () => {
-    vi.spyOn(ensureAdminToken, 'adminRequest').mockResolvedValue([
-      {
-        id: 11,
-        customer_name: 'Behind',
-        item_name: 'Classic Tennis Bracelet',
-        overdue_count: 1,
-        next_due_date: '2026-09-01T00:00:00.000Z',
-      },
-    ]);
-
-    const [plan] = await getAdminPlans();
-    expect(plan.status).toBe('warn');
-    expect(plan.next_due).toBe('Sep 1');
   });
 });

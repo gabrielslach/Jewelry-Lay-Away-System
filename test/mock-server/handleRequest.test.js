@@ -108,7 +108,26 @@ describe('mock API', () => {
     expect(dash.body.active_layaways).toBe(5);
     expect(dash.body.collected_this_month).toBe(184200);
     const customers = call(store, 'GET', '/api/admin/customers', { headers: auth });
-    expect(customers.body.results.some((row) => row.name === 'Sample Shopper')).toBe(true);
+    expect(customers.body.some((row) => row.name === 'Sample Shopper')).toBe(true);
+  });
+
+  it('revokes a customer sessions via the admin endpoint', () => {
+    const store = createStore();
+    const admin = call(store, 'POST', '/api/dev/session/admin', { body: {} });
+    const auth = { authorization: `Bearer ${admin.body.access_token}` };
+    const login = call(store, 'POST', '/api/customers/login', {
+      body: { email: 'client@sampleemail.com', password: 'password' },
+    });
+    const id = login.body.customer.id;
+    const url = `/api/admin/customers/${id}/sessions`;
+    expect(call(store, 'DELETE', url).status).toBe(401);
+    expect(call(store, 'DELETE', '/api/admin/customers/9999/sessions', { headers: auth }).status).toBe(404);
+    expect(call(store, 'DELETE', url, { headers: auth }).status).toBe(200);
+    expect(
+      call(store, 'POST', '/api/customers/refresh', {
+        body: { refresh_token: login.body.refresh_token },
+      }).status,
+    ).toBe(401);
   });
 
   it('expires access tokens at 15 minutes and refresh tokens at 24 hours', () => {

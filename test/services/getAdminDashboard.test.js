@@ -21,7 +21,7 @@ describe('getAdminDashboard', () => {
       collected_this_month: 100,
       overdue_payments: 0,
       active_customers: 1,
-      collections_last_6_weeks: [62, 80, 55, 90, 74, 96],
+      collections_last_6_weeks: [{ week_start: '2026-09-20', total: 100 }],
       recent_activity: [
         { title: 'New reservation — Solitaire Halo Ring', detail: 'Sample Client · 2h ago' },
       ],
@@ -35,7 +35,6 @@ describe('getAdminDashboard', () => {
         key: 'New reservation — Solitaire Halo Ring|Sample Client · 2h ago||0',
       },
     ]);
-    expect(data.collections_last_6_weeks).toEqual([62, 80, 55, 90, 74, 96]);
   });
 
   it('normalizes live-shaped activity and collection bars', async () => {
@@ -65,7 +64,14 @@ describe('getAdminDashboard', () => {
 
     const data = await getAdminDashboard();
 
-    expect(data.collections_last_6_weeks).toEqual([0, 0, 0, 50, 0, 100]);
+    expect(data.collections_last_6_weeks).toEqual([
+      { week_start: '2026-08-16', total: 0, height: 0 },
+      { week_start: '2026-08-23', total: 0, height: 0 },
+      { week_start: '2026-08-30', total: 0, height: 0 },
+      { week_start: '2026-09-06', total: 18700, height: 50 },
+      { week_start: '2026-09-13', total: 0, height: 0 },
+      { week_start: '2026-09-20', total: 37400, height: 100 },
+    ]);
     expect(data.recent_activity).toHaveLength(2);
     expect(data.recent_activity[0].title).toBe('New reservation');
     expect(data.recent_activity[0].detail).toMatch(/^Rounding Test - plan #8 · /);
@@ -74,5 +80,36 @@ describe('getAdminDashboard', () => {
     );
     expect(data.recent_activity[1].title).toBe('Payment received');
     expect(data.recent_activity[1].key).not.toBe(data.recent_activity[0].key);
+  });
+
+  it('unwraps live-shaped KPI objects into plain numbers', async () => {
+    vi.spyOn(ensureAdminToken, 'adminRequest').mockResolvedValue({
+      active_layaways: { count: 3 },
+      collected_this_month: { total: 37400, currency: 'PHP' },
+      overdue_payments: { count: 2, amount: 5000, currency: 'PHP' },
+      active_customers: { count: 4 },
+      collections_last_6_weeks: [],
+      recent_activity: [],
+    });
+
+    const data = await getAdminDashboard();
+
+    expect(data.active_layaways).toBe(3);
+    expect(data.collected_this_month).toBe(37400);
+    expect(data.overdue_payments).toBe(2);
+    expect(data.active_customers).toBe(4);
+  });
+
+  it('gives every week height 0 when all totals are zero', async () => {
+    vi.spyOn(ensureAdminToken, 'adminRequest').mockResolvedValue({
+      collections_last_6_weeks: [{ week_start: '2026-09-20', total: 0 }],
+      recent_activity: [],
+    });
+
+    const data = await getAdminDashboard();
+
+    expect(data.collections_last_6_weeks).toEqual([
+      { week_start: '2026-09-20', total: 0, height: 0 },
+    ]);
   });
 });

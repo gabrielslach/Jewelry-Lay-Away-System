@@ -25,6 +25,8 @@ describe('getCustomerOrders', () => {
       next_due: 'Oct 25',
     });
     expect(active.installments.length).toBeGreaterThan(0);
+    expect(active).not.toHaveProperty('total_payable');
+    expect(active).not.toHaveProperty('image_url');
 
     const completed = orders.completed.find((row) => row.id === 987);
     expect(completed).toMatchObject({

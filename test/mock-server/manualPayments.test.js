@@ -50,4 +50,49 @@ describe('mock manual payments', () => {
     });
     expect(due.body.items.some((row) => row.awaiting_confirmation)).toBe(true);
   });
+
+  it('requires earlier installments before accepting a not-yet-due one', () => {
+    const store = createStore();
+    const session = call(store, 'POST', '/api/dev/session/customer', { body: {} });
+    const auth = { authorization: `Bearer ${session.body.access_token}` };
+    const created = call(store, 'POST', '/api/layaway/plans', {
+      headers: auth,
+      body: { product_id: galleryPage.results[0].id, term_months: 3 },
+    });
+    const [first, second] = created.body.schedule;
+    const submit = (id, amount, ref) =>
+      call(store, 'POST', `/api/layaway/plans/${created.body.id}/payments/manual`, {
+        headers: auth,
+        body: {
+          installment_id: id,
+          bank_account_id: 1,
+          reference_number: ref,
+          amount: String(amount),
+          paid_on: store.now().toISOString().slice(0, 10),
+        },
+      });
+    expect(submit(`${created.body.id}-i2`, second.amount, 'BT-SKIP').status).toBe(409);
+    expect(submit(`${created.body.id}-i1`, first.amount, 'BT-FIRST').status).toBe(201);
+    expect(submit(`${created.body.id}-i2`, second.amount, 'BT-SECOND').status).toBe(201);
+  });
+
+  it('adds money, image and as-of fields to customer orders', () => {
+    const store = createStore();
+    const login = call(store, 'POST', '/api/customers/login', {
+      body: { email: 'client@sampleemail.com', password: 'password' },
+    });
+    const orders = call(store, 'GET', '/api/customers/orders', {
+      headers: { authorization: `Bearer ${login.body.access_token}` },
+    });
+    const active = orders.body.find((row) => row.id === 1001);
+    const installmentTotal = active.installments.reduce((sum, row) => sum + Number(row.amount), 0);
+    const paid = active.installments
+      .filter((row) => row.status === 'paid')
+      .reduce((sum, row) => sum + Number(row.amount), 0);
+    expect(active.total_payable).toBe(active.down_payment_amount + installmentTotal);
+    expect(active.amount_paid).toBe(active.down_payment_amount + paid);
+    expect(active.financed_principal).toBeGreaterThan(0);
+    expect(active.as_of).toBe(store.now().toISOString().slice(0, 10));
+    expect(active).toHaveProperty('image_url');
+  });
 });

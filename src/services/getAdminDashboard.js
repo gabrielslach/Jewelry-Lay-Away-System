@@ -9,19 +9,21 @@ function formatActivityTimestamp(timestamp) {
   });
 }
 
+function unwrap(value, key) {
+  return value !== null && typeof value === 'object' ? value[key] : value;
+}
+
 function normalizeCollections(weeks) {
-  if (!Array.isArray(weeks) || weeks.length === 0) {
+  if (!Array.isArray(weeks)) {
     return [];
   }
-  if (typeof weeks[0] === 'number') {
-    return weeks;
-  }
-  const totals = weeks.map((week) => Number(week?.total) || 0);
+  const totals = weeks.map((week) => Number(week.total) || 0);
   const max = Math.max(...totals, 0);
-  if (max === 0) {
-    return totals.map(() => 0);
-  }
-  return totals.map((total) => Math.round((total / max) * 100));
+  return weeks.map((week, index) => ({
+    week_start: week.week_start,
+    total: totals[index],
+    height: max === 0 ? 0 : Math.round((totals[index] / max) * 100),
+  }));
 }
 
 function normalizeActivity(items) {
@@ -44,6 +46,10 @@ export async function getAdminDashboard() {
   const data = await adminRequest('/api/admin/dashboard');
   return {
     ...data,
+    active_layaways: unwrap(data.active_layaways, 'count'),
+    collected_this_month: unwrap(data.collected_this_month, 'total'),
+    overdue_payments: unwrap(data.overdue_payments, 'count'),
+    active_customers: unwrap(data.active_customers, 'count'),
     collections_last_6_weeks: normalizeCollections(data.collections_last_6_weeks),
     recent_activity: normalizeActivity(data.recent_activity),
   };

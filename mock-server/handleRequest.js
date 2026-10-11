@@ -146,9 +146,28 @@ function listStatusToContract(plan) {
   return plan.list_status === 'warn' ? 'overdue' : 'on_track';
 }
 
+function orderMoney(plan) {
+  const live = plan.installments.filter((row) => row.status !== 'superseded');
+  const installmentTotal = live.reduce((sum, row) => sum + Number(row.amount), 0);
+  const paidInstallments = live
+    .filter((row) => row.status === 'paid')
+    .reduce((sum, row) => sum + Number(row.amount), 0);
+  const downPayment = Number(plan.down_payment_amount ?? 0);
+  return {
+    total_payable: downPayment + installmentTotal,
+    amount_paid: (plan.down_payment_status === 'paid' ? downPayment : 0) + paidInstallments,
+  };
+}
+
 function orderView(store, plan) {
   refreshPlan(store, plan);
+  const product = store.catalog.find((p) => p.id === plan.product_id);
+  const image = product?.images?.find((img) => img.is_primary) ?? product?.images?.[0];
   return {
+    ...orderMoney(plan),
+    as_of: todayIso(store),
+    image_url: image?.url ?? null,
+    financed_principal: plan.financed_principal ?? null,
     id: orderNumericId(plan.id),
     item_name: plan.item_name,
     term_months: plan.term_months,
@@ -192,7 +211,11 @@ function adminPlanView(store, plan) {
     item_name: plan.item_name,
     plan_label: plan.plan_label,
     next_due: plan.next_due,
-    status: plan.completed ? 'completed' : plan.list_status,
+    status: listStatusToContract(plan),
+    created_at: asIso(plan.created_at) ?? '2026-01-15T00:00:00.000Z',
+    total_price: plan.total_price,
+    financed_principal: plan.financed_principal,
+    down_payment_amount: plan.down_payment_amount,
     customer_id: plan.customer_id,
     reservation_status: plan.reservation_status ?? 'none',
     reservation_error: plan.reservation_error ?? null,
@@ -357,6 +380,19 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     if (inst.status === 'submitted') {
       return json(409, { error: 'Payment already awaiting confirmation' });
     }
+    if (inst.status === 'pending' && inst.due_date > todayIso(store)) {
+      const earlierOpen = plan.installments.some(
+        (i) =>
+          i !== inst &&
+          i.status !== 'superseded' &&
+          i.due_date < inst.due_date &&
+          i.status !== 'paid' &&
+          i.status !== 'submitted',
+      );
+      if (earlierOpen) {
+        return json(409, { error: 'Earlier payments must be paid first' });
+      }
+    }
     store.usedReferences.add(body.reference_number.trim());
     const payment = {
       id: store.nextPaymentId,
@@ -427,6 +463,9 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
       term_months: plan.term_months,
       installments: plan.installments,
       status: plan.completed ? 'completed' : plan.list_status,
+      item_name: plan.item_name,
+      plan_label: plan.plan_label,
+      reservation_status: plan.reservation_status ?? 'none',
       note: plan.note,
     });
   }
@@ -612,7 +651,14 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
       collected_this_month: 184200,
       overdue_payments: active.filter((p) => p.list_status === 'warn').length,
       active_customers: new Set(active.map((p) => p.customer_id)).size,
-      collections_last_6_weeks: [62, 80, 55, 90, 74, 96],
+      collections_last_6_weeks: [
+        { week_start: '2026-08-30', total: 6200 },
+        { week_start: '2026-09-06', total: 8000 },
+        { week_start: '2026-09-13', total: 5500 },
+        { week_start: '2026-09-20', total: 9000 },
+        { week_start: '2026-09-27', total: 7400 },
+        { week_start: '2026-10-04', total: 9600 },
+      ],
       recent_activity: [
         { title: 'New reservation — Solitaire Halo Ring', detail: 'Sample Client · 2h ago' },
         { title: 'Payment received — LA-1003', detail: '₱10,833 · 5h ago' },
@@ -635,7 +681,25 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
       member_since: c.member_since,
       active_layaways: store.plans.filter((p) => p.customer_id === c.id && !p.completed).length,
     }));
-    return json(200, { results: rows });
+    return json(200, rows);
+  }
+
+  params = match(path, '/api/admin/customers/:id/sessions');
+  if (verb === 'DELETE' && params) {
+    const gate = requireAdmin(store, headers);
+    if (gate.error) {
+      return gate.error;
+    }
+    const customer = customerById(store, params.id);
+    if (!customer) {
+      return json(404, { error: 'Not found' });
+    }
+    for (const [token, entry] of store.tokens) {
+      if (entry.id === customer.id && (entry.kind === 'refresh' || entry.kind === 'customer')) {
+        store.tokens.delete(token);
+      }
+    }
+    return json(200, {});
   }
 
   params = match(path, '/api/admin/customers/:id');

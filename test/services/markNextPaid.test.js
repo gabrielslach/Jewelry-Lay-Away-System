@@ -6,8 +6,8 @@ import { getAdminPlans } from '../../src/services/getAdminPlans.js';
 describe('markNextPaid', () => {
   it('marks a plan on track', async () => {
     await ensureAdminToken();
-    const overdue = (await getAdminPlans()).find((plan) => plan.status === 'warn');
+    const overdue = (await getAdminPlans()).find((plan) => plan.status === 'overdue');
     const updated = await markNextPaid(overdue.id);
-    expect(updated.status).toBe('ok');
+    expect(updated.status).toBe('on_track');
   });
 });

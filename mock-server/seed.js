@@ -205,6 +205,7 @@ export function initialPlans(catalog) {
       completed: false,
       completed_on: null,
       down_payment_amount: Math.round(Number(product.price) * 1.3 * 0.3),
+      financed_principal: Math.round(Number(product.price) * 1.3 * 0.7),
       down_payment_status: 'paid',
       down_payment_rejection_reason: null,
       reservation_status: 'reserved',
