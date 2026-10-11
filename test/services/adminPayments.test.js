@@ -6,6 +6,7 @@ import {
   rejectAdminPayment,
 } from '../../src/services/adminPayments.js';
 import { createLayawayPlan } from '../../src/services/createLayawayPlan.js';
+import { ensureAdminToken } from '../../src/services/ensureAdminToken.js';
 import { getGallery } from '../../src/services/getGallery.js';
 import { loginCustomer } from '../../src/services/loginCustomer.js';
 import {
@@ -15,6 +16,7 @@ import {
 
 describe('adminPayments', () => {
   it('loads pending and due lists for staff', async () => {
+    await ensureAdminToken();
     const pending = await getAdminPendingPayments();
     const due = await getAdminDuePayments();
     expect(Array.isArray(pending)).toBe(true);
@@ -22,6 +24,7 @@ describe('adminPayments', () => {
   });
 
   it('confirms a down payment and rejects an installment', async () => {
+    await ensureAdminToken();
     await loginCustomer({ email: 'client@sampleemail.com', password: 'password' });
     const { results } = await getGallery({ pageSize: 1 });
     const plan = await createLayawayPlan({ productId: results[0].id, termMonths: 1 });

@@ -103,7 +103,7 @@ describe('mock API', () => {
     const store = createStore();
     expect(call(store, 'GET', '/api/admin/dashboard').status).toBe(401);
     const session = call(store, 'POST', '/api/dev/session/admin', { body: {} });
-    const auth = { authorization: `Bearer ${session.body.token}` };
+    const auth = { authorization: `Bearer ${session.body.access_token}` };
     const dash = call(store, 'GET', '/api/admin/dashboard', { headers: auth });
     expect(dash.body.active_layaways).toBe(5);
     expect(dash.body.collected_this_month).toBe(184200);
@@ -160,7 +160,7 @@ describe('mock API', () => {
     expect(refresh('unknown')).toBe(401);
   });
 
-  it('returns the customer envelope from register and dev session, admin unchanged', () => {
+  it('returns access/refresh envelopes for customer and admin sessions', () => {
     const store = createStore();
     const registered = call(store, 'POST', '/api/customers/register', {
       body: { name: 'New Guest', email: 'guest@sampleemail.com', password: 'password' },
@@ -172,11 +172,22 @@ describe('mock API', () => {
     const admin = call(store, 'POST', '/api/admin/login', {
       body: { email: 'admin@samplejewelry.example', password: 'password' },
     });
-    expect(Object.keys(admin.body).sort()).toEqual(['admin', 'token']);
+    expect(Object.keys(admin.body).sort()).toEqual(['access_token', 'admin', 'refresh_token']);
     expect(Object.keys(call(store, 'POST', '/api/dev/session/admin').body).sort()).toEqual([
+      'access_token',
       'admin',
-      'token',
+      'refresh_token',
     ]);
+    const refreshed = call(store, 'POST', '/api/admin/refresh', {
+      body: { refresh_token: admin.body.refresh_token },
+    });
+    expect(refreshed.status).toBe(200);
+    expect(Object.keys(refreshed.body)).toEqual(['access_token']);
+    expect(
+      call(store, 'GET', '/api/admin/dashboard', {
+        headers: { authorization: `Bearer ${refreshed.body.access_token}` },
+      }).status,
+    ).toBe(200);
   });
 
   it('rate-limits login after 10 attempts', () => {

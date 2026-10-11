@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { ensureAdminToken } from '../../src/services/ensureAdminToken.js';
 import { getAdminCustomers } from '../../src/services/getAdminCustomers.js';
 import { getAdminCustomer } from '../../src/services/getAdminCustomer.js';
 
 describe('admin customers', () => {
   it('lists Sample Shopper and loads detail', async () => {
+    await ensureAdminToken();
     const rows = await getAdminCustomers();
     const shopper = rows.find((row) => row.name === 'Sample Shopper');
     expect(shopper).toBeTruthy();

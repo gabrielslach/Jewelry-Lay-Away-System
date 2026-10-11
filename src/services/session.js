@@ -53,25 +53,50 @@ export function getCustomerRefreshToken() {
   return localStorage.getItem(REFRESH_KEY);
 }
 
-const ADMIN_KEY = 'adminSession';
+const LEGACY_ADMIN_KEY = 'adminSession';
+const ADMIN_KEY = 'admin';
+const ADMIN_REFRESH_KEY = 'adminRefreshToken';
+const ADMIN_ACCESS_KEY = 'adminAccessToken';
 
-export function getAdminSession() {
+sessionStorage.removeItem(LEGACY_ADMIN_KEY);
+
+export function getAdmin() {
+  if (!localStorage.getItem(ADMIN_REFRESH_KEY)) {
+    return null;
+  }
   try {
-    const raw = sessionStorage.getItem(ADMIN_KEY);
-    return raw ? JSON.parse(raw) : null;
+    return JSON.parse(localStorage.getItem(ADMIN_KEY));
   } catch {
     return null;
   }
 }
 
-export function setAdminSession(session) {
-  sessionStorage.setItem(ADMIN_KEY, JSON.stringify(session));
+export function getAdminSession() {
+  const admin = getAdmin();
+  return admin ? { admin } : null;
+}
+
+export function setAdminSession({ access_token, refresh_token, admin }) {
+  localStorage.setItem(ADMIN_REFRESH_KEY, refresh_token);
+  localStorage.setItem(ADMIN_KEY, JSON.stringify(admin));
+  sessionStorage.setItem(ADMIN_ACCESS_KEY, access_token);
 }
 
 export function clearAdminSession() {
-  sessionStorage.removeItem(ADMIN_KEY);
+  localStorage.removeItem(ADMIN_REFRESH_KEY);
+  localStorage.removeItem(ADMIN_KEY);
+  sessionStorage.removeItem(ADMIN_ACCESS_KEY);
+  sessionStorage.removeItem(LEGACY_ADMIN_KEY);
 }
 
 export function getAdminToken() {
-  return getAdminSession()?.token ?? null;
+  return sessionStorage.getItem(ADMIN_ACCESS_KEY);
+}
+
+export function setAdminToken(accessToken) {
+  sessionStorage.setItem(ADMIN_ACCESS_KEY, accessToken);
+}
+
+export function getAdminRefreshToken() {
+  return localStorage.getItem(ADMIN_REFRESH_KEY);
 }

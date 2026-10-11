@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { ensureAdminToken } from '../../src/services/ensureAdminToken.js';
 import { getAdminSettings } from '../../src/services/getAdminSettings.js';
 import { putAdminSettings } from '../../src/services/putAdminSettings.js';
 
 describe('admin settings', () => {
   it('reads and persists business settings', async () => {
+    await ensureAdminToken();
     const current = await getAdminSettings();
     expect(current.business_name).toBe('Mine Credit');
     const saved = await putAdminSettings({ ...current, max_term_months: 2 });

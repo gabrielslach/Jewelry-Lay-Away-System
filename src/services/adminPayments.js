@@ -1,4 +1,4 @@
-import { adminRequest, ensureAdminToken } from './ensureAdminToken.js';
+import { adminRequest, withAdminAuth } from './ensureAdminToken.js';
 import { requestForm } from './http.js';
 
 export function getAdminPendingPayments() {
@@ -33,13 +33,14 @@ function staffForm(fields, fileField, file) {
 }
 
 export async function confirmAdminPayment(paymentId, { note, confirmerProof } = {}) {
-  const token = await ensureAdminToken();
   if (confirmerProof) {
-    return requestForm(`/api/admin/payments/${paymentId}/confirm`, {
-      method: 'POST',
-      token,
-      formData: staffForm({ note }, 'confirmer_proof', confirmerProof),
-    });
+    return withAdminAuth((token) =>
+      requestForm(`/api/admin/payments/${paymentId}/confirm`, {
+        method: 'POST',
+        token,
+        formData: staffForm({ note }, 'confirmer_proof', confirmerProof),
+      }),
+    );
   }
   return adminRequest(`/api/admin/payments/${paymentId}/confirm`, {
     method: 'POST',
@@ -48,13 +49,14 @@ export async function confirmAdminPayment(paymentId, { note, confirmerProof } = 
 }
 
 export async function rejectAdminPayment(paymentId, { reason, confirmerProof } = {}) {
-  const token = await ensureAdminToken();
   if (confirmerProof) {
-    return requestForm(`/api/admin/payments/${paymentId}/reject`, {
-      method: 'POST',
-      token,
-      formData: staffForm({ reason }, 'confirmer_proof', confirmerProof),
-    });
+    return withAdminAuth((token) =>
+      requestForm(`/api/admin/payments/${paymentId}/reject`, {
+        method: 'POST',
+        token,
+        formData: staffForm({ reason }, 'confirmer_proof', confirmerProof),
+      }),
+    );
   }
   return adminRequest(`/api/admin/payments/${paymentId}/reject`, {
     method: 'POST',

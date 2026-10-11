@@ -4,9 +4,11 @@ import {
   getAdminNotifications,
   markAdminNotificationsRead,
 } from '../../src/services/adminAlerts.js';
+import { ensureAdminToken } from '../../src/services/ensureAdminToken.js';
 
 describe('adminAlerts', () => {
   it('loads alert counts and notification list for staff', async () => {
+    await ensureAdminToken();
     const alerts = await getAdminAlerts();
     expect(alerts).toMatchObject({
       pending_payments: expect.any(Number),

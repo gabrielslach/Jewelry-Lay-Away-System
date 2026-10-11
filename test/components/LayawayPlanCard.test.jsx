@@ -2,16 +2,15 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import LayawayPlanCard from '../../src/components/LayawayPlanCard.jsx';
 import { ToastProvider } from '../../src/components/ToastProvider.jsx';
+import { addDaysIso, todayIsoLocal } from '../../src/lib/dates.js';
 import * as bankAccounts from '../../src/services/getBankAccounts.js';
 
 function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+  return todayIsoLocal();
 }
 
 function daysFromToday(days) {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
+  return addDaysIso(todayIsoLocal(), days);
 }
 
 const basePlan = {

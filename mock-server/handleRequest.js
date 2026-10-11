@@ -12,10 +12,11 @@ import {
   createStore,
   hitRate,
   issueAccessToken,
+  issueAdminAccessToken,
+  issueAdminSession,
   issueCustomerSession,
-  issueToken,
-  publicAdmin,
   publicCustomer,
+  readAdminRefreshToken,
   readRefreshToken,
   readToken,
 } from './store.js';
@@ -432,8 +433,7 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
   }
 
   if (verb === 'POST' && path === '/api/dev/session/admin') {
-    const token = issueToken(store, 'admin', store.admin.id);
-    return json(200, { token, admin: publicAdmin(store.admin) });
+    return json(200, issueAdminSession(store, store.admin));
   }
 
   if (verb === 'POST' && path === '/api/admin/login') {
@@ -443,8 +443,22 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     if (body?.email !== store.admin.email || body?.password !== store.admin.password) {
       return json(401, { error: 'Invalid credentials' });
     }
-    const token = issueToken(store, 'admin', store.admin.id);
-    return json(200, { token, admin: publicAdmin(store.admin) });
+    return json(200, issueAdminSession(store, store.admin));
+  }
+
+  if (verb === 'POST' && path === '/api/admin/refresh') {
+    const entry = readAdminRefreshToken(store, body?.refresh_token);
+    if (!entry) {
+      return json(401, { error: 'Unauthorized' });
+    }
+    return json(200, { access_token: issueAdminAccessToken(store, entry.id) });
+  }
+
+  if (verb === 'POST' && path === '/api/admin/logout') {
+    if (store.tokens.get(body?.refresh_token)?.kind === 'admin_refresh') {
+      store.tokens.delete(body.refresh_token);
+    }
+    return json(200, { ok: true });
   }
 
   if (verb === 'GET' && path === '/api/finance/ledger') {

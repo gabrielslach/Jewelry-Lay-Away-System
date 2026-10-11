@@ -46,7 +46,7 @@ describe('mock manual payments', () => {
     plan.installments[0].due_date = dueDate;
     const admin = call(store, 'POST', '/api/dev/session/admin', { body: {} });
     const due = call(store, 'GET', '/api/admin/payments/due', {
-      headers: { authorization: `Bearer ${admin.body.token}` },
+      headers: { authorization: `Bearer ${admin.body.access_token}` },
     });
     expect(due.body.items.some((row) => row.awaiting_confirmation)).toBe(true);
   });
