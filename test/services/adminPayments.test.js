@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   confirmAdminPayment,
+  fetchPaymentProof,
   getAdminDuePayments,
   getAdminPendingPayments,
   rejectAdminPayment,
@@ -47,5 +48,42 @@ describe('adminPayments', () => {
     });
     const rejected = await rejectAdminPayment(installment.id, { reason: 'Unclear proof' });
     expect(rejected.status).toBe('rejected');
+  });
+
+  it('fetches payment proof as a blob object URL', async () => {
+    await ensureAdminToken();
+    await loginCustomer({ email: 'client@sampleemail.com', password: 'password' });
+    const { results } = await getGallery({ pageSize: 1 });
+    const plan = await createLayawayPlan({ productId: results[0].id, termMonths: 1 });
+    const paidOn = new Date().toISOString().slice(0, 10);
+    const down = await submitDownPaymentManual(plan.id, {
+      bank_account_id: 1,
+      reference_number: `BT-ADMIN-PROOF-${Date.now()}`,
+      amount: plan.down_payment_amount,
+      paid_on: paidOn,
+      proof_of_payment: new File(['proof'], 'proof.png', { type: 'image/png' }),
+    });
+    const proof = await fetchPaymentProof(down.id);
+    expect(proof.url).toMatch(/^blob:/);
+    expect(proof.content_type).toMatch(/^image\//);
+    URL.revokeObjectURL(proof.url);
+  });
+
+  it('surfaces missing proof as a not-found ServiceError', async () => {
+    await ensureAdminToken();
+    await loginCustomer({ email: 'client@sampleemail.com', password: 'password' });
+    const { results } = await getGallery({ pageSize: 1 });
+    const plan = await createLayawayPlan({ productId: results[0].id, termMonths: 1 });
+    const paidOn = new Date().toISOString().slice(0, 10);
+    const down = await submitDownPaymentManual(plan.id, {
+      bank_account_id: 1,
+      reference_number: `BT-ADMIN-NOPROOF-${Date.now()}`,
+      amount: plan.down_payment_amount,
+      paid_on: paidOn,
+    });
+    await expect(fetchPaymentProof(down.id)).rejects.toMatchObject({
+      name: 'ServiceError',
+      status: 404,
+    });
   });
 });

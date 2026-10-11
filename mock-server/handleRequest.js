@@ -27,6 +27,18 @@ function json(status, body) {
   return { status, body, headers: { 'Content-Type': 'application/json; charset=utf-8' } };
 }
 
+const PLACEHOLDER_PROOF_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"><rect width="1" height="1" fill="#B98B2E"/></svg>';
+
+function binary(status, body, contentType) {
+  return {
+    status,
+    body,
+    headers: { 'Content-Type': contentType },
+    binary: true,
+  };
+}
+
 function todayIso(store) {
   return store.now().toISOString().slice(0, 10);
 }
@@ -547,7 +559,11 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     if (gate.error) {
       return gate.error;
     }
-    return json(200, { url: '/placeholders/1.svg' });
+    const payment = store.pendingPayments.find((p) => p.id === Number(params.id));
+    if (!payment?.proof_of_payment_url) {
+      return json(404, { error: 'Not found' });
+    }
+    return binary(200, PLACEHOLDER_PROOF_SVG, 'image/svg+xml');
   }
 
   params = match(path, '/api/admin/payments/:id/confirm');

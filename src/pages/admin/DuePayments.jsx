@@ -24,6 +24,25 @@ function graceNotice(row) {
   return `Grace period ends ${formatDisplayDate(graceEnd)}.`;
 }
 
+function statusCell(row) {
+  const grace = graceNotice(row);
+  return (
+    <>
+      {row.due_today ? (
+        <span className="badge badge-amber">Due today</span>
+      ) : row.days_overdue > 0 ? (
+        <span className="badge badge-warn">{row.days_overdue} days overdue</span>
+      ) : null}
+      {row.awaiting_confirmation ? (
+        <div className="table-sub">
+          <span className="badge badge-info">Payment awaiting confirmation</span>
+        </div>
+      ) : null}
+      {grace ? <div className="table-sub">{grace}</div> : null}
+    </>
+  );
+}
+
 export default function DuePayments() {
   const [data, setData] = useState(null);
   const [filter, setFilter] = useState('all');
@@ -99,13 +118,7 @@ export default function DuePayments() {
                 <td>Payment {row.term_number}</td>
                 <td>{formatPesoDecimals(row.amount)}</td>
                 <td>{formatDisplayDate(row.due_date)}</td>
-                <td>
-                  {row.awaiting_confirmation
-                    ? 'Payment awaiting confirmation'
-                    : row.due_today
-                      ? 'Due today'
-                      : `${row.days_overdue} days overdue`}
-                </td>
+                <td>{statusCell(row)}</td>
                 <td>
                   <Button variant="outline" size="sm" onClick={() => setViewRow(row)}>
                     View

@@ -273,12 +273,16 @@ export default function Orders() {
             </div>
             <div className="spec-item">
               <span>Status</span>
-              <b>{active.status === 'ok' ? 'On Track' : 'Overdue'}</b>
+              <span className={active.status === 'ok' ? 'badge badge-ok' : 'badge badge-warn'}>
+                {active.status === 'ok' ? 'On Track' : 'Overdue'}
+              </span>
             </div>
             {active.reservation_status && active.reservation_status !== 'none' ? (
               <div className="spec-item">
                 <span>Reservation</span>
-                <b>{RESERVATION_LABELS[active.reservation_status] ?? active.reservation_status}</b>
+                {reservationBadge(active.reservation_status) ?? (
+                  <b>{active.reservation_status}</b>
+                )}
               </div>
             ) : null}
             {active.down_payment_confirmed_at ? (
@@ -304,7 +308,13 @@ export default function Orders() {
                 <span>₱{Number(row.amount).toLocaleString('en-US')}</span>
                 <span
                   className={
-                    row.status === 'paid' ? 'badge badge-ok' : 'badge badge-warn'
+                    row.status === 'paid'
+                      ? 'badge badge-ok'
+                      : row.status === 'overdue'
+                        ? 'badge badge-warn'
+                        : row.status === 'submitted' || row.status === 'awaiting_confirmation'
+                          ? 'badge badge-info'
+                          : 'badge badge-mute'
                   }
                 >
                   {row.status === 'paid'

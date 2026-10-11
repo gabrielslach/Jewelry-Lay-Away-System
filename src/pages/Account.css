@@ -41,6 +41,7 @@
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .badge-ok {
@@ -51,6 +52,21 @@
 .badge-warn {
   background: color-mix(in srgb, var(--warn) 16%, var(--surface));
   color: var(--warn);
+}
+
+.badge-info {
+  background: color-mix(in srgb, var(--info) 16%, var(--surface));
+  color: var(--info);
+}
+
+.badge-amber {
+  background: color-mix(in srgb, var(--amber) 16%, var(--surface));
+  color: var(--amber);
+}
+
+.badge-mute {
+  background: color-mix(in srgb, var(--text-soft) 16%, var(--surface));
+  color: var(--text-soft);
 }
 
 .empty-copy {

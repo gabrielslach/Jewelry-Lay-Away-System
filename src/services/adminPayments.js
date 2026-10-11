@@ -1,5 +1,5 @@
 import { adminRequest, withAdminAuth } from './ensureAdminToken.js';
-import { requestForm } from './http.js';
+import { requestBlob, requestForm } from './http.js';
 
 export function getAdminPendingPayments() {
   return adminRequest('/api/admin/payments/pending').then((data) => data.results ?? data);
@@ -16,7 +16,15 @@ export function getPaymentProofUrl(paymentId) {
 }
 
 export async function fetchPaymentProof(paymentId) {
-  return adminRequest(`/api/admin/payments/${paymentId}/proof`);
+  return withAdminAuth(async (token) => {
+    const { blob, contentType } = await requestBlob(`/api/admin/payments/${paymentId}/proof`, {
+      token,
+    });
+    return {
+      url: URL.createObjectURL(blob),
+      content_type: contentType,
+    };
+  });
 }
 
 function staffForm(fields, fileField, file) {

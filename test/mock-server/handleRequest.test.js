@@ -201,4 +201,27 @@ describe('mock API', () => {
     }
     expect(last.status).toBe(429);
   });
+
+  it('returns payment proof as image binary, not JSON url', () => {
+    const store = createStore();
+    const admin = call(store, 'POST', '/api/dev/session/admin', { body: {} });
+    store.pendingPayments.push({
+      id: 42,
+      status: 'submitted',
+      proof_of_payment_url: '/placeholders/1.svg',
+    });
+    const proof = call(store, 'GET', '/api/admin/payments/42/proof', {
+      headers: { authorization: `Bearer ${admin.body.access_token}` },
+    });
+    expect(proof.status).toBe(200);
+    expect(proof.binary).toBe(true);
+    expect(proof.headers['Content-Type']).toBe('image/svg+xml');
+    expect(String(proof.body)).toContain('<svg');
+    expect(proof.body).not.toEqual(expect.objectContaining({ url: expect.any(String) }));
+
+    const missing = call(store, 'GET', '/api/admin/payments/99/proof', {
+      headers: { authorization: `Bearer ${admin.body.access_token}` },
+    });
+    expect(missing.status).toBe(404);
+  });
 });

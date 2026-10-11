@@ -50,7 +50,10 @@ describe('admin orders', () => {
     expect(screen.queryByText('LA-1001')).not.toBeInTheDocument();
     fireEvent.click(screen.getAllByRole('button', { name: 'View' })[0]);
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByText('Reserved')).toBeInTheDocument();
+    const statusItem = within(dialog).getByText('Status').closest('.spec-item');
+    expect(within(statusItem).getByText('Overdue')).toBeInTheDocument();
+    const reservationItem = within(dialog).getByText('Reservation').closest('.spec-item');
+    expect(within(reservationItem).getByText('Reserved')).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: 'Cancel reservation' })).toBeInTheDocument();
   });
 });

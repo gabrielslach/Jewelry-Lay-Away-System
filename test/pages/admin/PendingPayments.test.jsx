@@ -65,6 +65,7 @@ describe('PendingPayments', () => {
     ]);
     vi.spyOn(adminPayments, 'fetchPaymentProof').mockResolvedValue({
       url: '/placeholders/1.svg',
+      content_type: 'image/svg+xml',
     });
     render(
       <MemoryRouter initialEntries={['/admin/payments']}>
@@ -80,5 +81,42 @@ describe('PendingPayments', () => {
       '/placeholders/1.svg',
     );
     expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it('revokes blob proof URLs when the modal closes', async () => {
+    const revokeSpy = vi.spyOn(URL, 'revokeObjectURL');
+    vi.spyOn(adminPayments, 'getAdminPendingPayments').mockResolvedValue([
+      {
+        id: 11,
+        kind: 'down_payment',
+        plan_id: 'LA-1001',
+        customer_name: 'Sample Client',
+        amount: '14400',
+        amount_submitted: '14400',
+        amount_mismatch: 0,
+        reference_number: 'BT-11',
+        paid_on: '2026-10-09',
+      },
+    ]);
+    vi.spyOn(adminPayments, 'fetchPaymentProof').mockResolvedValue({
+      url: 'blob:http://localhost/proof-1',
+      content_type: 'image/png',
+    });
+    render(
+      <MemoryRouter initialEntries={['/admin/payments']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('Sample Client')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'View proof' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('img', { name: 'Proof of payment' })).toHaveAttribute(
+      'src',
+      'blob:http://localhost/proof-1',
+    );
+    fireEvent.click(within(dialog).getByLabelText('Close'));
+    await waitFor(() => {
+      expect(revokeSpy).toHaveBeenCalledWith('blob:http://localhost/proof-1');
+    });
   });
 });

@@ -47,6 +47,12 @@ function isImageProof(url, contentType) {
   return /\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(String(url ?? ''));
 }
 
+function revokeProofUrl(view) {
+  if (view?.url?.startsWith('blob:')) {
+    URL.revokeObjectURL(view.url);
+  }
+}
+
 export default function PendingPayments() {
   const { showToast } = useToast();
   const [rows, setRows] = useState([]);
@@ -73,8 +79,18 @@ export default function PendingPayments() {
     refresh();
   }, []);
 
+  function closeProof() {
+    setProofView((prev) => {
+      revokeProofUrl(prev);
+      return null;
+    });
+  }
+
   async function viewProof(row) {
-    setProofView({ loading: true, url: null, error: null });
+    setProofView((prev) => {
+      revokeProofUrl(prev);
+      return { loading: true, url: null, error: null };
+    });
     try {
       const proof = await fetchPaymentProof(row.id);
       if (proof?.url) {
@@ -204,9 +220,9 @@ export default function PendingPayments() {
       {proofView ? (
         <Modal
           title="Proof of payment"
-          onClose={() => setProofView(null)}
+          onClose={closeProof}
           footer={
-            <Button variant="outline" onClick={() => setProofView(null)}>
+            <Button variant="outline" onClick={closeProof}>
               Close
             </Button>
           }

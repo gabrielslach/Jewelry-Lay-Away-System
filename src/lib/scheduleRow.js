@@ -9,6 +9,7 @@ export function downPaymentRowState(plan) {
     return {
       key: 'awaiting',
       badge: 'Awaiting confirmation',
+      badgeClass: 'badge badge-info',
       note: 'Submitted - waiting for our confirmation.',
       showForm: false,
     };
@@ -37,6 +38,7 @@ export function installmentRowState(row, { gracePeriodDays, today = todayIsoLoca
     return {
       key: 'awaiting',
       badge: 'Awaiting confirmation',
+      badgeClass: 'badge badge-info',
       note: 'Submitted - waiting for our confirmation.',
       showForm: false,
     };
@@ -72,6 +74,7 @@ export function installmentRowState(row, { gracePeriodDays, today = todayIsoLoca
     return {
       key: 'due_today',
       badge: 'Due today',
+      badgeClass: 'badge badge-amber',
       dateLabel: formatDisplayDate(dueDate),
       showForm: true,
       payLabel: 'Pay',
@@ -80,7 +83,7 @@ export function installmentRowState(row, { gracePeriodDays, today = todayIsoLoca
   return {
     key: 'pending',
     badge: 'Pending',
-    badgeClass: 'badge muted',
+    badgeClass: 'badge badge-mute',
     dateLabel: formatDisplayDate(dueDate),
     showForm: false,
   };
