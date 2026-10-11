@@ -8,10 +8,8 @@ import { useToast } from '../../components/useToast.js';
 import { formatDisplayDate } from '../../lib/dates.js';
 import { ServiceError } from '../../services/http.js';
 import { getAdminPlans } from '../../services/getAdminPlans.js';
-import {
-  cancelReservation,
-  retryReservation,
-} from '../../services/adminReservations.js';
+import { getLayawayPlan } from '../../services/getLayawayPlan.js';
+import { cancelReservation, retryReservation } from '../../services/adminReservations.js';
 import { getAdminSession } from '../../services/session.js';
 import '../Account.css';
 import '../../components/Checkout.css';
@@ -27,10 +25,16 @@ function isAdminRole() {
   return (getAdminSession()?.admin?.role ?? 'admin') === 'admin';
 }
 
+async function withDetail(plan) {
+  const detail = await getLayawayPlan(plan.id);
+  return { ...plan, installments: detail.installments ?? [] };
+}
+
 export default function Orders() {
   const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const openPlanId = useRef(searchParams.get('plan'));
+  const viewRequest = useRef(0);
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -42,17 +46,29 @@ export default function Orders() {
   const [cancelErrors, setCancelErrors] = useState({});
   const admin = isAdminRole();
 
-  function refreshPlans() {
+  async function loadDetail(plan) {
+    try {
+      return await withDetail(plan);
+    } catch (err) {
+      setError(err instanceof ServiceError ? err.message : 'Unable to load order details.');
+      return null;
+    }
+  }
+
+  function refreshPlans(activeId = null) {
     return getAdminPlans()
-      .then((data) => {
+      .then(async (data) => {
         setPlans(data);
         setError(null);
-        setActive((current) => {
-          if (!current) {
-            return null;
-          }
-          return data.find((plan) => plan.id === current.id) ?? null;
-        });
+        const fresh = data.find((plan) => plan.id === activeId);
+        if (!fresh) {
+          setActive(null);
+          return;
+        }
+        const detailed = await loadDetail(fresh);
+        if (detailed) {
+          setActive(detailed);
+        }
       })
       .catch((err) => {
         setError(err instanceof ServiceError ? err.message : 'Unable to load orders.');
@@ -64,30 +80,29 @@ export default function Orders() {
 
   useEffect(() => {
     getAdminPlans()
-      .then((data) => {
+      .then(async (data) => {
         setPlans(data);
-        setError(null);
         const planId = openPlanId.current;
         openPlanId.current = null;
-        if (planId) {
-          const fromQuery = data.find((plan) => String(plan.id) === String(planId));
-          if (fromQuery) {
-            setActive(fromQuery);
-            setSearchParams(
-              (current) => {
-                if (!current.has('plan')) {
-                  return current;
-                }
-                const next = new URLSearchParams(current);
-                next.delete('plan');
-                return next;
-              },
-              { replace: true },
-            );
-            return;
-          }
+        const fromQuery = planId ? data.find((plan) => String(plan.id) === String(planId)) : null;
+        if (!fromQuery) {
+          return;
         }
-        setActive(null);
+        const detailed = await loadDetail(fromQuery);
+        if (detailed) {
+          setActive(detailed);
+        }
+        setSearchParams(
+          (current) => {
+            if (!current.has('plan')) {
+              return current;
+            }
+            const next = new URLSearchParams(current);
+            next.delete('plan');
+            return next;
+          },
+          { replace: true },
+        );
       })
       .catch((err) => {
         setError(err instanceof ServiceError ? err.message : 'Unable to load orders.');
@@ -99,6 +114,15 @@ export default function Orders() {
 
   const rows = plans.filter((plan) => filter === 'all' || plan.status === filter);
 
+  async function handleView(plan) {
+    const requestId = ++viewRequest.current;
+    const detailed = await loadDetail(plan);
+    if (detailed && requestId === viewRequest.current) {
+      setError(null);
+      setActive(detailed);
+    }
+  }
+
   async function handleRetry() {
     try {
       const result = await retryReservation(active.id);
@@ -107,11 +131,11 @@ export default function Orders() {
           ? `Reservation updated: ${RESERVATION_LABELS[result.state] ?? result.state}.`
           : 'Reservation retry sent.',
       );
-      refreshPlans();
+      refreshPlans(active.id);
     } catch (err) {
       if (err instanceof ServiceError && err.status === 409) {
         setError(err.message);
-        refreshPlans();
+        refreshPlans(active.id);
         return;
       }
       setError(err instanceof ServiceError ? err.message : 'Unable to retry reservation.');
@@ -220,7 +244,7 @@ export default function Orders() {
                   </td>
                   <td>{reservationBadge(plan.reservation_status)}</td>
                   <td>
-                    <Button variant="outline" size="sm" onClick={() => setActive(plan)}>
+                    <Button variant="outline" size="sm" onClick={() => handleView(plan)}>
                       View
                     </Button>
                   </td>
@@ -239,19 +263,14 @@ export default function Orders() {
               <Button variant="outline" onClick={() => setActive(null)}>
                 Close
               </Button>
-              {active.reservation_error ||
-              active.reservation_status === 'waiting_for_stock' ? (
+              {active.reservation_error || active.reservation_status === 'waiting_for_stock' ? (
                 <Button variant="primary" onClick={handleRetry} disabled={!admin}>
                   Retry
                 </Button>
               ) : null}
               {active.reservation_status === 'reserved' ||
               active.reservation_status === 'waiting_for_stock' ? (
-                <Button
-                  variant="outline"
-                  onClick={() => setCancelOpen(true)}
-                  disabled={!admin}
-                >
+                <Button variant="outline" onClick={() => setCancelOpen(true)} disabled={!admin}>
                   Cancel reservation
                 </Button>
               ) : null}
@@ -280,9 +299,7 @@ export default function Orders() {
             {active.reservation_status && active.reservation_status !== 'none' ? (
               <div className="spec-item">
                 <span>Reservation</span>
-                {reservationBadge(active.reservation_status) ?? (
-                  <b>{active.reservation_status}</b>
-                )}
+                {reservationBadge(active.reservation_status) ?? <b>{active.reservation_status}</b>}
               </div>
             ) : null}
             {active.down_payment_confirmed_at ? (
