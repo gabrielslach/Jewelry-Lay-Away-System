@@ -90,6 +90,11 @@ Until `getCustomerOrders` resolves, `/account` shows **Active Lay-Aways 0** and 
 
 **Epic 16** replaces that wait with skeletons: active count is a bone, and the empty sentences appear only after orders settle.
 
+### ~~BUG-19 — Manual pay shows every bank account at once~~
+**P2** · US-15, US-16 · **Fixed 2026-10-11** — **Transfer to** select defaults to the first store account; details/QR show for the selection (QR right when wide, below on phone).
+
+`ManualPaymentForm` listed all store bank accounts as clickable cards (QR under each), so every account name, number, and QR was visible before the shopper chose where to pay. Expected: a destination-bank select, then one selected-account detail block (`.pay-method` look — QR right when wide, below on phone).
+
 ---
 
 ## Staff
@@ -114,12 +119,23 @@ At ~390px width, **Open menu** shows the backdrop but the dark sidebar does not 
 
 The three policy toggles are `role="switch"` with no `aria-label` / labelled-by. Screen readers announce only “switch”.
 
+### ~~BUG-20 — Unauthenticated admin routes do not redirect to login~~
+**P1** · US-20–US-26 (staff shell) · **Fixed 2026-10-12** — signed-out `/admin` and nested routes redirect to `/admin/login?from=…`; `adminRequest` no longer auto-mints a staff session.
+
+Visiting `/admin` or other `/admin/*` routes without a valid admin session does not send the user to staff sign-in. Expected: redirect to `/admin/login` with a safe return path (`?from=`), no usable admin chrome, and after sign-in land back on the original admin URL. `/admin/login` already exists; the old note that staff login is out of scope is stale.
+
+### ~~BUG-21 — Admin login 200 does not stay on the return path~~
+**P1** · US-20–US-26 (staff shell) · **Fixed 2026-10-12** — admin session stores `access_token` / `refresh_token` / `admin` (customer-style split); `getAdminToken()` reads access; mock login + refresh aligned; `adminRequest` refreshes once on 401.
+
+Staff sign-in at `/admin/login` gets HTTP 200 from `POST /api/admin/login`, then either stays on login or briefly hits `/admin` (or `?from=`) and bounces back to `/admin/login`. Expected: leave login, land on the safe return path (default `/admin`), and keep a usable admin session.
+
+Likely cause: SPA stores the login body but `getAdminToken()` only reads legacy `session.token`. Spec/live shape is `{ access_token, refresh_token, admin }`; mock still returns `{ token, admin }`, so mock can pass while live/spec-shaped responses fail the BUG-20 gate.
+
 ---
 
 ## Notes (not filed as bugs)
 
 - **Start a Lay-Away** goes to `/collections` (catalog first). Fits US-2 / US-5 if cards are easier to open (see BUG-6).
-- Admin has no staff login screen (called out in user stories as out of scope).
 - FAQ / About / Contact footer links all go to `/#contact`.
 - Signed-in checkout (term → GCash → Continue → **Reservation Submitted**) works.
 - Admin orders table, filters, customer directory, and settings form load on desktop.

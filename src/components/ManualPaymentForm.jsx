@@ -39,7 +39,7 @@ export default function ManualPaymentForm({
     getBankAccounts()
       .then((rows) => {
         setAccounts(rows);
-        if (rows.length === 1) {
+        if (rows.length >= 1) {
           setBankAccountId(String(rows[0].id));
         }
       })
@@ -88,6 +88,11 @@ export default function ManualPaymentForm({
     }
   }
 
+  const bankSelectId = `bank-${planId}-${installmentId ?? 'dp'}`;
+  const selectedAccount = accounts.find(
+    (account) => String(account.id) === String(bankAccountId),
+  );
+
   return (
     <form className="manual-payment-form" onSubmit={handleSubmit}>
       <p className="payment-intro">
@@ -96,29 +101,45 @@ export default function ManualPaymentForm({
       </p>
       <ErrorMessage>{fieldErrors.form}</ErrorMessage>
       {loadingAccounts ? <p>Loading bank accounts…</p> : null}
-      <div className="bank-card-grid">
-        {accounts.map((account) => (
-          <button
-            key={account.id}
-            type="button"
-            className={
-              String(bankAccountId) === String(account.id)
-                ? 'bank-card selected'
-                : 'bank-card'
-            }
-            onClick={() => setBankAccountId(String(account.id))}
+      {!loadingAccounts ? (
+        <div className="form-row">
+          <label htmlFor={bankSelectId}>Transfer to</label>
+          <select
+            id={bankSelectId}
+            value={bankAccountId}
+            disabled={accounts.length === 0}
+            onChange={(event) => setBankAccountId(event.target.value)}
           >
-            <b>{account.bank_name}</b>
-            <span>Account name: {account.account_name}</span>
-            <span>Account no.: {account.account_number}</span>
-            {account.qr_code_url ? (
-              <img src={account.qr_code_url} alt="" className="bank-qr" />
-            ) : null}
-          </button>
-        ))}
-      </div>
-      {fieldErrors.bank_account_id ? (
-        <p className="field-error">{fieldErrors.bank_account_id}</p>
+            {accounts.length === 0 ? (
+              <option value="">No banks available</option>
+            ) : (
+              accounts.map((account) => (
+                <option key={account.id} value={String(account.id)}>
+                  {account.bank_name}
+                </option>
+              ))
+            )}
+          </select>
+          {fieldErrors.bank_account_id ? (
+            <p className="field-error">{fieldErrors.bank_account_id}</p>
+          ) : null}
+        </div>
+      ) : null}
+      {selectedAccount ? (
+        <div className="bank-account-detail" aria-live="polite">
+          <div className="bank-account-detail-text">
+            <b>{selectedAccount.bank_name}</b>
+            <span>Account name: {selectedAccount.account_name}</span>
+            <span>Account no.: {selectedAccount.account_number}</span>
+          </div>
+          {selectedAccount.qr_code_url ? (
+            <img
+              src={selectedAccount.qr_code_url}
+              alt=""
+              className="bank-account-qr"
+            />
+          ) : null}
+        </div>
       ) : null}
       <div className="form-row">
         <label htmlFor={`ref-${planId}-${installmentId ?? 'dp'}`}>Reference number</label>
