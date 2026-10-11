@@ -445,6 +445,70 @@ export function handleEpicRoutes(ctx) {
   return null;
 }
 
+export function previewLayaway(store, query, helpers) {
+  const { json } = helpers;
+  const productId = query.get('product_id');
+  if (productId == null || productId === '') {
+    return json(400, { error: 'product_id is required' });
+  }
+  const product = store.catalog.find((p) => p.id === Number(productId));
+  if (!product) {
+    return json(404, { error: 'Product not found' });
+  }
+  if (!product.price || Number(product.price) <= 0) {
+    return json(409, { error: 'This item has no peso price yet and cannot be put on lay-away' });
+  }
+  const maxTerm = store.settings.max_term_months || 3;
+  const termParam = query.get('term_months');
+  let terms;
+  if (termParam == null || termParam === '') {
+    terms = Array.from({ length: maxTerm }, (_, index) => index + 1);
+  } else {
+    const termMonths = Number(termParam);
+    if (!Number.isInteger(termMonths) || termMonths < 1 || termMonths > maxTerm) {
+      return json(400, { error: 'term_months is invalid' });
+    }
+    terms = [termMonths];
+  }
+  const totalPrice = markedUpTotal(product.price);
+  const options = terms.map((termMonths) => {
+    const { down_payment_amount, financed_principal, schedule } = buildSchedule({
+      totalPrice,
+      termMonths,
+      startDate: store.now(),
+    });
+    const totalInterest = schedule.reduce((sum, row) => sum + row.interest_amount, 0);
+    const installmentTotal = schedule.reduce((sum, row) => sum + row.amount, 0);
+    return {
+      term_months: termMonths,
+      installments: schedule.length,
+      total_interest: Math.round(totalInterest * 100) / 100,
+      total_payable: Math.round((down_payment_amount + installmentTotal) * 100) / 100,
+      schedule,
+      down_payment_amount,
+      financed_principal,
+    };
+  });
+  const primary = options[options.length - 1];
+  return json(200, {
+    product_id: product.id,
+    title: product.title,
+    currency: 'PHP',
+    total_price: totalPrice,
+    down_payment_amount: primary.down_payment_amount,
+    financed_principal: primary.financed_principal,
+    interval_days: store.settings.installment_interval_days ?? 15,
+    max_term_months: maxTerm,
+    options: options.map((option) => ({
+      term_months: option.term_months,
+      installments: option.installments,
+      total_interest: option.total_interest,
+      total_payable: option.total_payable,
+      schedule: option.schedule,
+    })),
+  });
+}
+
 export function createPlanFromProduct(store, gate, body, helpers) {
   const { json, refreshPlan } = helpers;
   const product = store.catalog.find((p) => p.id === Number(body?.product_id));

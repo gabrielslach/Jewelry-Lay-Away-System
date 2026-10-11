@@ -4,6 +4,7 @@ import {
   handleEpicRoutes,
   paymentFieldErrors,
   pendingRow,
+  previewLayaway,
   pushAdminNotification,
   rejectPayment,
 } from './epicRoutes.js';
@@ -300,6 +301,10 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
       .filter((p) => p.customer_id === gate.customer.id)
       .map((p) => orderView(store, p));
     return json(200, orders);
+  }
+
+  if (verb === 'GET' && path === '/api/layaway/preview') {
+    return previewLayaway(store, query, { json });
   }
 
   if (verb === 'POST' && path === '/api/layaway/plans') {

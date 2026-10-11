@@ -9,7 +9,7 @@ const steps = [
   },
   {
     title: 'Set Your Schedule',
-    body: 'Pick a lay-away term of up to 3 months and choose the days that work for you.',
+    body: 'Pick a lay-away term of up to 3 months. Payments are every 15 days — pay by bank transfer.',
   },
   {
     title: 'Complete & Collect',

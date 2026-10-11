@@ -41,7 +41,6 @@ describe('PiecePage', () => {
       title: piece.title,
       category: 'Rings',
       priceLabel: '₱1',
-      perPaymentLabel: '₱1',
       material: '-',
       stone: '-',
       size: '-',
@@ -84,6 +83,36 @@ describe('PiecePage', () => {
       'src',
       piece.images[0].url,
     );
+  });
+
+  it('shows as-low-as from lay-away preview, not a client split', async () => {
+    const piece = galleryPage.results[0];
+    render(
+      <MemoryRouter initialEntries={[`/collections/${piece.id}`]}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(
+      await screen.findByRole('heading', { name: 'Solitaire Halo Ring' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText(/as low as ₱.+\/payment/)).toBeInTheDocument();
+    const equalSplit = Math.round(Number(piece.price) / 6);
+    expect(screen.queryByText(`as low as ₱${equalSplit.toLocaleString('en-US')}/payment`)).toBeNull();
+  });
+
+  it('shows as-low-as from lay-away preview, not a client split', async () => {
+    const piece = galleryPage.results[0];
+    render(
+      <MemoryRouter initialEntries={[`/collections/${piece.id}`]}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(
+      await screen.findByRole('heading', { name: 'Solitaire Halo Ring' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText(/as low as ₱.+\/payment/)).toBeInTheDocument();
+    const equalSplit = Math.round(Number(piece.price) / 6);
+    expect(screen.queryByText(`as low as ₱${equalSplit.toLocaleString('en-US')}/payment`)).toBeNull();
   });
 
   it('shows GemMark for a failed main image and a failed thumb', async () => {

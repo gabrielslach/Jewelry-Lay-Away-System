@@ -1,4 +1,4 @@
-import { formatPeso, splitAmount } from '../lib/money.js';
+import { formatPeso } from '../lib/money.js';
 
 function specOrDash(value) {
   if (value == null || String(value).trim() === '') return '-';
@@ -21,6 +21,5 @@ export function presentPiece(item) {
     inStock: item.in_stock,
     images: item.images ?? [],
     priceLabel: formatPeso(price),
-    perPaymentLabel: formatPeso(splitAmount(price, 6)[0]),
   };
 }
