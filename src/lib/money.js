@@ -17,3 +17,12 @@ export function splitAmount(total, count) {
     index === count - 1 ? base + remainder : base,
   );
 }
+
+const compactNumber = new Intl.NumberFormat('en-PH', {
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
+
+export function formatPesoCompact(amount) {
+  return `₱${compactNumber.format(Number(amount)).replace('K', 'k')}`;
+}

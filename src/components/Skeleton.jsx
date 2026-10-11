@@ -136,11 +136,13 @@ export function DashboardSkeleton() {
           <h2>Collections — Last 6 Weeks</h2>
           <div className="bar-chart">
             {Array.from({ length: 6 }, (_, index) => (
-              <Bone
-                key={index}
-                className="skeleton-bone-bar"
-                style={{ height: `${40 + index * 8}%` }}
-              />
+              <div className="bar-col" key={index}>
+                <span className="bar-label" />
+                <div className="bar-track">
+                  <Bone className="skeleton-bone-bar" style={{ height: `${40 + index * 8}%` }} />
+                </div>
+                <span className="bar-label" />
+              </div>
             ))}
           </div>
         </div>
@@ -204,28 +206,16 @@ export function CustomersTableSkeleton() {
         <tr>
           <th>Name</th>
           <th>Email</th>
+          <th>Phone</th>
           <th>Active Lay-Aways</th>
           <th>Member Since</th>
           <th> </th>
         </tr>
       </thead>
       <tbody>
-        <TableBodySkeletonRows columns={5} rows={5} />
+        <TableBodySkeletonRows columns={6} rows={5} />
       </tbody>
     </table>
-  );
-}
-
-export function CustomerDetailSkeleton() {
-  return (
-    <div className="spec-grid">
-      {Array.from({ length: 4 }, (_, index) => (
-        <div className="spec-item" key={index}>
-          <Bone className="skeleton-bone-spec-label" />
-          <Bone className="skeleton-bone-spec-value" />
-        </div>
-      ))}
-    </div>
   );
 }
 

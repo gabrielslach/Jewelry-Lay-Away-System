@@ -75,8 +75,33 @@ describe('Account', () => {
     expect(await screen.findByText(/Solitaire Halo Ring/)).toBeInTheDocument();
     expect(screen.getByText(/Vintage Rose Pendant/)).toBeInTheDocument();
     expect(screen.getByText('On Track')).toBeInTheDocument();
-    expect(screen.getByText(/Next Due Oct 25/)).toBeInTheDocument();
+    expect(screen.getByText(/Next due Oct 25/)).toBeInTheDocument();
     expect(screen.getByText(/Completed Jul 2026/)).toBeInTheDocument();
+  });
+
+  it('expands and highlights the plan named in the plan query', async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    const matchMedia = window.matchMedia;
+    window.matchMedia = () => ({
+      matches: false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    });
+    await signIn();
+    render(
+      <MemoryRouter initialEntries={['/account?plan=LA-1001']}>
+        <SessionProvider>
+          <ToastProvider>
+            <Account />
+          </ToastProvider>
+        </SessionProvider>
+      </MemoryRouter>,
+    );
+    const header = await screen.findByRole('button', { name: /Solitaire Halo Ring/ });
+    expect(header).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Just reserved')).toBeInTheDocument();
+    expect(screen.getAllByText('Just reserved')).toHaveLength(1);
+    window.matchMedia = matchMedia;
   });
 
   it('opens change password in a dialog on demand', async () => {

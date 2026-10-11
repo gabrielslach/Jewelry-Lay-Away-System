@@ -37,6 +37,22 @@ export function CloseIcon({ size = 16, title = 'Close' }) {
   );
 }
 
+export function ChevronDownIcon({ size = 16 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
+
 export function CheckIcon({ size = 16, title = 'Success' }) {
   return (
     <svg

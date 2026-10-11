@@ -35,6 +35,15 @@ a.btn.btn-primary {
   color: var(--accent);
 }
 
+.btn-danger {
+  background: var(--warn);
+  color: var(--on-accent);
+}
+
+.btn-danger:hover {
+  background: color-mix(in srgb, var(--warn) 85%, black);
+}
+
 .btn-sm {
   padding: 8px 14px;
   font-size: 13px;
@@ -43,4 +52,25 @@ a.btn.btn-primary {
 .btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 0.8s linear infinite;
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-spinner {
+    display: none;
+  }
 }

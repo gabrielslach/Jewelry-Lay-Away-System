@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createLayawayPlan } from '../services/createLayawayPlan.js';
 import { getLayawayPreview } from '../services/getLayawayPreview.js';
 import { ServiceError } from '../services/http.js';
@@ -19,6 +20,7 @@ function termLabel(option) {
 
 export default function Checkout({ piece, onClose, onScheduled }) {
   const { customer } = useSession();
+  const navigate = useNavigate();
   const [preview, setPreview] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(Boolean(customer));
   const [previewError, setPreviewError] = useState(null);
@@ -76,6 +78,13 @@ export default function Checkout({ piece, onClose, onScheduled }) {
   const schedule = plan?.schedule ?? selectedOption?.schedule ?? [];
   const downPayment = plan?.down_payment_amount ?? preview?.down_payment_amount;
 
+  function handleClose() {
+    onClose();
+    if (plan) {
+      navigate(`/account?plan=${encodeURIComponent(plan.id)}`);
+    }
+  }
+
   async function handleConfirm() {
     setError(null);
     if (plan) {
@@ -103,7 +112,7 @@ export default function Checkout({ piece, onClose, onScheduled }) {
     return (
       <Modal
         title="Reserve on Lay-Away"
-        onClose={onClose}
+        onClose={handleClose}
         footer={
           <>
             <Button variant="outline" to={`/register?from=${from}`}>
@@ -125,15 +134,14 @@ export default function Checkout({ piece, onClose, onScheduled }) {
 
   if (showDownPaymentForm && plan) {
     return (
-      <Modal title="Pay down payment" onClose={onClose}>
+      <Modal title="Pay down payment" onClose={handleClose}>
         <ManualPaymentForm
           planId={plan.id}
           kind="down_payment"
           expectedAmount={plan.down_payment_amount}
-          onCancel={() => setShowDownPaymentForm(false)}
           onSuccess={() => {
             setShowDownPaymentForm(false);
-            onClose();
+            handleClose();
           }}
         />
       </Modal>
@@ -146,10 +154,10 @@ export default function Checkout({ piece, onClose, onScheduled }) {
   return (
     <Modal
       title="Reserve on Lay-Away"
-      onClose={onClose}
+      onClose={handleClose}
       footer={
         <>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
           <Button variant="primary" onClick={handleConfirm} disabled={!canConfirm}>

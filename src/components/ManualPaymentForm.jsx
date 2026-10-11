@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Button from './Button.jsx';
 import ErrorMessage from './ErrorMessage.jsx';
 import { todayIsoLocal } from '../lib/dates.js';
@@ -15,6 +15,8 @@ import {
 } from '../services/submitManualPayment.js';
 import { useToast } from './useToast.js';
 import './ManualPaymentForm.css';
+
+const SUBMIT_FAILED = "We couldn't submit your payment. Check your connection and try again.";
 
 export default function ManualPaymentForm({
   planId,
@@ -34,6 +36,8 @@ export default function ManualPaymentForm({
   const [proofFile, setProofFile] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const formRef = useRef(null);
+  const focusErrorsRef = useRef(false);
 
   useEffect(() => {
     getBankAccounts()
@@ -47,6 +51,28 @@ export default function ManualPaymentForm({
       .finally(() => setLoadingAccounts(false));
   }, []);
 
+  useEffect(() => {
+    if (!focusErrorsRef.current) {
+      return;
+    }
+    focusErrorsRef.current = false;
+    formRef.current
+      .querySelector('[aria-invalid="true"], [role="alert"]')
+      ?.focus();
+  }, [fieldErrors]);
+
+  function showErrors(errors) {
+    focusErrorsRef.current = true;
+    setFieldErrors(errors);
+  }
+
+  function editField(setValue, errorKey) {
+    return (event) => {
+      setValue(event.target.value);
+      setFieldErrors((errors) => ({ ...errors, [errorKey]: undefined }));
+    };
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     const today = todayIsoLocal();
@@ -58,7 +84,7 @@ export default function ManualPaymentForm({
       today,
     });
     if (Object.keys(clientErrors).length) {
-      setFieldErrors(clientErrors);
+      showErrors(clientErrors);
       return;
     }
     setFieldErrors({});
@@ -79,9 +105,9 @@ export default function ManualPaymentForm({
       onSuccess?.(result);
     } catch (err) {
       if (err instanceof ServiceError) {
-        setFieldErrors(mapPaymentError(err.status, err.message));
+        showErrors(mapPaymentError(err.status, err.message || SUBMIT_FAILED));
       } else {
-        setFieldErrors({ form: 'Unable to submit payment.' });
+        showErrors({ form: SUBMIT_FAILED });
       }
     } finally {
       setSubmitting(false);
@@ -94,12 +120,13 @@ export default function ManualPaymentForm({
   );
 
   return (
-    <form className="manual-payment-form" onSubmit={handleSubmit}>
+    <form ref={formRef} className="manual-payment-form" onSubmit={handleSubmit}>
       <p className="payment-intro">
         Step 1: transfer {formatPesoDecimals(expectedAmount)} to one of our accounts. Step 2: tell
         us the details below so we can confirm it.
       </p>
-      <ErrorMessage>{fieldErrors.form}</ErrorMessage>
+      <ErrorMessage tabIndex={-1}>{fieldErrors.form}</ErrorMessage>
+      <fieldset className="form-fields" disabled={submitting}>
       {loadingAccounts ? <p>Loading bank accounts…</p> : null}
       {!loadingAccounts ? (
         <div className="form-row">
@@ -108,7 +135,8 @@ export default function ManualPaymentForm({
             id={bankSelectId}
             value={bankAccountId}
             disabled={accounts.length === 0}
-            onChange={(event) => setBankAccountId(event.target.value)}
+            aria-invalid={Boolean(fieldErrors.bank_account_id)}
+            onChange={editField(setBankAccountId, 'bank_account_id')}
           >
             {accounts.length === 0 ? (
               <option value="">No banks available</option>
@@ -148,7 +176,8 @@ export default function ManualPaymentForm({
           value={referenceNumber}
           maxLength={100}
           placeholder="BT-20261105-77"
-          onChange={(event) => setReferenceNumber(event.target.value)}
+          aria-invalid={Boolean(fieldErrors.reference_number)}
+          onChange={editField(setReferenceNumber, 'reference_number')}
         />
         {fieldErrors.reference_number ? (
           <p className="field-error">{fieldErrors.reference_number}</p>
@@ -160,7 +189,8 @@ export default function ManualPaymentForm({
           id={`amount-${planId}-${installmentId ?? 'dp'}`}
           inputMode="decimal"
           value={amount}
-          onChange={(event) => setAmount(event.target.value)}
+          aria-invalid={Boolean(fieldErrors.amount)}
+          onChange={editField(setAmount, 'amount')}
         />
         {fieldErrors.amount ? <p className="field-error">{fieldErrors.amount}</p> : null}
       </div>
@@ -171,7 +201,8 @@ export default function ManualPaymentForm({
           type="date"
           max={todayIsoLocal()}
           value={paidOn}
-          onChange={(event) => setPaidOn(event.target.value)}
+          aria-invalid={Boolean(fieldErrors.paid_on)}
+          onChange={editField(setPaidOn, 'paid_on')}
         />
         {fieldErrors.paid_on ? <p className="field-error">{fieldErrors.paid_on}</p> : null}
       </div>
@@ -189,12 +220,27 @@ export default function ManualPaymentForm({
           Click to attach a screenshot or receipt (JPG, PNG or PDF).
         </span>
       </div>
+      </fieldset>
+      {submitting ? (
+        <p className="sr-only" role="status">
+          Submitting your payment…
+        </p>
+      ) : null}
       <div className="form-actions">
-        <Button variant="outline" type="button" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button variant="primary" type="submit" disabled={submitting}>
-          Submit payment
+        {onCancel ? (
+          <Button variant="outline" type="button" disabled={submitting} onClick={onCancel}>
+            Cancel
+          </Button>
+        ) : null}
+        <Button variant="primary" type="submit" disabled={submitting} aria-busy={submitting}>
+          {submitting ? (
+            <>
+              <span className="btn-spinner" aria-hidden="true" />
+              Submitting…
+            </>
+          ) : (
+            'Submit payment'
+          )}
         </Button>
       </div>
     </form>

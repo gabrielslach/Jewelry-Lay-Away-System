@@ -29,21 +29,29 @@ export function downPaymentRowState(plan) {
   return { key: 'due', badge: 'Due now', showForm: true, payLabel: 'Pay' };
 }
 
-export function installmentRowState(row, { gracePeriodDays, today = todayIsoLocal() } = {}) {
+const PAYMENT_OVERRIDES = ['submitted', 'awaiting_confirmation', 'rejected'];
+
+export function effectiveStatus(row) {
+  return PAYMENT_OVERRIDES.includes(row.payment_status) ? row.payment_status : row.status;
+}
+
+export function installmentRowState(row, { gracePeriodDays, today = todayIsoLocal(), advanceEligible = false } = {}) {
   const dueDate = row.due_date?.slice(0, 10);
-  if (row.status === 'paid') {
+  const status = effectiveStatus(row);
+  if (status === 'paid') {
     return { key: 'paid', badge: 'Paid', badgeClass: 'badge badge-ok', showForm: false };
   }
-  if (row.status === 'submitted' || row.status === 'awaiting_confirmation') {
+  if (status === 'submitted' || status === 'awaiting_confirmation') {
     return {
       key: 'awaiting',
       badge: 'Awaiting confirmation',
       badgeClass: 'badge badge-info',
+      dateLabel: formatDisplayDate(dueDate),
       note: 'Submitted - waiting for our confirmation.',
       showForm: false,
     };
   }
-  if (row.status === 'rejected') {
+  if (status === 'rejected') {
     return {
       key: 'rejected',
       badge: 'Rejected',
@@ -85,6 +93,7 @@ export function installmentRowState(row, { gracePeriodDays, today = todayIsoLoca
     badge: 'Pending',
     badgeClass: 'badge badge-mute',
     dateLabel: formatDisplayDate(dueDate),
-    showForm: false,
+    showForm: advanceEligible,
+    payLabel: 'Pay ahead',
   };
 }

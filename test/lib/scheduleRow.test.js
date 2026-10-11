@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { downPaymentRowState, installmentRowState } from '../../src/lib/scheduleRow.js';
+import {
+  downPaymentRowState,
+  effectiveStatus,
+  installmentRowState,
+} from '../../src/lib/scheduleRow.js';
 
 describe('scheduleRow', () => {
   it('maps down payment statuses for pay actions', () => {
@@ -62,6 +66,30 @@ describe('scheduleRow', () => {
     ).toMatchObject({
       badge: 'Pending',
       badgeClass: 'badge badge-mute',
+      showForm: false,
+    });
+  });
+
+  it('offers Pay ahead on a future pending row only when advance is eligible', () => {
+    const row = { status: 'pending', due_date: '2026-11-10' };
+    const locked = installmentRowState(row, { today: '2026-10-10' });
+    expect(locked).toMatchObject({ key: 'pending', showForm: false });
+    const open = installmentRowState(row, { today: '2026-10-10', advanceEligible: true });
+    expect(open).toMatchObject({ showForm: true, payLabel: 'Pay ahead' });
+  });
+
+  it('lets payment_status override status when awaiting or rejected', () => {
+    expect(effectiveStatus({ status: 'pending', payment_status: 'rejected' })).toBe('rejected');
+    expect(effectiveStatus({ status: 'paid', payment_status: 'confirmed' })).toBe('paid');
+    const state = installmentRowState(
+      { status: 'overdue', payment_status: 'awaiting_confirmation', due_date: '2026-10-01' },
+      { today: '2026-10-10' },
+    );
+    expect(state).toMatchObject({
+      key: 'awaiting',
+      badge: 'Awaiting confirmation',
+      dateLabel: 'Oct 1, 2026',
+      note: 'Submitted - waiting for our confirmation.',
       showForm: false,
     });
   });

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import ManualPaymentForm from '../../src/components/ManualPaymentForm.jsx';
 import { ToastProvider } from '../../src/components/ToastProvider.jsx';
@@ -12,7 +12,6 @@ function renderForm(props = {}) {
         planId="LA-1"
         kind="down_payment"
         expectedAmount={12000}
-        onCancel={() => {}}
         onSuccess={() => {}}
         {...props}
       />
@@ -111,5 +110,66 @@ describe('ManualPaymentForm', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Submit payment' }));
     expect(await screen.findByText('Please choose a bank account.')).toBeInTheDocument();
+  });
+
+  it('renders Cancel only when onCancel is passed', async () => {
+    vi.spyOn(bankAccounts, 'getBankAccounts').mockResolvedValue([]);
+    const { unmount } = renderForm();
+    await screen.findByLabelText('Transfer to');
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+    unmount();
+    renderForm({ onCancel: () => {} });
+    expect(await screen.findByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+  });
+
+  it('locks the form while submitting, then shows a retryable error and keeps values', async () => {
+    vi.spyOn(bankAccounts, 'getBankAccounts').mockResolvedValue([
+      { id: 1, bank_name: 'Sample Bank', account_name: 'A', account_number: '1' },
+    ]);
+    let reject;
+    vi.spyOn(submitManualPayment, 'submitDownPaymentManual').mockReturnValue(
+      new Promise((_, rej) => {
+        reject = rej;
+      }),
+    );
+    renderForm({ onCancel: () => {} });
+    fireEvent.change(await screen.findByLabelText('Reference number'), {
+      target: { value: 'BT-9' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit payment' }));
+
+    const busy = await screen.findByRole('button', { name: 'Submitting…' });
+    expect(busy).toBeDisabled();
+    expect(busy).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByText('Submitting your payment…')).toHaveAttribute('role', 'status');
+    expect(screen.getByLabelText('Reference number')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+
+    await act(async () => {
+      reject(new Error('network'));
+    });
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(
+      "We couldn't submit your payment. Check your connection and try again.",
+    );
+    expect(alert).toHaveFocus();
+    expect(screen.queryByText('Submitting your payment…')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Submit payment' })).toBeEnabled();
+    expect(screen.getByLabelText('Reference number')).toHaveValue('BT-9');
+  });
+
+  it('focuses the first invalid field and clears only the edited field error', async () => {
+    vi.spyOn(bankAccounts, 'getBankAccounts').mockResolvedValue([
+      { id: 1, bank_name: 'Sample Bank', account_name: 'A', account_number: '1' },
+    ]);
+    renderForm();
+    const reference = await screen.findByLabelText('Reference number');
+    fireEvent.change(screen.getByLabelText('Amount sent'), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit payment' }));
+    expect(await screen.findByText('Reference number is required.')).toBeInTheDocument();
+    expect(reference).toHaveFocus();
+    fireEvent.change(reference, { target: { value: 'BT-1' } });
+    expect(screen.queryByText('Reference number is required.')).not.toBeInTheDocument();
+    expect(screen.getByText('Enter a valid amount.')).toBeInTheDocument();
   });
 });

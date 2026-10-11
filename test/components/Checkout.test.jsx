@@ -75,21 +75,27 @@ describe('Checkout', () => {
     expect(screen.getByRole('heading', { name: 'Pay down payment' })).toBeInTheDocument();
   });
 
-  it('does not create twice when returning from the payment form', async () => {
-    const onScheduled = vi.fn();
-    renderCheckout(<Checkout piece={piece} onClose={() => {}} onScheduled={onScheduled} />);
+  it('redirects to the account page when closed after a plan is created', async () => {
+    const onClose = vi.fn();
+    renderCheckout(<Checkout piece={piece} onClose={onClose} />);
     await waitForPreview();
     fireEvent.click(screen.getByRole('button', { name: 'Confirm lay-away' }));
     expect(
       await screen.findByRole('heading', { name: 'Pay down payment' }),
     ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/account\?plan=LA-/);
+  });
+
+  it('stays on the page when closed before a plan is created', async () => {
+    const onClose = vi.fn();
+    renderCheckout(<Checkout piece={piece} onClose={onClose} />, { path: '/collections/1' });
+    await waitForPreview();
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(await screen.findByLabelText('Lay-Away Term')).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm lay-away' }));
-    expect(
-      await screen.findByRole('heading', { name: 'Pay down payment' }),
-    ).toBeInTheDocument();
-    expect(onScheduled).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('location')).toHaveTextContent('/collections/1');
   });
 
   it('creates the plan in a new tab without bouncing to login', async () => {

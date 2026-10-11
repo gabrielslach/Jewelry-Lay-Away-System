@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { useCallback, useEffect, useState } from 'react';
 import ChangePasswordModal from '../components/ChangePasswordModal.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
@@ -19,8 +19,13 @@ import './AuthPage.css';
 import '../components/Checkout.css';
 import '../components/PieceDetail.css';
 
+const orderDigits = (id) => String(id).replace(/\D/g, '');
+const sameOrder = (a, b) => orderDigits(a) === orderDigits(b);
+
 export default function Account() {
   const { customer } = useSession();
+  const [searchParams] = useSearchParams();
+  const focusedPlan = searchParams.get('plan');
   const [orders, setOrders] = useState({ active: [], completed: [] });
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [error, setError] = useState(null);
@@ -140,6 +145,7 @@ export default function Account() {
           <LayawayPlanCard
             key={plan.id}
             plan={plan}
+            focused={focusedPlan != null && sameOrder(plan.id, focusedPlan)}
             rejectionByPaymentId={rejections}
             onUpdated={loadOrders}
           />

@@ -21,6 +21,10 @@ if (typeof URL.revokeObjectURL !== 'function') {
   };
 }
 
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
+
 beforeEach(() => {
   store = createStore();
   sessionStorage.clear();
