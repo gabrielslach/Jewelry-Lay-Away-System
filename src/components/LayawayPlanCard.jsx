@@ -36,13 +36,15 @@ export default function LayawayPlanCard({ plan, rejectionByPaymentId, onUpdated 
 
   const installments = useMemo(
     () =>
-      plan.installments.map((row) => {
-        const rejection = rejectionByPaymentId?.[row.id];
-        return {
-          ...row,
-          rejection_reason: row.rejection_reason ?? rejection,
-        };
-      }),
+      plan.installments
+        .filter((row) => row.status !== 'superseded')
+        .map((row) => {
+          const rejection = rejectionByPaymentId?.[row.id];
+          return {
+            ...row,
+            rejection_reason: row.rejection_reason ?? rejection,
+          };
+        }),
     [plan.installments, rejectionByPaymentId],
   );
 
@@ -105,9 +107,9 @@ export default function LayawayPlanCard({ plan, rejectionByPaymentId, onUpdated 
           suppressPay={waitingForStock}
           onPay={() => setOpenPay({ kind: 'down_payment' })}
         />
-        {installments.map((row) => {
+        {installments.map((row, index) => {
           const state = installmentRowState(row, { gracePeriodDays: graceDays });
-          const termNumber = row.term_number ?? row.id;
+          const termNumber = row.term_number ?? index + 1;
           const canPay = state.showForm && !waitingForStock;
           return (
             <ScheduleLine

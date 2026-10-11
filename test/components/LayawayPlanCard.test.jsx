@@ -25,15 +25,13 @@ const basePlan = {
   installments: [
     {
       id: 'LA-9-i1',
-      term_number: 1,
-      amount: '500',
+      amount: '500.00',
       due_date: todayIso(),
       status: 'pending',
     },
     {
       id: 'LA-9-i2',
-      term_number: 2,
-      amount: '500',
+      amount: '500.00',
       due_date: daysFromToday(21),
       status: 'pending',
     },
@@ -41,6 +39,29 @@ const basePlan = {
 };
 
 describe('LayawayPlanCard', () => {
+  it('numbers payments by position and hides superseded installments', () => {
+    const superseded = {
+      id: 'LA-9-old',
+      amount: '500.00',
+      due_date: daysFromToday(-5),
+      status: 'superseded',
+    };
+    render(
+      <ToastProvider>
+        <LayawayPlanCard
+          plan={{
+            ...basePlan,
+            installments: [superseded, ...basePlan.installments],
+          }}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByText('Payment 1')).toBeInTheDocument();
+    expect(screen.getByText('Payment 2')).toBeInTheDocument();
+    expect(screen.queryByText('Payment 3')).not.toBeInTheDocument();
+    expect(screen.getAllByText('₱500.00')).toHaveLength(2);
+  });
+
   it('shows waiting-for-stock, keeps the schedule, and hides pay actions', () => {
     render(
       <ToastProvider>
@@ -52,7 +73,9 @@ describe('LayawayPlanCard', () => {
     expect(screen.getAllByText('Waiting for stock').length).toBeGreaterThan(0);
     expect(screen.getByText('Down payment')).toBeInTheDocument();
     expect(screen.getByText('Payment 1')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Pay' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Pay' }),
+    ).not.toBeInTheDocument();
   });
 
   it('opens the pay form in a dialog for a due installment', async () => {
@@ -66,6 +89,8 @@ describe('LayawayPlanCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Pay' }));
     const dialog = await screen.findByRole('dialog');
     expect(dialog).toHaveAccessibleName('Pay Payment 1');
-    expect(await screen.findByLabelText('Reference number')).toBeInTheDocument();
+    expect(
+      await screen.findByLabelText('Reference number'),
+    ).toBeInTheDocument();
   });
 });
