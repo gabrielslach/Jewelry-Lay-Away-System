@@ -1,0 +1,2547 @@
+openapi: 3.0.3
+info:
+  title: Mine Credit — Internal Storefront API
+  description: |
+    Draft contract for the storefront and admin panel against The Loft's own backend.
+    Frontend never calls the inventory provider's API directly.
+
+    **Auth:** `register`/`login` return `{ access_token, refresh_token, customer|admin }`.
+    Use `Authorization: Bearer <access_token>`. Access tokens expire in 15 minutes;
+    refresh with `POST .../refresh` using `{ refresh_token }` (valid 24 hours or until logout).
+
+    **Rate limiting:** `register`/`login` (customer and admin) and customer refresh are
+    limited to 10 attempts per 15 minutes per IP — `429 { error }` means too many attempts.
+  version: "1.15"
+  contact:
+    name: The Loft IT Solutions
+  x-status: draft contract for frontend build-against (Sep 23, 2026) — v1.15 (Oct 8, 2026)
+
+servers:
+  - url: https://honeydew-stork-999262.hostingersite.com
+    description: Sandbox (will move before go-live)
+
+# Default: no auth. Protected operations override with CustomerBearer / AdminBearer.
+security: []
+
+tags:
+  - name: Gallery
+  - name: Customers
+  - name: Layaway
+  - name: Bank Accounts
+  - name: Admin Auth
+  - name: Admin Staff
+  - name: Admin Plans
+  - name: Admin Customers
+  - name: Admin Dashboard
+  - name: Admin Settings
+  - name: Admin Payments
+  - name: Admin Alerts
+  - name: Admin Reports
+  - name: Admin Reservations
+  - name: Finance
+
+paths:
+  /api/gallery:
+    get:
+      tags: [Gallery]
+      summary: List browsable pieces
+      description: |
+        Paginated catalog via the backend adapter. `price` is always the peso price;
+        `currency` is always `"PHP"`. Use `thumb_url` in grids, `web_url` on product pages,
+        `url` only for zoom.
+      operationId: listGallery
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Paginated gallery
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GalleryListResponse"
+
+  /api/gallery/{id}:
+    get:
+      tags: [Gallery]
+      summary: Single piece detail
+      operationId: getGalleryItem
+      parameters:
+        - $ref: "#/components/parameters/GalleryId"
+      responses:
+        "200":
+          description: Gallery item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GalleryItem"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/customers/register:
+    post:
+      tags: [Customers]
+      summary: Customer registration
+      operationId: registerCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerRegisterRequest"
+      responses:
+        "200":
+          description: Registered; tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerAuthResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /api/customers/login:
+    post:
+      tags: [Customers]
+      summary: Customer login
+      operationId: loginCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerAuthResponse"
+        "401":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /api/customers/refresh:
+    post:
+      tags: [Customers]
+      summary: Refresh customer access token
+      description: No auth header. Exchange a still-valid refresh token for a new access_token.
+      operationId: refreshCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: New access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessTokenResponse"
+        "401":
+          description: Invalid, expired, or revoked refresh token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: Invalid, expired, or revoked refresh token
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /api/customers/forgot-password:
+    post:
+      tags: [Customers]
+      summary: Request password reset email
+      description: |
+        Always returns 200 (never reveals whether the email is registered).
+        If registered, customer gets a link to `<storefront>/reset-password?token=...`
+        (one-time, expires in 1 hour). Rate limited like login.
+      operationId: forgotPasswordCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: Always success (email may or may not exist)
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /api/customers/reset-password:
+    post:
+      tags: [Customers]
+      summary: Reset password with email token
+      description: |
+        Sets new password (min 8 chars), signs customer out of every device,
+        emails a password-changed notice.
+      operationId: resetPasswordCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token:
+                  type: string
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        "200":
+          description: Password reset
+        "400":
+          description: Invalid, used, or expired link; or password too short
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/customers/change-password:
+    post:
+      tags: [Customers]
+      summary: Change password (authenticated)
+      description: Other devices stay signed in.
+      operationId: changePasswordCustomer
+      security:
+        - CustomerBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "200":
+          description: Password changed
+        "400":
+          description: New password shorter than 8 characters or same as current
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Wrong current password or missing/invalid access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/customers/logout:
+    post:
+      tags: [Customers]
+      summary: Logout (revoke one refresh token)
+      description: Revokes that one refresh token (that device/session only).
+      operationId: logoutCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: Session revoked
+
+  /api/customers/me:
+    get:
+      tags: [Customers]
+      summary: Current customer profile
+      operationId: getCustomerMe
+      security:
+        - CustomerBearer: []
+      responses:
+        "200":
+          description: Customer profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/customers/orders:
+    get:
+      tags: [Customers]
+      summary: Customer's lay-away order history
+      description: Customer id comes from the access token.
+      operationId: listCustomerOrders
+      security:
+        - CustomerBearer: []
+      responses:
+        "200":
+          description: Orders with nested installments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CustomerOrder"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/customers/notifications:
+    get:
+      tags: [Customers]
+      summary: Customer notifications
+      description: Newest first. Use `unread` for badge count on My Account.
+      operationId: listCustomerNotifications
+      security:
+        - CustomerBearer: []
+      parameters:
+        - name: unread
+          in: query
+          schema:
+            type: integer
+            enum: [1]
+          description: When 1, return unread only
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            maximum: 200
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/customers/notifications/read:
+    post:
+      tags: [Customers]
+      summary: Mark customer notifications read
+      description: "Body `{ ids: [...] }` marks those; empty body marks everything read."
+      operationId: markCustomerNotificationsRead
+      security:
+        - CustomerBearer: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MarkNotificationsReadRequest"
+      responses:
+        "200":
+          description: Marked read
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/layaway/plans:
+    post:
+      tags: [Layaway]
+      summary: Create a lay-away plan
+      description: |
+        Body `{ product_id, term_months? }`. `term_months` is 1 up to admin-configured max
+        (default 3); installments every 15 days (2 per month). Customer id from token.
+        Returns 409 if the item has no peso price.
+      operationId: createLayawayPlan
+      security:
+        - CustomerBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLayawayPlanRequest"
+      responses:
+        "200":
+          description: Plan created with schedule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateLayawayPlanResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Item has no peso price
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: This item has no peso price yet and cannot be put on lay-away
+
+  /api/layaway/plans/{id}:
+    get:
+      tags: [Layaway]
+      summary: Lay-away plan detail
+      description: |
+        Includes installments. Pending past due_date flip to `overdue` lazily on read.
+        May silently reconstruct after grace period (`is_reconstructed: true`, fixed 6-term schedule).
+      operationId: getLayawayPlan
+      parameters:
+        - $ref: "#/components/parameters/PlanId"
+      responses:
+        "200":
+          description: Plan detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LayawayPlanDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/layaway/plans/{id}/payments:
+    post:
+      tags: [Layaway]
+      summary: Gateway payment (not available)
+      description: Gateway path only — blocked pending gateway confirmation (WBS M1).
+      operationId: createGatewayPayment
+      parameters:
+        - $ref: "#/components/parameters/PlanId"
+      responses:
+        "501":
+          description: Not implemented
+
+  /api/layaway/plans/{id}/payments/manual:
+    post:
+      tags: [Layaway]
+      summary: Pay an installment by bank transfer
+      operationId: createManualInstallmentPayment
+      security:
+        - CustomerBearer: []
+      parameters:
+        - $ref: "#/components/parameters/PlanId"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ManualInstallmentPaymentForm"
+      responses:
+        "201":
+          description: Payment submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManualPaymentSubmitted"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Already awaiting confirmation, or reference already used
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/layaway/plans/{id}/down-payment/manual:
+    post:
+      tags: [Layaway]
+      summary: Down payment by bank transfer
+      operationId: createManualDownPayment
+      security:
+        - CustomerBearer: []
+      parameters:
+        - $ref: "#/components/parameters/PlanId"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ManualDownPaymentForm"
+      responses:
+        "201":
+          description: Down payment submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManualPaymentSubmitted"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Plan not active, already confirmed/awaiting, or reference reused
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/bank-accounts:
+    get:
+      tags: [Bank Accounts]
+      summary: List bank accounts (public)
+      description: AlMar Corp bank accounts for the manual payment path.
+      operationId: listBankAccounts
+      responses:
+        "200":
+          description: Bank accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BankAccount"
+    post:
+      tags: [Bank Accounts]
+      summary: Create bank account
+      description: Admin only. Multipart with optional QR image.
+      operationId: createBankAccount
+      security:
+        - AdminBearer: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [bank_name, account_name, account_number]
+              properties:
+                bank_name:
+                  type: string
+                account_name:
+                  type: string
+                account_number:
+                  type: string
+                qr_code:
+                  type: string
+                  format: binary
+                  description: QR code image file
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankAccount"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/register:
+    post:
+      tags: [Admin Auth]
+      summary: Bootstrap first admin
+      description: Only creates the very first admin; closed afterwards. Use POST /api/admin/staff for further accounts.
+      operationId: registerAdmin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminRegisterRequest"
+      responses:
+        "200":
+          description: First admin created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAuthResponse"
+        "409":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /api/admin/login:
+    post:
+      tags: [Admin Auth]
+      summary: Admin / staff login
+      operationId: loginAdmin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAuthResponse"
+        "401":
+          description: Invalid credentials or deactivated account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /api/admin/refresh:
+    post:
+      tags: [Admin Auth]
+      summary: Refresh admin access token
+      operationId: refreshAdmin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: New access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessTokenResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/admin/logout:
+    post:
+      tags: [Admin Auth]
+      summary: Admin logout
+      operationId: logoutAdmin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: Session revoked
+
+  /api/admin/change-password:
+    post:
+      tags: [Admin Auth]
+      summary: Change own staff password
+      operationId: changePasswordAdmin
+      security:
+        - AdminBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "200":
+          description: Password changed
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/admin/staff:
+    get:
+      tags: [Admin Staff]
+      summary: List staff
+      description: Admin only.
+      operationId: listStaff
+      security:
+        - AdminBearer: []
+      responses:
+        "200":
+          description: Staff list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StaffMember"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [Admin Staff]
+      summary: Create staff account
+      description: Admin only. Role caps enforced.
+      operationId: createStaff
+      security:
+        - AdminBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStaffRequest"
+      responses:
+        "200":
+          description: Staff created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffMember"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: Role cap full or email exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/admin/staff/{id}:
+    patch:
+      tags: [Admin Staff]
+      summary: Update staff
+      description: |
+        Admin only. Send only fields that change. Cannot change own role or deactivate self;
+        last active admin cannot be demoted/deactivated. Caps enforced.
+      operationId: updateStaff
+      security:
+        - AdminBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStaffRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffMember"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Error"
+
+  /api/admin/audit-log:
+    get:
+      tags: [Admin Staff]
+      summary: Audit log
+      description: Admin only. Newest first.
+      operationId: getAuditLog
+      security:
+        - AdminBearer: []
+      parameters:
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: admin_id
+          in: query
+          schema:
+            type: integer
+        - name: before_id
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            maximum: 500
+      responses:
+        "200":
+          description: Audit entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLogEntry"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/plans:
+    get:
+      tags: [Admin Plans]
+      summary: All lay-away plans
+      description: Any staff role. Data source for admin orders/dashboard.
+      operationId: listAdminPlans
+      security:
+        - AdminBearer: []
+      responses:
+        "200":
+          description: Plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminPlan"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/plans/{id}/reservation/retry:
+    post:
+      tags: [Admin Reservations]
+      summary: Retry reservation / hold
+      description: Admin only. Re-attempt hold or completion after provider failure.
+      operationId: retryReservation
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/PlanId"
+      responses:
+        "200":
+          description: Retry succeeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: Provider still cannot hold
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationResult"
+
+  /api/admin/plans/{id}/reservation/cancel:
+    post:
+      tags: [Admin Reservations]
+      summary: Cancel reservation / release hold
+      description: Admin only. Manual only — never automatic.
+      operationId: cancelReservation
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/PlanId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason, handoff_confirmed]
+              properties:
+                reason:
+                  type: string
+                handoff_confirmed:
+                  type: boolean
+                  enum: [true]
+                  description: Must be true — termination handed off and agreed with customer
+      responses:
+        "200":
+          description: Reservation cancelled
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/customers:
+    get:
+      tags: [Admin Customers]
+      summary: Customer directory
+      description: Any staff role.
+      operationId: listAdminCustomers
+      security:
+        - AdminBearer: []
+      responses:
+        "200":
+          description: Customers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminCustomer"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/customers/{id}/sessions:
+    delete:
+      tags: [Admin Customers]
+      summary: Revoke all customer sessions
+      description: Admin only. Revokes every active refresh token for that customer.
+      operationId: revokeCustomerSessions
+      security:
+        - AdminBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Sessions revoked
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/dashboard:
+    get:
+      tags: [Admin Dashboard]
+      summary: Admin dashboard summary
+      description: Any staff role.
+      operationId: getAdminDashboard
+      security:
+        - AdminBearer: []
+      responses:
+        "200":
+          description: Dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboard"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/settings:
+    get:
+      tags: [Admin Settings]
+      summary: Business settings
+      description: Any staff role. Single row.
+      operationId: getAdminSettings
+      security:
+        - AdminBearer: []
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    put:
+      tags: [Admin Settings]
+      summary: Update business settings
+      description: |
+        Admin only. Send only changed fields. Rate/grace changes apply to new plans only.
+        Also accepts `notify_accounting_roles`.
+      operationId: updateAdminSettings
+      security:
+        - AdminBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/markup-rules:
+    get:
+      tags: [Admin Settings]
+      summary: List markup rules
+      description: Admin only.
+      operationId: listMarkupRules
+      security:
+        - AdminBearer: []
+      responses:
+        "200":
+          description: Markup rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GenericRule"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [Admin Settings]
+      summary: Create markup rule
+      description: 'Admin only. Global rule example `{"percent":30}`.'
+      operationId: createMarkupRule
+      security:
+        - AdminBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRule"
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericRule"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/penalty-rules:
+    get:
+      tags: [Admin Settings]
+      summary: List penalty rules
+      description: Admin only.
+      operationId: listPenaltyRules
+      security:
+        - AdminBearer: []
+      responses:
+        "200":
+          description: Penalty rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GenericRule"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [Admin Settings]
+      summary: Create penalty rule
+      description: Admin only.
+      operationId: createPenaltyRule
+      security:
+        - AdminBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRule"
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericRule"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/payments/pending:
+    get:
+      tags: [Admin Payments]
+      summary: Pending payment submissions
+      description: Any staff role. Oldest first.
+      operationId: listPendingPayments
+      security:
+        - AdminBearer: []
+      responses:
+        "200":
+          description: Pending payments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PendingPayment"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/payments/due:
+    get:
+      tags: [Admin Payments]
+      summary: Due today and overdue installments
+      description: Any staff role. Oldest first.
+      operationId: listDuePayments
+      security:
+        - AdminBearer: []
+      responses:
+        "200":
+          description: Due/overdue list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DuePaymentsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/payments/{id}/proof:
+    get:
+      tags: [Admin Payments]
+      summary: View customer proof-of-payment image
+      description: Any staff role.
+      operationId: getPaymentProof
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+      responses:
+        "200":
+          description: Image
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/admin/payments/{id}/confirmer-proof:
+    get:
+      tags: [Admin Payments]
+      summary: View reviewer confirmer proof
+      description: Any staff role. Staff-only; never exposed to customers. 404 if none.
+      operationId: getConfirmerProof
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+      responses:
+        "200":
+          description: Image
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/admin/payments/{id}/confirm:
+    post:
+      tags: [Admin Payments]
+      summary: Confirm a payment
+      description: |
+        Roles `receivables` or `admin`. JSON or multipart. Optional note and confirmer_proof.
+        Down payment confirmation holds the piece or puts on backorder.
+      operationId: confirmPayment
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+                confirmer_proof:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfirmPaymentResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/payments/{id}/reject:
+    post:
+      tags: [Admin Payments]
+      summary: Reject a payment
+      description: Roles `receivables` or `admin`. `reason` required.
+      operationId: rejectPayment
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+          multipart/form-data:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                confirmer_proof:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Rejected
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/alerts:
+    get:
+      tags: [Admin Alerts]
+      summary: Badge and dashboard counts
+      description: Any staff role. Poll about once a minute while admin is open.
+      operationId: getAdminAlerts
+      security:
+        - AdminBearer: []
+      responses:
+        "200":
+          description: Counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAlerts"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/notifications:
+    get:
+      tags: [Admin Alerts]
+      summary: Staff notifications
+      description: Any staff role. Newest first.
+      operationId: listAdminNotifications
+      security:
+        - AdminBearer: []
+      parameters:
+        - name: unread
+          in: query
+          schema:
+            type: integer
+            enum: [1]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/notifications/read:
+    post:
+      tags: [Admin Alerts]
+      summary: Mark staff notifications read
+      operationId: markAdminNotificationsRead
+      security:
+        - AdminBearer: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MarkNotificationsReadRequest"
+      responses:
+        "200":
+          description: Marked read
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/notifications/digest:
+    post:
+      tags: [Admin Alerts]
+      summary: Send due-today / overdue digest email now
+      description: Admin only. Once per day; subsequent calls same day do nothing.
+      operationId: sendAdminDigest
+      security:
+        - AdminBearer: []
+      responses:
+        "200":
+          description: Digest sent or already sent today
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/jobs/daily:
+    post:
+      tags: [Admin Alerts]
+      summary: Run daily customer notices and digest
+      description: |
+        Admin only. Overdue, reconstruction, closure, due-today emails and digest.
+        Each runs once per day.
+      operationId: runDailyJobs
+      security:
+        - AdminBearer: []
+      responses:
+        "200":
+          description: Jobs run or already run today
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/reservations/sync:
+    post:
+      tags: [Admin Reservations]
+      summary: Sync waiting-for-stock plans
+      description: Admin only. Also runs about every 30 minutes while alerts are loaded.
+      operationId: syncReservations
+      security:
+        - AdminBearer: []
+      responses:
+        "200":
+          description: Sync result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  checked:
+                    type: integer
+                  now_held:
+                    type: integer
+                  cancelled:
+                    type: integer
+                  errors:
+                    type: integer
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/reports/receivables:
+    get:
+      tags: [Admin Reports]
+      summary: Overdue and receivables report
+      description: Any staff role. Optional CSV export.
+      operationId: getReceivablesReport
+      security:
+        - AdminBearer: []
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [csv]
+      responses:
+        "200":
+          description: Report or CSV
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReceivablesReport"
+            text/csv:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/reports/profit:
+    get:
+      tags: [Admin Reports]
+      summary: Profit report
+      description: Roles `ledger`, `reporting`, or `admin`.
+      operationId: getProfitReport
+      security:
+        - AdminBearer: []
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Profit report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfitReport"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/finance/ledger:
+    get:
+      tags: [Finance]
+      summary: Finance ledger
+      description: Any staff role. Optional CSV via `format=csv`.
+      operationId: getFinanceLedger
+      security:
+        - AdminBearer: []
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: entry_type
+          in: query
+          schema:
+            type: string
+            enum: [payment, penalty, receivable]
+        - name: plan_id
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [csv]
+      responses:
+        "200":
+          description: Ledger rows or CSV
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LedgerEntry"
+            text/csv:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+components:
+  securitySchemes:
+    CustomerBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Customer access_token from register/login/refresh
+    AdminBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Admin/staff access_token from admin login/refresh (separate from customer)
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+    GalleryId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    PlanId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    PaymentId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Missing or invalid access token (or deactivated staff)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Outside caller's role
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    RateLimited:
+      description: Too many attempts — handle distinctly from validation errors
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+
+    AccessTokenResponse:
+      type: object
+      required: [access_token]
+      properties:
+        access_token:
+          type: string
+
+    ChangePasswordRequest:
+      type: object
+      required: [current_password, new_password]
+      properties:
+        current_password:
+          type: string
+        new_password:
+          type: string
+          minLength: 8
+
+    CustomerRegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        phone:
+          type: string
+          nullable: true
+          description: Optional
+
+    Customer:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          description: Member since
+
+    CustomerAuthResponse:
+      type: object
+      required: [access_token, refresh_token, customer]
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        customer:
+          $ref: "#/components/schemas/Customer"
+
+    AdminRole:
+      type: string
+      enum: [admin, receivables, ledger, reporting]
+      description: |
+        `admin` — full access (max 2 active).
+        Accounting roles `receivables`, `ledger`, `reporting` (max 3 active each).
+
+    Admin:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          $ref: "#/components/schemas/AdminRole"
+
+    AdminRegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+
+    AdminAuthResponse:
+      type: object
+      required: [access_token, refresh_token, admin]
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        admin:
+          $ref: "#/components/schemas/Admin"
+
+    CreateStaffRequest:
+      type: object
+      required: [name, email, password, role]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        role:
+          $ref: "#/components/schemas/AdminRole"
+
+    UpdateStaffRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        role:
+          $ref: "#/components/schemas/AdminRole"
+        is_active:
+          type: boolean
+        password:
+          type: string
+          minLength: 8
+          description: Reset password
+
+    StaffMember:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          $ref: "#/components/schemas/AdminRole"
+        is_active:
+          type: boolean
+        created_by:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    AuditLogEntry:
+      type: object
+      description: Who did what (payment confirm/reject, settings, staff, etc.)
+      properties:
+        id:
+          type: integer
+        action:
+          type: string
+        admin_id:
+          type: integer
+        details:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+
+    GalleryImage:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Full camera original (often 5–9 MB) — zoom only
+        thumb_url:
+          type: string
+          format: uri
+          description: ~480 px — grids and lists
+        web_url:
+          type: string
+          format: uri
+          description: ~1200 px WebP — product page
+        is_primary:
+          type: boolean
+
+    StoneDetail:
+      type: object
+      properties:
+        weight_ct:
+          type: number
+          nullable: true
+        count:
+          type: integer
+          nullable: true
+
+    GalleryDetails:
+      type: object
+      description: Jewelry specs; every value can be null/empty
+      properties:
+        item_form:
+          type: string
+          nullable: true
+        item_form_code:
+          type: string
+          nullable: true
+          description: ER, RN, NL, BR, PND, …
+        category:
+          type: string
+          nullable: true
+          description: Open list — do not hard-code a fixed set
+        metal:
+          type: string
+          nullable: true
+        metal_codes:
+          type: string
+          nullable: true
+          description: SL, YG, WG, RG, …
+        purity:
+          type: string
+          nullable: true
+        gold_weight_g:
+          type: string
+          nullable: true
+          description: Metal weight in grams (any metal)
+        diamond_weight_ct:
+          type: string
+          nullable: true
+        diamonds:
+          type: array
+          items:
+            $ref: "#/components/schemas/StoneDetail"
+        stones:
+          type: array
+          items:
+            $ref: "#/components/schemas/StoneDetail"
+
+    GalleryItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+          description: Barcode / PJ number
+        price:
+          type: string
+          description: Peso price as string — show as-is
+        currency:
+          type: string
+          example: PHP
+        in_stock:
+          type: boolean
+        details:
+          $ref: "#/components/schemas/GalleryDetails"
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/GalleryImage"
+
+    GalleryListResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          nullable: true
+          description: Relative path on this API
+        previous:
+          type: string
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/GalleryItem"
+
+    InstallmentStatus:
+      type: string
+      enum: [pending, overdue, paid, superseded]
+      description: superseded is internal; not returned on plan detail
+
+    CustomerOrderInstallment:
+      type: object
+      properties:
+        id:
+          type: integer
+        due_date:
+          type: string
+          format: date-time
+        amount:
+          type: string
+        status:
+          $ref: "#/components/schemas/InstallmentStatus"
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    CustomerOrder:
+      type: object
+      properties:
+        id:
+          type: integer
+        item_name:
+          type: string
+        term_months:
+          type: integer
+        plan_label:
+          type: string
+          example: 3 Mo. / 6 Payments
+        installment_count:
+          type: integer
+        next_due_date:
+          type: string
+          format: date-time
+          nullable: true
+        total_price:
+          type: string
+        currency:
+          type: string
+        status:
+          type: string
+          enum: [on_track, overdue, completed]
+        plan_status:
+          type: string
+          example: active
+        completed_on:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        installments:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomerOrderInstallment"
+
+    CreateLayawayPlanRequest:
+      type: object
+      required: [product_id]
+      properties:
+        product_id:
+          type: integer
+          description: Gallery item id
+        term_months:
+          type: integer
+          minimum: 1
+          description: 1 up to admin max_term_months (default 3)
+
+    ScheduleEntry:
+      type: object
+      properties:
+        term_number:
+          type: integer
+        due_date:
+          type: string
+          format: date
+        principal_amount:
+          type: number
+        interest_amount:
+          type: number
+        amount:
+          type: number
+
+    CreateLayawayPlanResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        total_price:
+          type: number
+          description: Selling price with markup applied
+        down_payment_amount:
+          type: number
+        financed_principal:
+          type: number
+        currency:
+          type: string
+        term_months:
+          type: integer
+        installments:
+          type: integer
+          description: Count of installment terms
+        schedule:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScheduleEntry"
+        note:
+          type: string
+          description: Present only if no markup rule configured
+
+    PlanInstallment:
+      type: object
+      properties:
+        id:
+          type: integer
+        term_number:
+          type: integer
+        due_date:
+          type: string
+          format: date
+        amount:
+          type: number
+        principal_amount:
+          type: number
+        interest_amount:
+          type: number
+        status:
+          $ref: "#/components/schemas/InstallmentStatus"
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    LayawayPlanDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        total_price:
+          type: number
+        down_payment_amount:
+          type: number
+        financed_principal:
+          type: number
+        currency:
+          type: string
+        term_months:
+          type: integer
+        is_reconstructed:
+          type: boolean
+          description: True after grace-period reconstruction (always 6-term schedule)
+        installments:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlanInstallment"
+
+    ManualInstallmentPaymentForm:
+      type: object
+      required: [installment_id, bank_account_id, reference_number, amount, paid_on]
+      properties:
+        installment_id:
+          type: integer
+        bank_account_id:
+          type: integer
+        reference_number:
+          type: string
+          maxLength: 100
+          description: Bank reference; required; cannot be reused
+        amount:
+          type: number
+          description: What the customer paid
+        paid_on:
+          type: string
+          format: date
+          description: YYYY-MM-DD; not in the future
+        proof_of_payment:
+          type: string
+          format: binary
+          description: Image, optional
+
+    ManualDownPaymentForm:
+      type: object
+      required: [bank_account_id, reference_number, amount, paid_on]
+      properties:
+        bank_account_id:
+          type: integer
+        reference_number:
+          type: string
+          maxLength: 100
+        amount:
+          type: number
+        paid_on:
+          type: string
+          format: date
+        proof_of_payment:
+          type: string
+          format: binary
+          description: Image, optional
+
+    ManualPaymentSubmitted:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+          enum: [submitted]
+        amount_matches_expected:
+          type: boolean
+        note:
+          type: string
+          nullable: true
+
+    BankAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+        bank_name:
+          type: string
+        account_name:
+          type: string
+        account_number:
+          type: string
+        qr_code_url:
+          type: string
+          format: uri
+          nullable: true
+
+    CustomerNotificationKind:
+      type: string
+      enum:
+        - plan_created
+        - down_payment_confirmed
+        - payment_confirmed
+        - payment_rejected
+        - due_today
+        - plan_reconstructed
+        - plan_closed
+
+    AdminNotificationKind:
+      type: string
+      enum:
+        - payment_submitted
+        - waiting_for_stock
+        - piece_held
+        - reservation_failed
+        - plan_reconstructed
+        - plan_closed
+
+    NotificationItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        kind:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+        plan_id:
+          type: integer
+          nullable: true
+        payment_id:
+          type: integer
+          nullable: true
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    NotificationList:
+      type: object
+      properties:
+        unread:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/NotificationItem"
+
+    MarkNotificationsReadRequest:
+      type: object
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+          description: Omit or empty to mark everything read
+
+    ReservationStatus:
+      type: string
+      enum: [none, waiting_for_stock, reserved, completed, cancelled]
+
+    AdminPlan:
+      type: object
+      properties:
+        id:
+          type: integer
+        customer_name:
+          type: string
+        customer_email:
+          type: string
+        item_name:
+          type: string
+        next_due_date:
+          type: string
+          format: date-time
+          nullable: true
+        overdue_count:
+          type: integer
+        pending_count:
+          type: integer
+        paid_count:
+          type: integer
+        reservation_status:
+          $ref: "#/components/schemas/ReservationStatus"
+        reservation_error:
+          type: string
+          nullable: true
+        down_payment_confirmed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    AdminCustomer:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          nullable: true
+        member_since:
+          type: string
+          format: date-time
+        active_layaway_count:
+          type: integer
+
+    AdminDashboard:
+      type: object
+      properties:
+        collected_this_month:
+          type: object
+          properties:
+            total:
+              type: number
+            currency:
+              type: string
+        collections_last_6_weeks:
+          type: array
+          minItems: 6
+          maxItems: 6
+          items:
+            type: object
+            properties:
+              week_start:
+                type: string
+                format: date
+              total:
+                type: number
+        recent_activity:
+          type: array
+          maxItems: 10
+          items:
+            type: object
+            properties:
+              label:
+                type: string
+              detail:
+                type: string
+              timestamp:
+                type: string
+                format: date-time
+
+    AdminSettings:
+      type: object
+      properties:
+        id:
+          type: integer
+        business_name:
+          type: string
+        max_term_months:
+          type: integer
+        penalty_per_day:
+          type: number
+          nullable: true
+        require_full_payment_before_release:
+          type: integer
+          description: 0 or 1
+        send_sms_reminders:
+          type: integer
+        allow_customer_selected_due_dates:
+          type: integer
+          description: Kept for compatibility; no longer used
+        down_payment_percent:
+          type: string
+        regular_interest_rate_percent:
+          type: string
+        reconstructed_interest_rate_percent:
+          type: string
+        installment_interval_days:
+          type: integer
+        installment_term_count:
+          type: integer
+          description: Fixed term count used only when a plan is reconstructed
+        grace_period_days:
+          type: integer
+        gateway_fee_percent:
+          type: number
+          nullable: true
+        notify_accounting_roles:
+          type: boolean
+          description: When on, payment alerts and daily email also go to accounting roles
+        updated_at:
+          type: string
+          format: date-time
+
+    AdminSettingsUpdate:
+      type: object
+      description: Send only fields that changed. Percent fields as numbers when updating.
+      properties:
+        business_name:
+          type: string
+        max_term_months:
+          type: integer
+        penalty_per_day:
+          type: number
+          nullable: true
+        require_full_payment_before_release:
+          type: integer
+        send_sms_reminders:
+          type: integer
+        allow_customer_selected_due_dates:
+          type: integer
+        down_payment_percent:
+          type: number
+        regular_interest_rate_percent:
+          type: number
+        reconstructed_interest_rate_percent:
+          type: number
+        installment_interval_days:
+          type: integer
+        installment_term_count:
+          type: integer
+        grace_period_days:
+          type: integer
+        gateway_fee_percent:
+          type: number
+          nullable: true
+        notify_accounting_roles:
+          type: boolean
+
+    GenericRule:
+      type: object
+      description: 'Generic JSON rule (e.g. markup `{"percent":30}`)'
+      additionalProperties: true
+      properties:
+        percent:
+          type: number
+
+    PendingPayment:
+      type: object
+      properties:
+        id:
+          type: integer
+        kind:
+          type: string
+          enum: [installment, down_payment]
+        plan_id:
+          type: integer
+        customer_name:
+          type: string
+        term_number:
+          type: integer
+          nullable: true
+          description: Installments only
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        amount:
+          type: number
+          description: Expected amount
+        amount_submitted:
+          type: number
+        amount_mismatch:
+          type: integer
+          description: 1 when submitted differs from expected
+        reference_number:
+          type: string
+        paid_on:
+          type: string
+          format: date
+        proof_of_payment_url:
+          type: string
+          nullable: true
+
+    DuePaymentsResponse:
+      type: object
+      properties:
+        as_of:
+          type: string
+          format: date
+        due_today:
+          type: object
+          properties:
+            count:
+              type: integer
+            amount:
+              type: number
+        overdue:
+          type: object
+          properties:
+            count:
+              type: integer
+            amount:
+              type: number
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              installment_id:
+                type: integer
+              plan_id:
+                type: integer
+              term_number:
+                type: integer
+              due_date:
+                type: string
+                format: date
+              amount:
+                type: number
+              days_overdue:
+                type: integer
+              due_today:
+                type: boolean
+              awaiting_confirmation:
+                type: boolean
+              customer_id:
+                type: integer
+              customer_name:
+                type: string
+              customer_email:
+                type: string
+              customer_phone:
+                type: string
+                nullable: true
+
+    ConfirmPaymentResponse:
+      type: object
+      properties:
+        reservation:
+          $ref: "#/components/schemas/ReservationResult"
+
+    ReservationResult:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        action:
+          type: string
+          description: e.g. hold, complete
+        state:
+          type: string
+          enum: [reserved, waiting_for_stock, completed, cancelled]
+        error:
+          type: string
+
+    AdminAlerts:
+      type: object
+      properties:
+        pending_payments:
+          type: integer
+        due_today:
+          type: integer
+        overdue:
+          type: integer
+        waiting_for_stock:
+          type: integer
+        reservation_problems:
+          type: integer
+        unread_notifications:
+          type: integer
+
+    ReceivablesReport:
+      type: object
+      properties:
+        overdue:
+          type: object
+          properties:
+            count:
+              type: integer
+            amount:
+              type: number
+        outstanding_receivable:
+          type: object
+          properties:
+            count:
+              type: integer
+            amount:
+              type: number
+        aging:
+          type: object
+          description: Buckets 1-7 (grace), 8-30, 31+
+          additionalProperties: true
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              customer_name:
+                type: string
+              customer_email:
+                type: string
+              customer_phone:
+                type: string
+                nullable: true
+              days_overdue:
+                type: integer
+              amount:
+                type: number
+
+    ProfitReport:
+      type: object
+      properties:
+        interest_profit:
+          type: object
+          properties:
+            realized:
+              type: number
+            scheduled_remaining:
+              type: number
+        markup_profit:
+          type: object
+          properties:
+            booked_on_new_plans:
+              type: number
+            realized_on_installments:
+              type: number
+        total_realized:
+          type: number
+        principal_collected:
+          type: number
+        by_month:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    LedgerEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        entry_type:
+          type: string
+          enum: [payment, penalty, receivable]
+        plan_id:
+          type: integer
+        customer_name:
+          type: string
+        amount:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+      additionalProperties: true
