@@ -1,6 +1,6 @@
 ---
 name: developer
-model: composer-2.5[]
+model: inherit
 description: Implements features and bugfixes in this repo. Use for writing or changing code. Do not use for code review or git push.
 ---
 

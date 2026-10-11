@@ -6,8 +6,13 @@ import ErrorMessage from '../components/ErrorMessage.jsx';
 import PieceImage from '../components/PieceImage.jsx';
 import Skeleton, { PiecePageSkeleton } from '../components/Skeleton.jsx';
 import { useSession } from '../components/useSession.js';
+import { formatPeso } from '../lib/money.js';
 import { ServiceError } from '../services/http.js';
 import { getGalleryPiece } from '../services/getGalleryPiece.js';
+import {
+  getLayawayPreview,
+  lowestLongestTermPayment,
+} from '../services/getLayawayPreview.js';
 import '../components/Gallery.css';
 import '../components/PieceDetail.css';
 import './PiecePage.css';
@@ -21,6 +26,7 @@ export default function PiecePage() {
   const [error, setError] = useState(null);
   const [index, setIndex] = useState(0);
   const [loadedId, setLoadedId] = useState(null);
+  const [perPaymentLabel, setPerPaymentLabel] = useState(null);
 
   if (loadedId !== id) {
     setLoadedId(id);
@@ -28,6 +34,7 @@ export default function PiecePage() {
     setLoading(true);
     setError(null);
     setIndex(0);
+    setPerPaymentLabel(null);
   }
   const [checkout, setCheckout] = useState(
     () => Boolean(customer) && searchParams.get('reserve') === '1',
@@ -64,6 +71,24 @@ export default function PiecePage() {
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getLayawayPreview({ productId: id })
+      .then((preview) => {
+        if (cancelled) return;
+        const lowest = lowestLongestTermPayment(preview);
+        setPerPaymentLabel(lowest == null ? null : formatPeso(lowest));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPerPaymentLabel(null);
         }
       });
     return () => {
@@ -115,7 +140,9 @@ export default function PiecePage() {
             <h1>{piece.name}</h1>
             <p className="piece-sku">{piece.title}</p>
             <div className="piece-detail-price">{piece.priceLabel}</div>
-            <p className="page-lead">as low as {piece.perPaymentLabel}/payment</p>
+            {perPaymentLabel ? (
+              <p className="page-lead">as low as {perPaymentLabel}/payment</p>
+            ) : null}
             <div className="spec-grid">
               <div className="spec-item">
                 <span>Material</span>

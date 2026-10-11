@@ -4,6 +4,16 @@ import LayawayPlanCard from '../../src/components/LayawayPlanCard.jsx';
 import { ToastProvider } from '../../src/components/ToastProvider.jsx';
 import * as bankAccounts from '../../src/services/getBankAccounts.js';
 
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function daysFromToday(days) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
 const basePlan = {
   id: 'LA-9',
   item_name: 'Solitaire Halo Ring',
@@ -18,14 +28,14 @@ const basePlan = {
       id: 'LA-9-i1',
       term_number: 1,
       amount: '500',
-      due_date: '2026-10-10',
+      due_date: todayIso(),
       status: 'pending',
     },
     {
       id: 'LA-9-i2',
       term_number: 2,
       amount: '500',
-      due_date: '2026-11-01',
+      due_date: daysFromToday(21),
       status: 'pending',
     },
   ],

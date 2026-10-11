@@ -39,6 +39,11 @@ function renderCheckout(ui, { path = '/' } = {}) {
   );
 }
 
+async function waitForPreview() {
+  expect(await screen.findByLabelText('Lay-Away Term')).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'Down payment' })).toBeInTheDocument();
+}
+
 describe('Checkout', () => {
   beforeEach(async () => {
     await loginCustomer({ email: 'client@sampleemail.com', password: 'password' });
@@ -46,44 +51,45 @@ describe('Checkout', () => {
     piece.id = page.results[0].id;
   });
 
-  it('shows the term select without a date picker', () => {
+  it('shows the term select and schedule from preview without a date picker', async () => {
     renderCheckout(<Checkout piece={piece} onClose={() => {}} />);
-    expect(screen.getByLabelText('Lay-Away Term')).toBeInTheDocument();
+    await waitForPreview();
     expect(screen.queryByLabelText(/Payment \d+ date/)).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Payment schedule' })).toBeInTheDocument();
+    expect(screen.getAllByText(/Payment \d+/)).toHaveLength(6);
+    expect(screen.getByRole('button', { name: 'Confirm lay-away' })).toBeEnabled();
   });
 
-  it('creates a plan and shows the fixed schedule with Proceed', async () => {
+  it('creates a plan on confirm and opens the down-payment form', async () => {
     const onScheduled = vi.fn();
     renderCheckout(<Checkout piece={piece} onClose={() => {}} onScheduled={onScheduled} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitForPreview();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm lay-away' }));
     await vi.waitFor(() => {
       expect(onScheduled).toHaveBeenCalled();
     });
     expect(onScheduled.mock.calls[0][0].plan.term_months).toBe(3);
-    expect(await screen.findByRole('heading', { name: 'Down payment' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Payment schedule' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Proceed' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
-    expect(
-      screen.getByText(/Click Proceed to open the payment form/),
-    ).toBeInTheDocument();
-    expect(screen.getAllByText(/Payment \d+/)).toHaveLength(6);
-  });
-
-  it('returns to term select from Back and opens payment from Proceed', async () => {
-    renderCheckout(<Checkout piece={piece} onClose={() => {}} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
-    expect(await screen.findByRole('button', { name: 'Proceed' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
-    expect(screen.getByLabelText('Lay-Away Term')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Proceed' }));
     expect(
       await screen.findByText(/Step 1: transfer .+ to one of our accounts/),
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Pay down payment' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Reference number')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
+  });
+
+  it('does not create twice when returning from the payment form', async () => {
+    const onScheduled = vi.fn();
+    renderCheckout(<Checkout piece={piece} onClose={() => {}} onScheduled={onScheduled} />);
+    await waitForPreview();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm lay-away' }));
+    expect(
+      await screen.findByRole('heading', { name: 'Pay down payment' }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(await screen.findByLabelText('Lay-Away Term')).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm lay-away' }));
+    expect(
+      await screen.findByRole('heading', { name: 'Pay down payment' }),
+    ).toBeInTheDocument();
+    expect(onScheduled).toHaveBeenCalledTimes(1);
   });
 
   it('creates the plan in a new tab without bouncing to login', async () => {
@@ -92,7 +98,8 @@ describe('Checkout', () => {
     renderCheckout(<Checkout piece={piece} onClose={() => {}} onScheduled={onScheduled} />, {
       path: '/collections/1',
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitForPreview();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm lay-away' }));
     await vi.waitFor(() => {
       expect(onScheduled).toHaveBeenCalled();
     });
@@ -103,7 +110,8 @@ describe('Checkout', () => {
     setCustomerToken('expired');
     localStorage.setItem('customerRefreshToken', 'revoked');
     renderCheckout(<Checkout piece={piece} onClose={() => {}} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitForPreview();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm lay-away' }));
     expect(
       await screen.findByRole('heading', { name: 'Sign in to reserve' }),
     ).toBeInTheDocument();
@@ -136,9 +144,9 @@ describe('Checkout', () => {
     );
   });
 
-  it('skips the sign-in step for signed-in shoppers', () => {
+  it('skips the sign-in step for signed-in shoppers', async () => {
     renderCheckout(<Checkout piece={piece} onClose={() => {}} />);
     expect(screen.queryByRole('heading', { name: 'Sign in to reserve' })).not.toBeInTheDocument();
-    expect(screen.getByLabelText('Lay-Away Term')).toBeInTheDocument();
+    await waitForPreview();
   });
 });

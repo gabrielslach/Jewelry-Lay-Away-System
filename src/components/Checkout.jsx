@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createLayawayPlan } from '../services/createLayawayPlan.js';
-import { termMonthOptions } from '../data/plans.js';
+import { getLayawayPreview } from '../services/getLayawayPreview.js';
 import { ServiceError } from '../services/http.js';
 import { formatDisplayDate } from '../lib/dates.js';
 import { formatPesoDecimals } from '../lib/money.js';
@@ -12,19 +12,77 @@ import { useSession } from './useSession.js';
 import './Checkout.css';
 import './PieceDetail.css';
 
-const TERM_OPTIONS = termMonthOptions(3);
+function termLabel(option) {
+  const monthLabel = option.term_months === 1 ? '1 Month' : `${option.term_months} Months`;
+  return `${monthLabel} · ${option.installments} payments`;
+}
 
 export default function Checkout({ piece, onClose, onScheduled }) {
   const { customer } = useSession();
-  const [termMonths, setTermMonths] = useState(TERM_OPTIONS[0].termMonths);
+  const [preview, setPreview] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(Boolean(customer));
+  const [previewError, setPreviewError] = useState(null);
+  const [previewBlocked, setPreviewBlocked] = useState(false);
+  const [termMonths, setTermMonths] = useState(null);
   const [plan, setPlan] = useState(null);
+  const [creating, setCreating] = useState(false);
   const [error, setError] = useState(null);
   const [showDownPaymentForm, setShowDownPaymentForm] = useState(false);
+  const [loadKey, setLoadKey] = useState(0);
 
-  const schedule = plan?.schedule ?? [];
+  useEffect(() => {
+    if (!customer) return undefined;
+    let cancelled = false;
+    getLayawayPreview({ productId: piece.id })
+      .then((data) => {
+        if (cancelled) return;
+        setPreview(data);
+        setPreviewError(null);
+        setPreviewBlocked(false);
+        const options = data.options ?? [];
+        const defaultTerm =
+          options.find((row) => row.term_months === data.max_term_months)?.term_months ??
+          options[options.length - 1]?.term_months ??
+          null;
+        setTermMonths(defaultTerm);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setPreview(null);
+        const message =
+          err instanceof ServiceError ? err.message : 'Unable to load lay-away preview.';
+        setPreviewError(message);
+        setPreviewBlocked(err instanceof ServiceError && err.status === 409);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setPreviewLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [customer, piece.id, loadKey]);
 
-  async function handleContinue() {
+  function handleRetryPreview() {
+    setPreview(null);
+    setPreviewError(null);
+    setPreviewBlocked(false);
+    setPreviewLoading(true);
+    setLoadKey((key) => key + 1);
+  }
+
+  const selectedOption = preview?.options?.find((row) => row.term_months === termMonths);
+  const schedule = plan?.schedule ?? selectedOption?.schedule ?? [];
+  const downPayment = plan?.down_payment_amount ?? preview?.down_payment_amount;
+
+  async function handleConfirm() {
     setError(null);
+    if (plan) {
+      setShowDownPaymentForm(true);
+      return;
+    }
+    setCreating(true);
     try {
       const created = await createLayawayPlan({
         productId: piece.id,
@@ -32,15 +90,12 @@ export default function Checkout({ piece, onClose, onScheduled }) {
       });
       setPlan(created);
       onScheduled?.({ plan: created, termMonths });
+      setShowDownPaymentForm(true);
     } catch (err) {
-      setError(err instanceof ServiceError ? err.message : 'Unable to continue checkout.');
+      setError(err instanceof ServiceError ? err.message : 'Unable to confirm lay-away.');
+    } finally {
+      setCreating(false);
     }
-  }
-
-  function handleBack() {
-    setPlan(null);
-    setShowDownPaymentForm(false);
-    setError(null);
   }
 
   if (!customer) {
@@ -85,68 +140,73 @@ export default function Checkout({ piece, onClose, onScheduled }) {
     );
   }
 
-  const footer = !plan ? (
-    <>
-      <Button variant="outline" onClick={onClose}>
-        Cancel
-      </Button>
-      <Button variant="primary" onClick={handleContinue}>
-        Continue
-      </Button>
-    </>
-  ) : (
-    <>
-      <Button variant="outline" onClick={handleBack}>
-        Back
-      </Button>
-      <Button variant="primary" onClick={() => setShowDownPaymentForm(true)}>
-        Proceed
-      </Button>
-    </>
-  );
+  const canConfirm =
+    !previewLoading && !previewBlocked && !previewError && selectedOption && !creating;
 
   return (
-    <Modal title="Reserve on Lay-Away" onClose={onClose} footer={footer}>
-      <ErrorMessage>{error}</ErrorMessage>
-      {!plan ? (
-        <div className="form-row">
-          <label htmlFor="plan-term">Lay-Away Term</label>
-          <select
-            id="plan-term"
-            value={termMonths}
-            onChange={(event) => setTermMonths(Number(event.target.value))}
-          >
-            {TERM_OPTIONS.map((term) => (
-              <option key={term.termMonths} value={term.termMonths}>
-                {term.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      ) : (
-        <div className="plan-box">
-          <h4>Down payment</h4>
-          <div className="schedule-row">
-            <span>Due now</span>
-            <b>{formatPesoDecimals(plan.down_payment_amount)}</b>
+    <Modal
+      title="Reserve on Lay-Away"
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleConfirm} disabled={!canConfirm}>
+            Confirm lay-away
+          </Button>
+        </>
+      }
+    >
+      <ErrorMessage>{error || previewError}</ErrorMessage>
+      {previewLoading ? <p className="field-hint">Loading lay-away options…</p> : null}
+      {previewError && !previewBlocked ? (
+        <Button variant="outline" onClick={handleRetryPreview}>
+          Retry
+        </Button>
+      ) : null}
+      {preview && !previewBlocked ? (
+        <>
+          <div className="form-row">
+            <label htmlFor="plan-term">Lay-Away Term</label>
+            <select
+              id="plan-term"
+              value={termMonths ?? ''}
+              disabled={Boolean(plan)}
+              onChange={(event) => setTermMonths(Number(event.target.value))}
+            >
+              {(preview.options ?? []).map((option) => (
+                <option key={option.term_months} value={option.term_months}>
+                  {termLabel(option)}
+                </option>
+              ))}
+            </select>
           </div>
-          <h4>Payment schedule</h4>
-          <div className="schedule-list">
-            {schedule.map((row) => (
-              <div className="schedule-row" key={row.term_number}>
-                <span>
-                  Payment {row.term_number} · {formatDisplayDate(row.due_date)}
-                </span>
-                <b>{formatPesoDecimals(row.amount)}</b>
-              </div>
-            ))}
+          <div className="plan-box">
+            <h4>Down payment</h4>
+            <div className="schedule-row">
+              <span>Due now</span>
+              <b>{formatPesoDecimals(downPayment)}</b>
+            </div>
+            <h4>Payment schedule</h4>
+            <div className="schedule-list">
+              {schedule.map((row) => (
+                <div className="schedule-row" key={row.term_number}>
+                  <span>
+                    Payment {row.term_number} · {formatDisplayDate(row.due_date)}
+                  </span>
+                  <b>{formatPesoDecimals(row.amount)}</b>
+                </div>
+              ))}
+            </div>
+            <p className="field-hint">
+              {plan
+                ? 'Confirm again to open the down-payment form. A down payment is required to start this lay-away.'
+                : 'Dates are illustrative until you confirm. Confirm to create your plan and open the down-payment form.'}
+            </p>
           </div>
-          <p className="field-hint">
-            Click Proceed to open the payment form. A down payment is required to start this
-            lay-away.
-          </p>
-        </div>
-      )}
+        </>
+      ) : null}
     </Modal>
   );
 }
