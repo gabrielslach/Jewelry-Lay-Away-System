@@ -72,4 +72,35 @@ describe('admin dashboard', () => {
     expect(title.nextElementSibling).toBe(detail);
     expect(title.textContent).not.toContain(detail.textContent);
   });
+
+  it('renders live-shaped activity labels as bold titles', async () => {
+    vi.spyOn(getAdminDashboardModule, 'getAdminDashboard').mockResolvedValue({
+      active_layaways: 1,
+      collected_this_month: 37400,
+      overdue_payments: 0,
+      active_customers: 1,
+      collections_last_6_weeks: [0, 0, 0, 50, 0, 100],
+      recent_activity: [
+        {
+          title: 'New reservation',
+          detail: 'Rounding Test - plan #8 · Sep 26, 10:02 AM',
+          key: 'New reservation|Rounding Test - plan #8|2026-09-26T02:02:10.000Z|0',
+        },
+      ],
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/admin']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(document.querySelector('.activity-item b')?.textContent).toBe('New reservation');
+    });
+    const item = document.querySelector('.activity-item');
+    expect(item.querySelector('b').textContent).toBe('New reservation');
+    expect(item.querySelector('span').textContent).toContain('Rounding Test - plan #8');
+    expect(item.querySelector('b').textContent.trim()).not.toBe('');
+  });
 });

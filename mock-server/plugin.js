@@ -29,6 +29,11 @@ function readBody(req) {
         named.forEach((hit) => {
           fields[hit[1]] = hit[2];
         });
+        // File parts include filename= and a Content-Type line before the body.
+        const files = [...raw.matchAll(/name="([^"]+)";\s*filename="[^"]*"/g)];
+        files.forEach((hit) => {
+          fields[hit[1]] = fields[hit[1]] || 'uploaded-file';
+        });
         resolve(fields);
         return;
       }
@@ -68,6 +73,10 @@ export function mockApiPlugin() {
     }
     res.statusCode = result.status;
     Object.entries(result.headers).forEach(([key, value]) => res.setHeader(key, value));
+    if (result.binary) {
+      res.end(result.body);
+      return;
+    }
     res.end(JSON.stringify(result.body));
   }
   return {

@@ -28,7 +28,12 @@ describe('scheduleRow', () => {
         { status: 'pending', due_date: '2026-10-10' },
         { today: '2026-10-10' },
       ),
-    ).toMatchObject({ badge: 'Due today', showForm: true, payLabel: 'Pay' });
+    ).toMatchObject({
+      badge: 'Due today',
+      badgeClass: 'badge badge-amber',
+      showForm: true,
+      payLabel: 'Pay',
+    });
     expect(
       installmentRowState(
         { status: 'pending', due_date: '2026-10-01' },
@@ -36,14 +41,28 @@ describe('scheduleRow', () => {
       ),
     ).toMatchObject({
       badge: 'Overdue',
+      badgeClass: 'badge badge-warn',
       graceNote: 'Grace period ends Oct 8, 2026',
       showForm: true,
     });
     expect(
       installmentRowState(
+        { status: 'awaiting_confirmation', due_date: '2026-10-10' },
+        { today: '2026-10-10' },
+      ),
+    ).toMatchObject({
+      badge: 'Awaiting confirmation',
+      badgeClass: 'badge badge-info',
+    });
+    expect(
+      installmentRowState(
         { status: 'pending', due_date: '2026-11-01' },
         { today: '2026-10-10' },
-      ).showForm,
-    ).toBe(false);
+      ),
+    ).toMatchObject({
+      badge: 'Pending',
+      badgeClass: 'badge badge-mute',
+      showForm: false,
+    });
   });
 });

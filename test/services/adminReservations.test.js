@@ -3,10 +3,12 @@ import {
   cancelReservation,
   retryReservation,
 } from '../../src/services/adminReservations.js';
+import { ensureAdminToken } from '../../src/services/ensureAdminToken.js';
 import { getAdminPlans } from '../../src/services/getAdminPlans.js';
 
 describe('adminReservations', () => {
   it('retries and cancels a reserved plan', async () => {
+    await ensureAdminToken();
     const plans = await getAdminPlans();
     const reserved = plans.find((plan) => plan.reservation_status === 'reserved');
     expect(reserved).toBeTruthy();

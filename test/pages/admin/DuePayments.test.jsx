@@ -59,11 +59,17 @@ describe('DuePayments', () => {
     );
     expect(await screen.findByText('Due Today Client')).toBeInTheDocument();
     expect(screen.getByText('Overdue Client')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Due today/ }));
+    expect(screen.getByText('Due today')).toBeInTheDocument();
+    expect(screen.getByText('9 days overdue')).toBeInTheDocument();
+    expect(screen.getByText('Payment awaiting confirmation')).toBeInTheDocument();
+    expect(screen.getByText(/Grace period expired/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Due today \(/ }));
     expect(screen.getByText('Due Today Client')).toBeInTheDocument();
     expect(screen.queryByText('Overdue Client')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Overdue/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Overdue \(/ }));
     expect(screen.getByText('Overdue Client')).toBeInTheDocument();
+    expect(screen.getByText('9 days overdue')).toBeInTheDocument();
     expect(screen.getByText('Payment awaiting confirmation')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'View' }));

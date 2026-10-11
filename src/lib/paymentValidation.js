@@ -1,5 +1,5 @@
 export const PAYMENT_FIELD_MESSAGES = {
-  bank_account_id: 'Please choose the bank you used.',
+  bank_account_id: 'Please choose a bank account.',
   reference_number: 'Reference number is required.',
   amount: 'Enter a valid amount.',
   paid_on: 'Date cannot be in the future.',

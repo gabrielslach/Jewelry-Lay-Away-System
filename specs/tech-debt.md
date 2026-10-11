@@ -14,7 +14,7 @@ The Sep 26 update (v1.6–v1.9) turned several of our *invented* mocks into real
 | --- | --- | --- | --- |
 | 1 | **Done (orders path):** `GET /api/customers/orders` (token, no `:id`), bare array, v1.9 fields. Service maps dates and `on_track`/`overdue`/`completed`. Live `item_name` is still the barcode. | Mock still uses jewelry names for demo fidelity. | AC-1, AC-2, AC-3 |
 | 2 | **New:** `GET /api/customers/me` — customer's own profile by token, same shape as register/login's `customer`. | Not called anywhere. `Account.jsx` only has whatever `SessionProvider` cached at login. | AC-1 |
-| 3 | **New:** admin auth is now access/refresh split too — `POST /api/admin/login` returns `{ access_token, refresh_token, admin }`, plus `POST /api/admin/refresh` / `/logout`. | Admin session code (`session.js` admin functions, `ensureAdminToken.js`, mock `/api/admin/login`) still uses a single `token`, same as before Epic 15. Admin has no refresh, so a long admin session will just start getting `401`s with no recovery. | AD-1 (none yet — no admin login screen), Epic 15 follow-up |
+| 3 | **Done (session shape + refresh):** admin auth uses access/refresh split — `POST /api/admin/login` returns `{ access_token, refresh_token, admin }`; SPA + mock store/refresh like customers; `adminRequest` retries once after refresh on 401. | Mock has `/api/admin/logout`; no admin Sign out UI wired yet. | AD-1, Epic 15 follow-up |
 | 4 | **New:** `DELETE /api/admin/customers/:id/sessions` — revoke every refresh token for a customer (stolen device / support request). | Not called anywhere; no admin UI action for it. | AD-6, AD-7 |
 | 5 | **Confirmed, not new:** the manual-payment **confirm/reject-of-proof** flow (`POST /api/admin/payments/:id/confirm` / `/reject`) is *the* only "mark paid" mechanism — there is no separate no-proof admin action, and none is coming. | AD-5's one-click **`POST /api/admin/plans/:id/mark-next-paid`** is still an invented mock with no live equivalent. It will need to become the confirm/reject + proof-image UI, not get a real backend swap-in. | AD-5 |
 | 6 | **New real endpoint** for something we invented: `GET /api/admin/customers` (list only — `phone`, `member_since`, `active_layaway_count`). No live `GET /api/admin/customers/:id`. | Mock still serves our invented `GET /api/admin/customers/:id` too; the list fields already line up closely. | AD-6, AD-7 |
@@ -56,7 +56,7 @@ These endpoints are in the contract (many already live) but **do not appear** as
 | `POST /api/customers/refresh` / `/logout` | Refresh and revoke a customer session | Epic 15 |
 | `GET /api/customers/me` | Customer's own profile by token (gap #2) | not yet used |
 | Rate limit `429` on register/login/refresh | Distinct UI (“please wait”) vs wrong password | AU-1, AU-2 |
-| `POST /api/admin/login` / `/refresh` / `/logout` | Admin session, now access/refresh split (gap #3) | none (dev session helper) |
+| `POST /api/admin/login` / `/refresh` / `/logout` | Admin session access/refresh (gap #3 done for shape/refresh; logout UI still open) | AD-1 |
 | `DELETE /api/admin/customers/:id/sessions` | Revoke a customer's sessions (gap #4) | not yet used |
 | `GET /api/bank-accounts` (public) | Bank name, account, QR for manual pay | not in demo checkout |
 | `POST /api/layaway/plans/:id/payments/manual` | Proof-of-payment upload; status `submitted` until admin confirms | not in demo checkout |

@@ -65,11 +65,23 @@ export function issueAccessToken(store, customerId) {
   return issueToken(store, 'customer', customerId, ACCESS_TTL_MS);
 }
 
+export function issueAdminAccessToken(store, adminId) {
+  return issueToken(store, 'admin', adminId, ACCESS_TTL_MS);
+}
+
 export function issueCustomerSession(store, customer) {
   return {
     access_token: issueAccessToken(store, customer.id),
     refresh_token: issueToken(store, 'refresh', customer.id, REFRESH_TTL_MS),
     customer: publicCustomer(customer),
+  };
+}
+
+export function issueAdminSession(store, admin) {
+  return {
+    access_token: issueAdminAccessToken(store, admin.id),
+    refresh_token: issueToken(store, 'admin_refresh', admin.id, REFRESH_TTL_MS),
+    admin: publicAdmin(admin),
   };
 }
 
@@ -91,6 +103,11 @@ export function readToken(store, header) {
 export function readRefreshToken(store, token) {
   const entry = liveToken(store, token);
   return entry?.kind === 'refresh' ? entry : null;
+}
+
+export function readAdminRefreshToken(store, token) {
+  const entry = liveToken(store, token);
+  return entry?.kind === 'admin_refresh' ? entry : null;
 }
 
 export function hitRate(store, key) {

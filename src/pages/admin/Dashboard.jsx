@@ -59,7 +59,7 @@ export default function Dashboard() {
         <div className="panel">
           <h2>Recent Activity</h2>
           {data.recent_activity.map((item) => (
-            <div className="activity-item" key={item.title}>
+            <div className="activity-item" key={item.key}>
               <div>
                 <b>{item.title}</b>
                 <span>{item.detail}</span>

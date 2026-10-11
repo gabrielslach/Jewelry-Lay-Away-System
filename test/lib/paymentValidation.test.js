@@ -15,7 +15,7 @@ describe('paymentValidation', () => {
         today: '2026-10-10',
       }),
     ).toMatchObject({
-      bank_account_id: 'Please choose the bank you used.',
+      bank_account_id: 'Please choose a bank account.',
       reference_number: 'Reference number is required.',
       amount: 'Enter a valid amount.',
       paid_on: 'Date cannot be in the future.',

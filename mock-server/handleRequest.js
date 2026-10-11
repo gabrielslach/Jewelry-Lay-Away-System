@@ -12,10 +12,11 @@ import {
   createStore,
   hitRate,
   issueAccessToken,
+  issueAdminAccessToken,
+  issueAdminSession,
   issueCustomerSession,
-  issueToken,
-  publicAdmin,
   publicCustomer,
+  readAdminRefreshToken,
   readRefreshToken,
   readToken,
 } from './store.js';
@@ -24,6 +25,18 @@ export { createStore };
 
 function json(status, body) {
   return { status, body, headers: { 'Content-Type': 'application/json; charset=utf-8' } };
+}
+
+const PLACEHOLDER_PROOF_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"><rect width="1" height="1" fill="#B98B2E"/></svg>';
+
+function binary(status, body, contentType) {
+  return {
+    status,
+    body,
+    headers: { 'Content-Type': contentType },
+    binary: true,
+  };
 }
 
 function todayIso(store) {
@@ -432,8 +445,7 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
   }
 
   if (verb === 'POST' && path === '/api/dev/session/admin') {
-    const token = issueToken(store, 'admin', store.admin.id);
-    return json(200, { token, admin: publicAdmin(store.admin) });
+    return json(200, issueAdminSession(store, store.admin));
   }
 
   if (verb === 'POST' && path === '/api/admin/login') {
@@ -443,8 +455,22 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     if (body?.email !== store.admin.email || body?.password !== store.admin.password) {
       return json(401, { error: 'Invalid credentials' });
     }
-    const token = issueToken(store, 'admin', store.admin.id);
-    return json(200, { token, admin: publicAdmin(store.admin) });
+    return json(200, issueAdminSession(store, store.admin));
+  }
+
+  if (verb === 'POST' && path === '/api/admin/refresh') {
+    const entry = readAdminRefreshToken(store, body?.refresh_token);
+    if (!entry) {
+      return json(401, { error: 'Unauthorized' });
+    }
+    return json(200, { access_token: issueAdminAccessToken(store, entry.id) });
+  }
+
+  if (verb === 'POST' && path === '/api/admin/logout') {
+    if (store.tokens.get(body?.refresh_token)?.kind === 'admin_refresh') {
+      store.tokens.delete(body.refresh_token);
+    }
+    return json(200, { ok: true });
   }
 
   if (verb === 'GET' && path === '/api/finance/ledger') {
@@ -533,7 +559,11 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     if (gate.error) {
       return gate.error;
     }
-    return json(200, { url: '/placeholders/1.svg' });
+    const payment = store.pendingPayments.find((p) => p.id === Number(params.id));
+    if (!payment?.proof_of_payment_url) {
+      return json(404, { error: 'Not found' });
+    }
+    return binary(200, PLACEHOLDER_PROOF_SVG, 'image/svg+xml');
   }
 
   params = match(path, '/api/admin/payments/:id/confirm');

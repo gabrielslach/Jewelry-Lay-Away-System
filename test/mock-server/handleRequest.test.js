@@ -103,7 +103,7 @@ describe('mock API', () => {
     const store = createStore();
     expect(call(store, 'GET', '/api/admin/dashboard').status).toBe(401);
     const session = call(store, 'POST', '/api/dev/session/admin', { body: {} });
-    const auth = { authorization: `Bearer ${session.body.token}` };
+    const auth = { authorization: `Bearer ${session.body.access_token}` };
     const dash = call(store, 'GET', '/api/admin/dashboard', { headers: auth });
     expect(dash.body.active_layaways).toBe(5);
     expect(dash.body.collected_this_month).toBe(184200);
@@ -160,7 +160,7 @@ describe('mock API', () => {
     expect(refresh('unknown')).toBe(401);
   });
 
-  it('returns the customer envelope from register and dev session, admin unchanged', () => {
+  it('returns access/refresh envelopes for customer and admin sessions', () => {
     const store = createStore();
     const registered = call(store, 'POST', '/api/customers/register', {
       body: { name: 'New Guest', email: 'guest@sampleemail.com', password: 'password' },
@@ -172,11 +172,22 @@ describe('mock API', () => {
     const admin = call(store, 'POST', '/api/admin/login', {
       body: { email: 'admin@samplejewelry.example', password: 'password' },
     });
-    expect(Object.keys(admin.body).sort()).toEqual(['admin', 'token']);
+    expect(Object.keys(admin.body).sort()).toEqual(['access_token', 'admin', 'refresh_token']);
     expect(Object.keys(call(store, 'POST', '/api/dev/session/admin').body).sort()).toEqual([
+      'access_token',
       'admin',
-      'token',
+      'refresh_token',
     ]);
+    const refreshed = call(store, 'POST', '/api/admin/refresh', {
+      body: { refresh_token: admin.body.refresh_token },
+    });
+    expect(refreshed.status).toBe(200);
+    expect(Object.keys(refreshed.body)).toEqual(['access_token']);
+    expect(
+      call(store, 'GET', '/api/admin/dashboard', {
+        headers: { authorization: `Bearer ${refreshed.body.access_token}` },
+      }).status,
+    ).toBe(200);
   });
 
   it('rate-limits login after 10 attempts', () => {
@@ -189,5 +200,28 @@ describe('mock API', () => {
       });
     }
     expect(last.status).toBe(429);
+  });
+
+  it('returns payment proof as image binary, not JSON url', () => {
+    const store = createStore();
+    const admin = call(store, 'POST', '/api/dev/session/admin', { body: {} });
+    store.pendingPayments.push({
+      id: 42,
+      status: 'submitted',
+      proof_of_payment_url: '/placeholders/1.svg',
+    });
+    const proof = call(store, 'GET', '/api/admin/payments/42/proof', {
+      headers: { authorization: `Bearer ${admin.body.access_token}` },
+    });
+    expect(proof.status).toBe(200);
+    expect(proof.binary).toBe(true);
+    expect(proof.headers['Content-Type']).toBe('image/svg+xml');
+    expect(String(proof.body)).toContain('<svg');
+    expect(proof.body).not.toEqual(expect.objectContaining({ url: expect.any(String) }));
+
+    const missing = call(store, 'GET', '/api/admin/payments/99/proof', {
+      headers: { authorization: `Bearer ${admin.body.access_token}` },
+    });
+    expect(missing.status).toBe(404);
   });
 });

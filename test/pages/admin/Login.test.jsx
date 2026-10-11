@@ -2,7 +2,9 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it } from 'vitest';
 import { SessionProvider } from '../../../src/components/SessionProvider.jsx';
+import AdminLayout from '../../../src/layouts/AdminLayout.jsx';
 import AdminLogin from '../../../src/pages/admin/Login.jsx';
+import { getAdminToken } from '../../../src/services/session.js';
 import { signOutAdmin } from '../../helpers/adminAuth.js';
 
 function LocationDisplay() {
@@ -15,30 +17,32 @@ describe('AdminLogin', () => {
     signOutAdmin();
   });
 
-  it('signs in and returns to the from path', async () => {
+  it('signs in, stays authenticated, and returns to the from path', async () => {
     signOutAdmin();
     render(
       <MemoryRouter initialEntries={['/admin/login?from=%2Fadmin%2Forders']}>
         <SessionProvider>
           <Routes>
             <Route path="/admin/login" element={<AdminLogin />} />
-            <Route
-              path="/admin/orders"
-              element={
-                <>
-                  <h1>Orders & Installments</h1>
-                  <LocationDisplay />
-                </>
-              }
-            />
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route
+                path="orders"
+                element={
+                  <>
+                    <p>Orders content</p>
+                    <LocationDisplay />
+                  </>
+                }
+              />
+            </Route>
           </Routes>
         </SessionProvider>
       </MemoryRouter>,
     );
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
-    expect(
-      await screen.findByRole('heading', { name: 'Orders & Installments' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Orders content')).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent('/admin/orders');
+    expect(screen.getByRole('navigation', { name: 'Admin' })).toBeInTheDocument();
+    expect(getAdminToken()).toBeTruthy();
   });
 });
