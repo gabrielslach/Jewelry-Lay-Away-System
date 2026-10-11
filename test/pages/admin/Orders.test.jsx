@@ -1,12 +1,18 @@
 import { MemoryRouter } from 'react-router-dom';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../../../src/App.jsx';
+import { signInAdmin, signOutAdmin } from '../../helpers/adminAuth.js';
 import * as getAdminPlansModule from '../../../src/services/getAdminPlans.js';
 
 describe('admin orders', () => {
+  beforeEach(async () => {
+    await signInAdmin();
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
+    signOutAdmin();
   });
 
   it('shows skeleton table rows until plans load', async () => {

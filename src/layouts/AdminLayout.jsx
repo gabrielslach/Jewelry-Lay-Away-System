@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
 import AdminAlertsBell from '../components/AdminAlertsBell.jsx';
 import { Logo } from '../theme/assets.js';
 import { HamburgerIcon } from '../theme/icons.jsx';
 import { getAdminAlerts } from '../services/adminAlerts.js';
+import { getAdminToken } from '../services/session.js';
 import './AdminLayout.css';
 
 const links = [
@@ -44,15 +45,24 @@ export default function AdminLayout() {
   const [alerts, setAlerts] = useState(null);
   const location = useLocation();
   const title = titles[location.pathname] || 'Admin';
+  const token = getAdminToken();
 
   useEffect(() => {
+    if (!token) {
+      return undefined;
+    }
     function load() {
       getAdminAlerts().then(setAlerts).catch(() => setAlerts(null));
     }
     load();
     const timer = window.setInterval(load, 60_000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [token]);
+
+  if (!token) {
+    const from = encodeURIComponent(`${location.pathname}${location.search}`);
+    return <Navigate to={`/admin/login?from=${from}`} replace />;
+  }
 
   return (
     <div className="admin-shell">

@@ -68,6 +68,10 @@ export function setAdminSession(session) {
   sessionStorage.setItem(ADMIN_KEY, JSON.stringify(session));
 }
 
+export function clearAdminSession() {
+  sessionStorage.removeItem(ADMIN_KEY);
+}
+
 export function getAdminToken() {
   return getAdminSession()?.token ?? null;
 }
