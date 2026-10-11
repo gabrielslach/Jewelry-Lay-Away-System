@@ -26,9 +26,20 @@ describe('AdminLayout', () => {
     const sidebar = document.querySelector('.admin-sidebar');
     expect(sidebar.querySelector('.logo-name')).toBeNull();
     expect(within(sidebar).queryByText('Mine Credit')).not.toBeInTheDocument();
-    expect(
-      within(sidebar).getByRole('img', { name: 'Mine Credit' }),
-    ).toBeInTheDocument();
+    expect(within(sidebar).getByRole('img', { name: 'Mine Credit' })).toBeInTheDocument();
+  });
+
+  it('shows the admin name in the top bar and highlights only Due & Overdue on its page', () => {
+    render(
+      <MemoryRouter initialEntries={['/admin/payments/due']}>
+        <Routes>
+          <Route path="/admin/payments/due" element={<AdminLayout />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('Sample Admin')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Due & Overdue/ })).toHaveClass('active');
+    expect(screen.getByRole('link', { name: /Pending payments/ })).not.toHaveClass('active');
   });
 
   it('redirects to admin login when signed out', () => {

@@ -4,9 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../../../src/App.jsx';
 import { signInAdmin, signOutAdmin } from '../../helpers/adminAuth.js';
 import * as adminPayments from '../../../src/services/adminPayments.js';
+import * as getLayawayPlanModule from '../../../src/services/getLayawayPlan.js';
 
 describe('PendingPayments', () => {
   beforeEach(async () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: false }));
     await signInAdmin();
   });
 
@@ -15,41 +17,7 @@ describe('PendingPayments', () => {
     signOutAdmin();
   });
 
-  it('lists pending payments and confirms one', async () => {
-    vi.spyOn(adminPayments, 'getAdminPendingPayments').mockResolvedValue([
-      {
-        id: 11,
-        kind: 'down_payment',
-        plan_id: 'LA-1001',
-        customer_name: 'Sample Client',
-        amount: '14400',
-        amount_submitted: '14400',
-        amount_mismatch: 0,
-        reference_number: 'BT-11',
-        paid_on: '2026-10-09',
-      },
-    ]);
-    const confirm = vi
-      .spyOn(adminPayments, 'confirmAdminPayment')
-      .mockResolvedValue({ status: 'confirmed', reservation: { state: 'reserved' } });
-    render(
-      <MemoryRouter initialEntries={['/admin/payments']}>
-        <App />
-      </MemoryRouter>,
-    );
-    expect(await screen.findByText('Sample Client')).toBeInTheDocument();
-    expect(screen.getByText('BT-11')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
-    const dialog = await screen.findByRole('dialog');
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm' }));
-    await waitFor(() => {
-      expect(confirm).toHaveBeenCalledWith(11, expect.any(Object));
-    });
-    expect(await screen.findByText(/Payment confirmed/)).toBeInTheDocument();
-  });
-
-  it('opens proof in a dialog instead of navigating away', async () => {
-    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+  it('lists pending payments with a View button and opens the review modal', async () => {
     vi.spyOn(adminPayments, 'getAdminPendingPayments').mockResolvedValue([
       {
         id: 11,
@@ -67,25 +35,30 @@ describe('PendingPayments', () => {
       url: '/placeholders/1.svg',
       content_type: 'image/svg+xml',
     });
+    vi.spyOn(getLayawayPlanModule, 'getLayawayPlan').mockResolvedValue({
+      installments: [],
+    });
     render(
       <MemoryRouter initialEntries={['/admin/payments']}>
         <App />
       </MemoryRouter>,
     );
     expect(await screen.findByText('Sample Client')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'View proof' }));
+    expect(screen.getByRole('columnheader', { name: 'Order' })).toBeInTheDocument();
+    expect(screen.getByText('#LA-1001')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Confirm' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reject' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'View proof' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'View' }));
     const dialog = await screen.findByRole('dialog');
-    expect(dialog).toHaveAccessibleName('Proof of payment');
-    expect(within(dialog).getByRole('img', { name: 'Proof of payment' })).toHaveAttribute(
-      'src',
-      '/placeholders/1.svg',
-    );
-    expect(openSpy).not.toHaveBeenCalled();
+    expect(dialog).toHaveAccessibleName('Order #LA-1001');
+    expect(
+      await within(dialog).findByRole('img', { name: 'Proof of payment' }),
+    ).toBeInTheDocument();
   });
 
-  it('revokes blob proof URLs when the modal closes', async () => {
-    const revokeSpy = vi.spyOn(URL, 'revokeObjectURL');
-    vi.spyOn(adminPayments, 'getAdminPendingPayments').mockResolvedValue([
+  it('closes the modal and refreshes the list after confirming', async () => {
+    const list = vi.spyOn(adminPayments, 'getAdminPendingPayments').mockResolvedValue([
       {
         id: 11,
         kind: 'down_payment',
@@ -98,25 +71,27 @@ describe('PendingPayments', () => {
         paid_on: '2026-10-09',
       },
     ]);
-    vi.spyOn(adminPayments, 'fetchPaymentProof').mockResolvedValue({
-      url: 'blob:http://localhost/proof-1',
-      content_type: 'image/png',
+    vi.spyOn(adminPayments, 'fetchPaymentProof').mockRejectedValue(new Error('none'));
+    vi.spyOn(getLayawayPlanModule, 'getLayawayPlan').mockResolvedValue({
+      installments: [],
+    });
+    vi.spyOn(adminPayments, 'confirmAdminPayment').mockResolvedValue({
+      reservation: null,
     });
     render(
       <MemoryRouter initialEntries={['/admin/payments']}>
         <App />
       </MemoryRouter>,
     );
-    expect(await screen.findByText('Sample Client')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'View proof' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'View' }));
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByRole('img', { name: 'Proof of payment' })).toHaveAttribute(
-      'src',
-      'blob:http://localhost/proof-1',
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Confirm payment' }),
     );
-    fireEvent.click(within(dialog).getByLabelText('Close'));
     await waitFor(() => {
-      expect(revokeSpy).toHaveBeenCalledWith('blob:http://localhost/proof-1');
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
+    expect(list).toHaveBeenCalledTimes(2);
   });
 });

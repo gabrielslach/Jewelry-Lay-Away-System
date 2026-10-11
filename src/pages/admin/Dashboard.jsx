@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
+import CollectionsBar from '../../components/CollectionsBar.jsx';
 import ErrorMessage from '../../components/ErrorMessage.jsx';
 import Skeleton, { DashboardSkeleton } from '../../components/Skeleton.jsx';
-import { CashIcon, OrdersIcon, UsersIcon, WarnIcon } from '../../theme/icons.jsx';
+import {
+  CashIcon,
+  OrdersIcon,
+  UsersIcon,
+  WarnIcon,
+} from '../../theme/icons.jsx';
 import { formatPeso } from '../../lib/money.js';
 import { ServiceError } from '../../services/http.js';
 import { getAdminDashboard } from '../../services/getAdminDashboard.js';
@@ -14,7 +20,11 @@ export default function Dashboard() {
     getAdminDashboard()
       .then(setData)
       .catch((err) => {
-        setError(err instanceof ServiceError ? err.message : 'Unable to load dashboard.');
+        setError(
+          err instanceof ServiceError
+            ? err.message
+            : 'Unable to load dashboard.',
+        );
       });
   }, []);
 
@@ -30,10 +40,26 @@ export default function Dashboard() {
   }
 
   const kpis = [
-    { icon: <OrdersIcon />, value: data.active_layaways, label: 'Active Lay-Aways' },
-    { icon: <CashIcon />, value: formatPeso(data.collected_this_month), label: 'Collected This Month' },
-    { icon: <WarnIcon />, value: data.overdue_payments, label: 'Overdue Payments' },
-    { icon: <UsersIcon />, value: data.active_customers, label: 'Active Customers' },
+    {
+      icon: <OrdersIcon />,
+      value: data.active_layaways,
+      label: 'Active Lay-Aways',
+    },
+    {
+      icon: <CashIcon />,
+      value: formatPeso(data.collected_this_month),
+      label: 'Collected This Month',
+    },
+    {
+      icon: <WarnIcon />,
+      value: data.overdue_payments,
+      label: 'Overdue Payments',
+    },
+    {
+      icon: <UsersIcon />,
+      value: data.active_customers,
+      label: 'Active Customers',
+    },
   ];
 
   return (
@@ -50,9 +76,9 @@ export default function Dashboard() {
       <div className="two-col">
         <div className="panel">
           <h2>Collections — Last 6 Weeks</h2>
-          <div className="bar-chart">
-            {data.collections_last_6_weeks.map((height, index) => (
-              <div className="bar" key={index} style={{ height: `${height}%` }} />
+          <div className="bar-chart" role="list">
+            {data.collections_last_6_weeks.map((week, index) => (
+              <CollectionsBar key={week.week_start} week={week} weekNumber={index + 1} />
             ))}
           </div>
         </div>

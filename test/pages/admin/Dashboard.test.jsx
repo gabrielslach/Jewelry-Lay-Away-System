@@ -1,5 +1,5 @@
 import { MemoryRouter } from 'react-router-dom';
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../../../src/App.jsx';
 import { signInAdmin, signOutAdmin } from '../../helpers/adminAuth.js';
@@ -55,6 +55,32 @@ describe('admin dashboard', () => {
     });
   });
 
+  it('labels each week with its exact total and compact amount', async () => {
+    vi.spyOn(getAdminDashboardModule, 'getAdminDashboard').mockResolvedValue({
+      active_layaways: 1,
+      collected_this_month: 0,
+      overdue_payments: 0,
+      active_customers: 1,
+      collections_last_6_weeks: [
+        { week_start: '2026-09-13', total: 0, height: 0 },
+        { week_start: '2026-09-20', total: 12500, height: 100 },
+      ],
+      recent_activity: [],
+    });
+    render(
+      <MemoryRouter initialEntries={['/admin']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    const items = await screen.findAllByRole('listitem', { name: /^Week of/ });
+    expect(items.map((item) => item.getAttribute('aria-label'))).toEqual([
+      'Week of Sep 13: ₱0.00',
+      'Week of Sep 20: ₱12,500.00',
+    ]);
+    expect(items[1]).toHaveTextContent('₱12.5kWk 2');
+  });
+
   it('keeps activity title and detail on separate lines', async () => {
     render(
       <MemoryRouter initialEntries={['/admin']}>
@@ -79,7 +105,7 @@ describe('admin dashboard', () => {
       collected_this_month: 37400,
       overdue_payments: 0,
       active_customers: 1,
-      collections_last_6_weeks: [0, 0, 0, 50, 0, 100],
+      collections_last_6_weeks: [],
       recent_activity: [
         {
           title: 'New reservation',

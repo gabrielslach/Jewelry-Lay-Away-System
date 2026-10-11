@@ -4,15 +4,32 @@ import AdminAlertsBell from '../components/AdminAlertsBell.jsx';
 import { Logo } from '../theme/assets.js';
 import { HamburgerIcon } from '../theme/icons.jsx';
 import { getAdminAlerts } from '../services/adminAlerts.js';
-import { getAdminToken } from '../services/session.js';
+import { getAdmin, getAdminToken } from '../services/session.js';
 import './AdminLayout.css';
 
 const links = [
   { to: '/admin', label: 'Dashboard', end: true },
-  { to: '/admin/orders', label: 'Orders & Installments', badgeKeys: ['waiting_for_stock', 'reservation_problems'] },
-  { to: '/admin/payments', label: 'Pending payments', badgeKey: 'pending_payments' },
-  { to: '/admin/payments/due', label: 'Due & Overdue', badgeKeys: ['due_today', 'overdue'] },
-  { to: '/admin/notifications', label: 'Notifications', badgeKey: 'unread_notifications' },
+  {
+    to: '/admin/orders',
+    label: 'Orders & Installments',
+    badgeKeys: ['waiting_for_stock', 'reservation_problems'],
+  },
+  {
+    to: '/admin/payments',
+    label: 'Pending payments',
+    end: true,
+    badgeKey: 'pending_payments',
+  },
+  {
+    to: '/admin/payments/due',
+    label: 'Due & Overdue',
+    badgeKeys: ['due_today', 'overdue'],
+  },
+  {
+    to: '/admin/notifications',
+    label: 'Notifications',
+    badgeKey: 'unread_notifications',
+  },
   { to: '/admin/customers', label: 'Customers' },
   { to: '/admin/settings', label: 'Settings' },
 ];
@@ -46,13 +63,16 @@ export default function AdminLayout() {
   const location = useLocation();
   const title = titles[location.pathname] || 'Admin';
   const token = getAdminToken();
+  const admin = getAdmin();
 
   useEffect(() => {
     if (!token) {
       return undefined;
     }
     function load() {
-      getAdminAlerts().then(setAlerts).catch(() => setAlerts(null));
+      getAdminAlerts()
+        .then(setAlerts)
+        .catch(() => setAlerts(null));
     }
     load();
     const timer = window.setInterval(load, 60_000);
@@ -103,6 +123,7 @@ export default function AdminLayout() {
           </button>
           <h1>{title}</h1>
           <AdminAlertsBell />
+          {admin?.name ? <span className="admin-user">{admin.name}</span> : null}
         </header>
         <div className="admin-page">
           <Outlet context={{ alerts }} />

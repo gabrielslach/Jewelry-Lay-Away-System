@@ -1,5 +1,11 @@
 import { MemoryRouter } from 'react-router-dom';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../../../src/App.jsx';
 import { signInAdmin, signOutAdmin } from '../../helpers/adminAuth.js';
@@ -10,6 +16,7 @@ import { ServiceError } from '../../../src/services/http.js';
 
 describe('admin orders', () => {
   beforeEach(async () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: false }));
     await signInAdmin();
   });
 
@@ -31,13 +38,17 @@ describe('admin orders', () => {
         <App />
       </MemoryRouter>,
     );
-    expect(document.querySelector('.skeleton[aria-busy="true"]')).toBeInTheDocument();
+    expect(
+      document.querySelector('.skeleton[aria-busy="true"]'),
+    ).toBeInTheDocument();
     expect(document.querySelectorAll('.skeleton-table-row')).toHaveLength(5);
     expect(screen.queryByText('LA-1001')).not.toBeInTheDocument();
     resolve(await realGetAdminPlans());
     expect(await screen.findByText('LA-1001')).toBeInTheDocument();
     await waitFor(() => {
-      expect(document.querySelector('.skeleton[aria-busy="true"]')).not.toBeInTheDocument();
+      expect(
+        document.querySelector('.skeleton[aria-busy="true"]'),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -48,27 +59,146 @@ describe('admin orders', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByText('LA-1001')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Show Overdue orders' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Show Overdue orders' }),
+    );
     expect(await screen.findByText('LA-1002')).toBeInTheDocument();
     expect(screen.queryByText('LA-1001')).not.toBeInTheDocument();
     fireEvent.click(screen.getAllByRole('button', { name: 'View' })[0]);
     const dialog = await screen.findByRole('dialog');
     const statusItem = within(dialog).getByText('Status').closest('.spec-item');
     expect(within(statusItem).getByText('Overdue')).toBeInTheDocument();
-    const reservationItem = within(dialog).getByText('Reservation').closest('.spec-item');
+    const reservationItem = within(dialog)
+      .getByText('Reservation')
+      .closest('.spec-item');
     expect(within(reservationItem).getByText('Reserved')).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: 'Cancel reservation' })).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole('button', { name: 'Cancel reservation' }),
+    ).toBeInTheDocument();
+  });
+
+  it('offers a filter per plan status', async () => {
+    render(
+      <MemoryRouter initialEntries={['/admin/orders']}>
+        <App />
+      </MemoryRouter>,
+    );
+    await screen.findByText('LA-1001');
+    const labels = [
+      'All',
+      'On Track',
+      'Overdue',
+      'Completed',
+      'Cancelled',
+      'Defaulted',
+    ];
+    labels.forEach((label) => {
+      expect(
+        screen.getByRole('button', {
+          name: label === 'All' ? 'Show All orders' : `Show ${label} orders`,
+        }),
+      ).toBeInTheDocument();
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Show Defaulted orders' }),
+    );
+    expect(screen.queryByText('LA-1001')).not.toBeInTheDocument();
+  });
+
+  it('shows total in the table and plan money details in the modal', async () => {
+    vi.spyOn(getAdminPlansModule, 'getAdminPlans').mockResolvedValue([
+      {
+        id: 'LA-7',
+        customer_name: 'Ana',
+        item_name: 'Ring',
+        status: 'defaulted',
+        created_at: '2026-03-04T00:00:00.000Z',
+        total_price: 12000,
+        down_payment_amount: 3600,
+        installments: [],
+      },
+      {
+        id: 'LA-8',
+        customer_name: 'Ben',
+        item_name: 'Pendant',
+        status: 'cancelled',
+      },
+    ]);
+    vi.spyOn(getLayawayPlanModule, 'getLayawayPlan').mockResolvedValue({
+      installments: [
+        { id: 'a', amount: 4200, status: 'pending' },
+        { id: 'b', amount: 4200, status: 'pending' },
+        { id: 'c', amount: 999, status: 'superseded' },
+      ],
+    });
+    render(
+      <MemoryRouter initialEntries={['/admin/orders']}>
+        <App />
+      </MemoryRouter>,
+    );
+    await screen.findByText('LA-7');
+    expect(
+      screen.getByRole('columnheader', { name: 'Total' }),
+    ).toBeInTheDocument();
+    const table = within(screen.getByRole('table'));
+    expect(table.getByText('Defaulted')).toHaveClass('badge-warn');
+    expect(table.getByText('Cancelled')).toHaveClass('badge-mute');
+    expect(table.getByText('₱12,000')).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: 'View' })[0]);
+    const dialog = await screen.findByRole('dialog');
+    const item = (label) =>
+      within(dialog).getByText(label).closest('.spec-item');
+    expect(
+      within(item('Created')).getByText('Mar 4, 2026'),
+    ).toBeInTheDocument();
+    expect(
+      within(item('Total amount')).getByText('₱12,000'),
+    ).toBeInTheDocument();
+    expect(
+      within(item('Financed amount')).getByText('₱8,400'),
+    ).toBeInTheDocument();
+    expect(
+      within(item('Down payment')).getByText('₱3,600'),
+    ).toBeInTheDocument();
+  });
+
+  it('shows a dash for missing plan amounts', async () => {
+    vi.spyOn(getAdminPlansModule, 'getAdminPlans').mockResolvedValue([
+      {
+        id: 'LA-8',
+        customer_name: 'Ben',
+        item_name: 'Pendant',
+        status: 'on_track',
+      },
+    ]);
+    vi.spyOn(getLayawayPlanModule, 'getLayawayPlan').mockResolvedValue({
+      installments: [],
+    });
+    render(
+      <MemoryRouter initialEntries={['/admin/orders']}>
+        <App />
+      </MemoryRouter>,
+    );
+    await screen.findByText('LA-8');
+    fireEvent.click(screen.getByRole('button', { name: 'View' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      within(dialog).getByText('Total amount').closest('.spec-item'),
+    ).toHaveTextContent('—');
+    expect(dialog).not.toHaveTextContent('NaN');
   });
 
   it('fetches plan detail on View and shows its installments', async () => {
-    const spy = vi.spyOn(getLayawayPlanModule, 'getLayawayPlan').mockResolvedValue({
-      id: 'LA-1001',
-      status: 'completed',
-      installments: [
-        { id: 'a', term_number: 1, amount: 111, status: 'paid' },
-        { id: 'b', term_number: 2, amount: 222, status: 'pending' },
-      ],
-    });
+    const spy = vi
+      .spyOn(getLayawayPlanModule, 'getLayawayPlan')
+      .mockResolvedValue({
+        id: 'LA-1001',
+        status: 'completed',
+        installments: [
+          { id: 'a', term_number: 1, amount: 111, status: 'paid' },
+          { id: 'b', term_number: 2, amount: 222, status: 'pending' },
+        ],
+      });
     render(
       <MemoryRouter initialEntries={['/admin/orders']}>
         <App />
@@ -109,7 +239,7 @@ describe('admin orders', () => {
       </MemoryRouter>,
     );
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByText('₱333')).toBeInTheDocument();
+    expect(within(dialog).getAllByText('₱333').length).toBeGreaterThan(0);
   });
 
   it('still lists orders when the deep-link detail fetch fails', async () => {
@@ -133,7 +263,9 @@ describe('admin orders', () => {
     ]);
     vi.spyOn(adminReservationsModule, 'retryReservation').mockResolvedValue({});
     vi.spyOn(getLayawayPlanModule, 'getLayawayPlan').mockResolvedValue({
-      installments: [{ id: 'a', term_number: 1, amount: 444, status: 'pending' }],
+      installments: [
+        { id: 'a', term_number: 1, amount: 444, status: 'pending' },
+      ],
     });
     render(
       <MemoryRouter initialEntries={['/admin/orders']}>
@@ -147,6 +279,8 @@ describe('admin orders', () => {
     await waitFor(() => {
       expect(getLayawayPlanModule.getLayawayPlan).toHaveBeenCalledTimes(2);
     });
-    expect(within(await screen.findByRole('dialog')).getByText('₱444')).toBeInTheDocument();
+    expect(
+      within(await screen.findByRole('dialog')).getAllByText('₱444').length,
+    ).toBeGreaterThan(0);
   });
 });

@@ -3,23 +3,38 @@ import { useSearchParams } from 'react-router-dom';
 import Button from '../../components/Button.jsx';
 import ErrorMessage from '../../components/ErrorMessage.jsx';
 import Skeleton, { OrdersTableSkeleton } from '../../components/Skeleton.jsx';
+import InstallmentSchedule from '../../components/InstallmentSchedule.jsx';
 import Modal from '../../components/Modal.jsx';
+import PlanStatusBadge from '../../components/PlanStatusBadge.jsx';
+import ReservationBadge, {
+  RESERVATION_LABELS,
+} from '../../components/ReservationBadge.jsx';
 import { useToast } from '../../components/useToast.js';
 import { formatDisplayDate } from '../../lib/dates.js';
+import { PLAN_STATUSES } from '../../lib/planStatuses.js';
 import { ServiceError } from '../../services/http.js';
 import { getAdminPlans } from '../../services/getAdminPlans.js';
+import { planTotals } from '../../lib/planTotals.js';
 import { getLayawayPlan } from '../../services/getLayawayPlan.js';
-import { cancelReservation, retryReservation } from '../../services/adminReservations.js';
+import {
+  cancelReservation,
+  retryReservation,
+} from '../../services/adminReservations.js';
 import { getAdminSession } from '../../services/session.js';
 import '../Account.css';
 import '../../components/Checkout.css';
 
-const RESERVATION_LABELS = {
-  waiting_for_stock: 'Waiting for stock',
-  reserved: 'Reserved',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-};
+const FILTERS = [
+  { id: 'all', label: 'All' },
+  ...Object.entries(PLAN_STATUSES).map(([id, { label }]) => ({ id, label })),
+];
+
+function peso(value) {
+  const amount = Number(value);
+  return value == null || value === '' || Number.isNaN(amount)
+    ? '—'
+    : `₱${amount.toLocaleString('en-US')}`;
+}
 
 function isAdminRole() {
   return (getAdminSession()?.admin?.role ?? 'admin') === 'admin';
@@ -50,7 +65,11 @@ export default function Orders() {
     try {
       return await withDetail(plan);
     } catch (err) {
-      setError(err instanceof ServiceError ? err.message : 'Unable to load order details.');
+      setError(
+        err instanceof ServiceError
+          ? err.message
+          : 'Unable to load order details.',
+      );
       return null;
     }
   }
@@ -71,7 +90,9 @@ export default function Orders() {
         }
       })
       .catch((err) => {
-        setError(err instanceof ServiceError ? err.message : 'Unable to load orders.');
+        setError(
+          err instanceof ServiceError ? err.message : 'Unable to load orders.',
+        );
       })
       .finally(() => {
         setLoading(false);
@@ -84,7 +105,9 @@ export default function Orders() {
         setPlans(data);
         const planId = openPlanId.current;
         openPlanId.current = null;
-        const fromQuery = planId ? data.find((plan) => String(plan.id) === String(planId)) : null;
+        const fromQuery = planId
+          ? data.find((plan) => String(plan.id) === String(planId))
+          : null;
         if (!fromQuery) {
           return;
         }
@@ -105,14 +128,18 @@ export default function Orders() {
         );
       })
       .catch((err) => {
-        setError(err instanceof ServiceError ? err.message : 'Unable to load orders.');
+        setError(
+          err instanceof ServiceError ? err.message : 'Unable to load orders.',
+        );
       })
       .finally(() => {
         setLoading(false);
       });
   }, [setSearchParams]);
 
-  const rows = plans.filter((plan) => filter === 'all' || plan.status === filter);
+  const rows = plans.filter(
+    (plan) => filter === 'all' || plan.status === filter,
+  );
 
   async function handleView(plan) {
     const requestId = ++viewRequest.current;
@@ -138,7 +165,11 @@ export default function Orders() {
         refreshPlans(active.id);
         return;
       }
-      setError(err instanceof ServiceError ? err.message : 'Unable to retry reservation.');
+      setError(
+        err instanceof ServiceError
+          ? err.message
+          : 'Unable to retry reservation.',
+      );
     }
   }
 
@@ -171,35 +202,25 @@ export default function Orders() {
         setCancelErrors({ form: err.message });
         return;
       }
-      setError(err instanceof ServiceError ? err.message : 'Unable to cancel reservation.');
+      setError(
+        err instanceof ServiceError
+          ? err.message
+          : 'Unable to cancel reservation.',
+      );
     }
-  }
-
-  function reservationBadge(status) {
-    const label = RESERVATION_LABELS[status];
-    if (!label) {
-      return null;
-    }
-    return (
-      <span className={status === 'waiting_for_stock' ? 'badge badge-warn' : 'badge badge-ok'}>
-        {label}
-      </span>
-    );
   }
 
   return (
     <div className="panel">
       <ErrorMessage>{error}</ErrorMessage>
       <div className="filter-row">
-        {[
-          { id: 'all', label: 'All' },
-          { id: 'ok', label: 'On Track' },
-          { id: 'warn', label: 'Overdue' },
-        ].map((option) => (
+        {FILTERS.map((option) => (
           <button
             key={option.id}
             type="button"
-            className={filter === option.id ? 'filter-btn active' : 'filter-btn'}
+            className={
+              filter === option.id ? 'filter-btn active' : 'filter-btn'
+            }
             aria-pressed={filter === option.id}
             aria-label={`Show ${option.label} orders`}
             onClick={() => setFilter(option.id)}
@@ -220,10 +241,10 @@ export default function Orders() {
                 <th>Order</th>
                 <th>Customer</th>
                 <th>Item</th>
-                <th>Plan</th>
+                <th>Total</th>
                 <th>Next Due</th>
-                <th>Status</th>
-                <th>Hold</th>
+                <th>Plan Status</th>
+                <th>Reservation Status</th>
                 <th> </th>
               </tr>
             </thead>
@@ -235,16 +256,20 @@ export default function Orders() {
                   </td>
                   <td>{plan.customer_name}</td>
                   <td>{plan.item_name}</td>
-                  <td>{plan.plan_label}</td>
+                  <td>{peso(plan.total_price)}</td>
                   <td>{plan.next_due}</td>
                   <td>
-                    <span className={plan.status === 'ok' ? 'badge badge-ok' : 'badge badge-warn'}>
-                      {plan.status === 'ok' ? 'On Track' : 'Overdue'}
-                    </span>
+                    <PlanStatusBadge status={plan.status} />
                   </td>
-                  <td>{reservationBadge(plan.reservation_status)}</td>
                   <td>
-                    <Button variant="outline" size="sm" onClick={() => handleView(plan)}>
+                    <ReservationBadge status={plan.reservation_status} />
+                  </td>
+                  <td>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleView(plan)}
+                    >
                       View
                     </Button>
                   </td>
@@ -263,14 +288,23 @@ export default function Orders() {
               <Button variant="outline" onClick={() => setActive(null)}>
                 Close
               </Button>
-              {active.reservation_error || active.reservation_status === 'waiting_for_stock' ? (
-                <Button variant="primary" onClick={handleRetry} disabled={!admin}>
+              {active.reservation_error ||
+              active.reservation_status === 'waiting_for_stock' ? (
+                <Button
+                  variant="primary"
+                  onClick={handleRetry}
+                  disabled={!admin}
+                >
                   Retry
                 </Button>
               ) : null}
               {active.reservation_status === 'reserved' ||
               active.reservation_status === 'waiting_for_stock' ? (
-                <Button variant="outline" onClick={() => setCancelOpen(true)} disabled={!admin}>
+                <Button
+                  variant="outline"
+                  onClick={() => setCancelOpen(true)}
+                  disabled={!admin}
+                >
                   Cancel reservation
                 </Button>
               ) : null}
@@ -287,19 +321,14 @@ export default function Orders() {
               <b>{active.item_name}</b>
             </div>
             <div className="spec-item">
-              <span>Plan</span>
-              <b>{active.plan_label}</b>
-            </div>
-            <div className="spec-item">
               <span>Status</span>
-              <span className={active.status === 'ok' ? 'badge badge-ok' : 'badge badge-warn'}>
-                {active.status === 'ok' ? 'On Track' : 'Overdue'}
-              </span>
+              <PlanStatusBadge status={active.status} />
             </div>
-            {active.reservation_status && active.reservation_status !== 'none' ? (
+            {active.reservation_status &&
+            active.reservation_status !== 'none' ? (
               <div className="spec-item">
                 <span>Reservation</span>
-                {reservationBadge(active.reservation_status) ?? <b>{active.reservation_status}</b>}
+                <ReservationBadge status={active.reservation_status} />
               </div>
             ) : null}
             {active.down_payment_confirmed_at ? (
@@ -308,6 +337,22 @@ export default function Orders() {
                 <b>{formatDisplayDate(active.down_payment_confirmed_at)}</b>
               </div>
             ) : null}
+            <div className="spec-item">
+              <span>Created</span>
+              <b>{formatDisplayDate(active.created_at) || '—'}</b>
+            </div>
+            <div className="spec-item">
+              <span>Total amount</span>
+              <b>{peso(active.total_price)}</b>
+            </div>
+            <div className="spec-item">
+              <span>Financed amount</span>
+              <b>{peso(planTotals(active).financedPrincipal)}</b>
+            </div>
+            <div className="spec-item">
+              <span>Down payment</span>
+              <b>{peso(active.down_payment_amount)}</b>
+            </div>
           </div>
           {active.reservation_error ? (
             <p className="plan-notice">
@@ -316,35 +361,7 @@ export default function Orders() {
               {active.reservation_error}
             </p>
           ) : null}
-          <div className="schedule-list">
-            {active.installments.map((row, index) => (
-              <div className="schedule-row" key={row.id}>
-                <b>
-                  Payment {row.term_number ?? index + 1} of {active.installments.length}
-                </b>
-                <span>₱{Number(row.amount).toLocaleString('en-US')}</span>
-                <span
-                  className={
-                    row.status === 'paid'
-                      ? 'badge badge-ok'
-                      : row.status === 'overdue'
-                        ? 'badge badge-warn'
-                        : row.status === 'submitted' || row.status === 'awaiting_confirmation'
-                          ? 'badge badge-info'
-                          : 'badge badge-mute'
-                  }
-                >
-                  {row.status === 'paid'
-                    ? 'Paid'
-                    : row.status === 'overdue'
-                      ? 'Overdue'
-                      : row.status === 'submitted' || row.status === 'awaiting_confirmation'
-                        ? 'Awaiting confirmation'
-                        : 'Pending'}
-                </span>
-              </div>
-            ))}
-          </div>
+          <InstallmentSchedule installments={active.installments} />
         </Modal>
       ) : null}
 
@@ -366,7 +383,11 @@ export default function Orders() {
               >
                 Close
               </Button>
-              <Button variant="primary" onClick={handleCancel} disabled={!admin}>
+              <Button
+                variant="primary"
+                onClick={handleCancel}
+                disabled={!admin}
+              >
                 Cancel reservation
               </Button>
             </>
@@ -380,7 +401,9 @@ export default function Orders() {
               value={cancelReason}
               onChange={(event) => setCancelReason(event.target.value)}
             />
-            {cancelErrors.reason ? <p className="field-error">{cancelErrors.reason}</p> : null}
+            {cancelErrors.reason ? (
+              <p className="field-error">{cancelErrors.reason}</p>
+            ) : null}
           </div>
           <label className="checkbox-row">
             <input
@@ -390,7 +413,9 @@ export default function Orders() {
             />
             <span>Termination handed off and agreed with the customer</span>
           </label>
-          {cancelErrors.handoff ? <p className="field-error">{cancelErrors.handoff}</p> : null}
+          {cancelErrors.handoff ? (
+            <p className="field-error">{cancelErrors.handoff}</p>
+          ) : null}
         </Modal>
       ) : null}
     </div>

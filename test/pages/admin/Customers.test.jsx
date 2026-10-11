@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../../../src/App.jsx';
 import { signInAdmin, signOutAdmin } from '../../helpers/adminAuth.js';
-import * as getAdminCustomerModule from '../../../src/services/getAdminCustomer.js';
+import * as deleteModule from '../../../src/services/deleteAdminCustomerSessions.js';
 import * as getAdminCustomersModule from '../../../src/services/getAdminCustomers.js';
 
 describe('admin customers', () => {
@@ -39,42 +39,81 @@ describe('admin customers', () => {
     });
   });
 
-  it('shows spec skeleton bones in the detail modal while the customer loads', async () => {
-    const realGetAdminCustomer = getAdminCustomerModule.getAdminCustomer;
-    let resolve;
-    vi.spyOn(getAdminCustomerModule, 'getAdminCustomer').mockImplementation(
-      () =>
-        new Promise((done) => {
-          resolve = done;
-        }),
-    );
+  function renderCustomers() {
     render(
       <MemoryRouter initialEntries={['/admin/customers']}>
         <App />
       </MemoryRouter>,
     );
-    const shopperRow = (await screen.findByText('Sample Shopper')).closest('tr');
-    fireEvent.click(within(shopperRow).getByRole('button', { name: 'View' }));
-    expect(await screen.findByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Sample Shopper' })).toBeInTheDocument();
-    expect(document.querySelector('.modal-body .skeleton[aria-busy="true"]')).toBeInTheDocument();
-    expect(document.querySelectorAll('.modal-body .spec-item .skeleton-bone')).toHaveLength(8);
-    expect(screen.queryByText(/900 000/)).not.toBeInTheDocument();
-    resolve(await realGetAdminCustomer(5));
-    expect(await screen.findByText(/900 000/)).toBeInTheDocument();
-    await waitFor(() => {
-      expect(document.querySelector('.modal-body .skeleton[aria-busy="true"]')).not.toBeInTheDocument();
-    });
+  }
+
+  async function openConfirm() {
+    renderCustomers();
+    await screen.findByText('Sample Shopper');
+    fireEvent.click(screen.getByRole('button', { name: 'Delete sessions for Sample Shopper' }));
+    return screen.findByRole('dialog');
+  }
+
+  it('shows phone, formatted member since and dashes for missing values', async () => {
+    vi.spyOn(getAdminCustomersModule, 'getAdminCustomers').mockResolvedValue([
+      { id: 1, name: 'Ana', email: 'a@x.com', phone: '+63 900 111 2222', member_since: '2026-10-11', active_layaways: 1 },
+      { id: 2, name: 'Ben', email: 'b@x.com', phone: null, member_since: 'not a date', active_layaways: 0 },
+    ]);
+    renderCustomers();
+    const ana = (await screen.findByText('Ana')).closest('tr');
+    expect(screen.getByRole('columnheader', { name: 'Phone' })).toBeInTheDocument();
+    expect(within(ana).getByText('+63 900 111 2222')).toBeInTheDocument();
+    expect(within(ana).getByText('Oct 11, 2026')).toBeInTheDocument();
+    const ben = screen.getByText('Ben').closest('tr');
+    expect(within(ben).getAllByText('—')).toHaveLength(2);
+    expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument();
   });
 
-  it('opens customer detail', async () => {
-    render(
-      <MemoryRouter initialEntries={['/admin/customers']}>
-        <App />
-      </MemoryRouter>,
+  it('cancels the confirmation without calling the service', async () => {
+    const spy = vi.spyOn(deleteModule, 'deleteAdminCustomerSessions');
+    const dialog = await openConfirm();
+    expect(within(dialog).getByRole('heading', { name: 'Delete sessions?' })).toBeInTheDocument();
+    expect(within(dialog).getByText(/Sample Shopper will be signed out on all devices/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('deletes sessions, closes the modal and shows a toast', async () => {
+    const spy = vi.spyOn(deleteModule, 'deleteAdminCustomerSessions').mockResolvedValue({});
+    const dialog = await openConfirm();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete sessions' }));
+    expect(await screen.findByText('Signed Sample Shopper out of all devices.')).toBeInTheDocument();
+    expect(spy).toHaveBeenCalledWith(5);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('Sample Shopper')).toBeInTheDocument();
+  });
+
+  it('blocks closing while deleting', async () => {
+    let resolve;
+    vi.spyOn(deleteModule, 'deleteAdminCustomerSessions').mockReturnValue(
+      new Promise((done) => {
+        resolve = done;
+      }),
     );
-    expect(await screen.findByText('Sample Shopper')).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole('button', { name: 'View' })[0]);
-    expect(await screen.findByText(/900 000/)).toBeInTheDocument();
+    const dialog = await openConfirm();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete sessions' }));
+    expect(await within(dialog).findByRole('button', { name: 'Deleting…' })).toBeDisabled();
+    expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    resolve({});
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('keeps the modal open and shows an error when deleting fails', async () => {
+    vi.spyOn(deleteModule, 'deleteAdminCustomerSessions').mockRejectedValue(new Error('boom'));
+    const dialog = await openConfirm();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete sessions' }));
+    expect(await within(dialog).findByText('Unable to delete sessions.')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Delete sessions' })).toBeEnabled();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete sessions for Sample Shopper' }));
+    expect(screen.queryByText('Unable to delete sessions.')).not.toBeInTheDocument();
   });
 });
