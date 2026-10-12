@@ -84,12 +84,28 @@
 
 .admin-topbar h1 {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 22px;
 }
 
 .admin-user {
   font-weight: 600;
   white-space: nowrap;
+}
+
+.admin-signout {
+  flex-shrink: 0;
+  min-height: 38px;
+  white-space: nowrap;
+}
+
+@media (max-width: 479px) {
+  .admin-user {
+    display: none;
+  }
 }
 
 .admin-hamburger {
@@ -121,6 +137,10 @@
   border-radius: var(--radius);
   padding: 16px;
   box-shadow: var(--shadow);
+}
+
+:not(.two-col) > .panel + .panel {
+  margin-top: 22px;
 }
 
 .kpi-card b {
@@ -237,6 +257,73 @@ td {
   text-align: left;
   padding: 10px 8px;
   border-bottom: 1px solid var(--border);
+}
+
+th {
+  vertical-align: top;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.th-sort {
+  font: inherit;
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  min-height: 32px;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.th-sort__icon {
+  color: var(--text-soft);
+}
+
+th[aria-sort='ascending'] .th-sort,
+th[aria-sort='descending'] .th-sort,
+th[aria-sort='ascending'] .th-sort__icon,
+th[aria-sort='descending'] .th-sort__icon {
+  color: var(--accent);
+}
+
+.th-sort:focus-visible,
+.th-filter:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.th-filter {
+  display: block;
+  width: 100%;
+  min-width: 96px;
+  margin-top: 6px;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.th-filter:focus {
+  border-color: var(--accent);
+}
+
+.table-empty {
+  text-align: center;
+  color: var(--text-soft);
+  padding: 24px 8px;
+}
+
+@media (max-width: 479px) {
+  .th-filter {
+    font-size: 16px;
+  }
 }
 
 .settings-form .form-row {

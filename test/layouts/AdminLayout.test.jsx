@@ -2,6 +2,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import AdminLayout from '../../src/layouts/AdminLayout.jsx';
+import { getAdminToken } from '../../src/services/session.js';
 import { signInAdmin, signOutAdmin } from '../helpers/adminAuth.js';
 
 describe('AdminLayout', () => {
@@ -40,6 +41,20 @@ describe('AdminLayout', () => {
     expect(screen.getByText('Sample Admin')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Due & Overdue/ })).toHaveClass('active');
     expect(screen.getByRole('link', { name: /Pending payments/ })).not.toHaveClass('active');
+  });
+
+  it('signs out and goes to admin login', () => {
+    render(
+      <MemoryRouter initialEntries={['/admin']}>
+        <Routes>
+          <Route path="/admin/login" element={<h1>Admin sign in</h1>} />
+          <Route path="/admin" element={<AdminLayout />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+    expect(screen.getByRole('heading', { name: 'Admin sign in' })).toBeInTheDocument();
+    expect(getAdminToken()).toBeFalsy();
   });
 
   it('redirects to admin login when signed out', () => {

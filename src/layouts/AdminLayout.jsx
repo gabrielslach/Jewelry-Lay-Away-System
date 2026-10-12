@@ -1,10 +1,21 @@
 import { useEffect, useState } from 'react';
-import { Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
+import {
+  Navigate,
+  NavLink,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 import AdminAlertsBell from '../components/AdminAlertsBell.jsx';
+import Button from '../components/Button.jsx';
 import { Logo } from '../theme/assets.js';
 import { HamburgerIcon } from '../theme/icons.jsx';
 import { getAdminAlerts } from '../services/adminAlerts.js';
-import { getAdmin, getAdminToken } from '../services/session.js';
+import {
+  clearAdminSession,
+  getAdmin,
+  getAdminToken,
+} from '../services/session.js';
 import './AdminLayout.css';
 
 const links = [
@@ -61,6 +72,7 @@ export default function AdminLayout() {
   const [open, setOpen] = useState(false);
   const [alerts, setAlerts] = useState(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const title = titles[location.pathname] || 'Admin';
   const token = getAdminToken();
   const admin = getAdmin();
@@ -78,6 +90,11 @@ export default function AdminLayout() {
     const timer = window.setInterval(load, 60_000);
     return () => window.clearInterval(timer);
   }, [token]);
+
+  function signOut() {
+    clearAdminSession();
+    navigate('/admin/login');
+  }
 
   if (!token) {
     const from = encodeURIComponent(`${location.pathname}${location.search}`);
@@ -101,7 +118,9 @@ export default function AdminLayout() {
                 key={link.to}
                 to={link.to}
                 end={link.end}
-                className={({ isActive }) => (isActive ? 'sb-link active' : 'sb-link')}
+                className={({ isActive }) =>
+                  isActive ? 'sb-link active' : 'sb-link'
+                }
                 onClick={() => setOpen(false)}
               >
                 <span>{link.label}</span>
@@ -122,8 +141,18 @@ export default function AdminLayout() {
             <HamburgerIcon title="" />
           </button>
           <h1>{title}</h1>
+          {admin?.name ? (
+            <span className="admin-user">{admin.name}</span>
+          ) : null}
           <AdminAlertsBell />
-          {admin?.name ? <span className="admin-user">{admin.name}</span> : null}
+          <Button
+            variant="outline"
+            size="sm"
+            className="admin-signout"
+            onClick={signOut}
+          >
+            Sign out
+          </Button>
         </header>
         <div className="admin-page">
           <Outlet context={{ alerts }} />

@@ -24,29 +24,61 @@
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   z-index: 20;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text);
 }
 
 .bell-panel-head {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
+}
+
+.bell-panel-head b {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.bell-panel-head .text-link {
+  font-size: 13px;
+  padding: 0;
 }
 
 .bell-panel-item {
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
   display: grid;
-  gap: 4px;
+  gap: 2px;
+}
+
+.bell-panel-item b {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text);
 }
 
 .bell-panel-item p {
   margin: 0;
   color: var(--text-soft);
-  font-size: 0.9rem;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.bell-panel-item span {
+  font-size: 12px;
+  color: var(--text-soft);
+  margin-top: 2px;
 }
 
 .bell-panel-footer {
   display: block;
+  font-size: 13px;
+  text-align: center;
   padding: 10px 14px;
+  text-decoration: none;
 }
