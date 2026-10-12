@@ -1,10 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Button from '../../components/Button.jsx';
+import DataTable from '../../components/DataTable.jsx';
 import ErrorMessage from '../../components/ErrorMessage.jsx';
 import PaymentReviewModal from '../../components/PaymentReviewModal.jsx';
 import { formatDisplayDate } from '../../lib/dates.js';
 import { formatPesoDecimals } from '../../lib/money.js';
-import { paymentKindLabel, paymentTermLabel } from '../../lib/paymentLabels.js';
+import {
+  paymentKindLabel,
+  paymentDueDateLabel,
+} from '../../lib/paymentLabels.js';
+import { idNumber, sortByValue } from '../../lib/tableSort.js';
 import { getAdminPendingPayments } from '../../services/adminPayments.js';
 import { ServiceError } from '../../services/http.js';
 import { getAdminSession } from '../../services/session.js';
@@ -42,6 +47,78 @@ export default function PendingPayments() {
     refresh();
   }
 
+  const columns = useMemo(
+    () => [
+      {
+        id: 'order',
+        header: 'Order',
+        accessorFn: (payment) => `#${payment.plan_id}`,
+        sortingFn: sortByValue((payment) => idNumber(payment.plan_id)),
+        cell: ({ row }) => `#${row.original.plan_id}`,
+      },
+      {
+        id: 'customer',
+        header: 'Customer',
+        accessorFn: (payment) => payment.customer_name,
+        cell: ({ row }) => row.original.customer_name,
+      },
+      {
+        id: 'kind',
+        header: 'Kind',
+        accessorFn: paymentKindLabel,
+        cell: ({ row }) => paymentKindLabel(row.original),
+      },
+      {
+        id: 'due_date',
+        header: 'Due date',
+        accessorFn: paymentDueDateLabel,
+        sortingFn: sortByValue((payment) => payment.due_date),
+        cell: ({ row }) => paymentDueDateLabel(row.original),
+      },
+      {
+        id: 'paid_on',
+        header: 'Paid on',
+        accessorFn: (payment) => formatDisplayDate(payment.paid_on),
+        sortingFn: sortByValue((payment) => payment.paid_on),
+        cell: ({ row }) => formatDisplayDate(row.original.paid_on),
+      },
+      {
+        id: 'amount',
+        header: 'Amount Expected / Amount Paid',
+        accessorFn: (payment) =>
+          `${formatPesoDecimals(payment.amount)} / ${formatPesoDecimals(payment.amount_submitted)}`,
+        sortingFn: sortByValue((payment) => Number(payment.amount)),
+        cell: ({ row }) => (
+          <>
+            {formatPesoDecimals(row.original.amount)} /{' '}
+            {formatPesoDecimals(row.original.amount_submitted)}
+            {row.original.amount_mismatch ? (
+              <span className="badge badge-warn">Amounts differ</span>
+            ) : null}
+          </>
+        ),
+      },
+      {
+        id: 'reference',
+        header: 'Reference',
+        accessorFn: (payment) => payment.reference_number,
+        cell: ({ row }) => row.original.reference_number,
+      },
+      {
+        id: 'actions',
+        header: ' ',
+        enableSorting: false,
+        enableColumnFilter: false,
+        cell: ({ row }) => (
+          <Button variant="outline" size="sm" onClick={() => setSelected(row.original)}>
+            View
+          </Button>
+        ),
+      },
+    ],
+    [],
+  );
+
   return (
     <div className="panel">
       <ErrorMessage>{error}</ErrorMessage>
@@ -51,48 +128,7 @@ export default function PendingPayments() {
         </p>
       ) : null}
       <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Order</th>
-              <th>Customer</th>
-              <th>Kind</th>
-              <th>Due date</th>
-              <th>Paid on</th>
-              <th>Amount Expected / Amount Paid</th>
-              <th>Reference</th>
-              <th> </th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.id}>
-                <td>#{row.plan_id}</td>
-                <td>{paymentKindLabel(row)}</td>
-                <td>{row.customer_name}</td>
-                <td>{paymentTermLabel(row)}</td>
-                <td>{formatDisplayDate(row.paid_on)}</td>
-                <td>
-                  {formatPesoDecimals(row.amount)} /{' '}
-                  {formatPesoDecimals(row.amount_submitted)}
-                  {row.amount_mismatch ? (
-                    <span className="badge badge-warn">Amounts differ</span>
-                  ) : null}
-                </td>
-                <td>{row.reference_number}</td>
-                <td>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelected(row)}
-                  >
-                    View
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataTable columns={columns} data={rows} getRowId={(row) => String(row.id)} />
       </div>
       {!rows.length ? (
         <p className="empty-copy">No payments waiting for confirmation.</p>

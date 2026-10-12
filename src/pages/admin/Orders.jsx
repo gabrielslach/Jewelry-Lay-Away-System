@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Button from '../../components/Button.jsx';
+import DataTable from '../../components/DataTable.jsx';
 import ErrorMessage from '../../components/ErrorMessage.jsx';
 import Skeleton, { OrdersTableSkeleton } from '../../components/Skeleton.jsx';
 import InstallmentSchedule from '../../components/InstallmentSchedule.jsx';
@@ -14,6 +15,7 @@ import { formatDisplayDate } from '../../lib/dates.js';
 import { PLAN_STATUSES } from '../../lib/planStatuses.js';
 import { ServiceError } from '../../services/http.js';
 import { getAdminPlans } from '../../services/getAdminPlans.js';
+import { idNumber, sortByValue } from '../../lib/tableSort.js';
 import { planTotals } from '../../lib/planTotals.js';
 import { getLayawayPlan } from '../../services/getLayawayPlan.js';
 import {
@@ -26,7 +28,9 @@ import '../../components/Checkout.css';
 
 const FILTERS = [
   { id: 'all', label: 'All' },
-  ...Object.entries(PLAN_STATUSES).map(([id, { label }]) => ({ id, label })),
+  ...Object.entries(PLAN_STATUSES)
+    .filter(([id]) => id !== 'active')
+    .map(([id, { label }]) => ({ id, label })),
 ];
 
 function peso(value) {
@@ -61,7 +65,7 @@ export default function Orders() {
   const [cancelErrors, setCancelErrors] = useState({});
   const admin = isAdminRole();
 
-  async function loadDetail(plan) {
+  const loadDetail = useCallback(async (plan) => {
     try {
       return await withDetail(plan);
     } catch (err) {
@@ -72,7 +76,7 @@ export default function Orders() {
       );
       return null;
     }
-  }
+  }, []);
 
   function refreshPlans(activeId = null) {
     return getAdminPlans()
@@ -135,20 +139,94 @@ export default function Orders() {
       .finally(() => {
         setLoading(false);
       });
-  }, [setSearchParams]);
+  }, [setSearchParams, loadDetail]);
 
-  const rows = plans.filter(
-    (plan) => filter === 'all' || plan.status === filter,
+  const rows = useMemo(
+    () =>
+      plans.filter(
+        (plan) =>
+          filter === 'all' ||
+          plan.status === filter ||
+          (filter === 'on_track' && plan.status === 'active'),
+      ),
+    [plans, filter],
   );
 
-  async function handleView(plan) {
-    const requestId = ++viewRequest.current;
-    const detailed = await loadDetail(plan);
-    if (detailed && requestId === viewRequest.current) {
-      setError(null);
-      setActive(detailed);
-    }
-  }
+  const handleView = useCallback(
+    async (plan) => {
+      const requestId = ++viewRequest.current;
+      const detailed = await loadDetail(plan);
+      if (detailed && requestId === viewRequest.current) {
+        setError(null);
+        setActive(detailed);
+      }
+    },
+    [loadDetail],
+  );
+
+  const columns = useMemo(
+    () => [
+      {
+        id: 'order',
+        header: 'Order',
+        accessorFn: (plan) => String(plan.id),
+        sortingFn: sortByValue((plan) => idNumber(plan.id)),
+        cell: ({ row }) => <b>{row.original.id}</b>,
+      },
+      {
+        id: 'customer',
+        header: 'Customer',
+        accessorFn: (plan) => plan.customer_name,
+        cell: ({ row }) => row.original.customer_name,
+      },
+      {
+        id: 'item',
+        header: 'Item',
+        accessorFn: (plan) => plan.item_name,
+        cell: ({ row }) => row.original.item_name,
+      },
+      {
+        id: 'total',
+        header: 'Total',
+        accessorFn: (plan) => peso(plan.total_price),
+        sortingFn: sortByValue((plan) => Number(plan.total_price)),
+        cell: ({ row }) => peso(row.original.total_price),
+      },
+      {
+        id: 'next_due',
+        header: 'Next Due',
+        accessorFn: (plan) => plan.next_due || undefined,
+        filterFn: 'includesString',
+        sortUndefined: 'last',
+        sortingFn: sortByValue((plan) => plan.next_due_date),
+        cell: ({ row }) => row.original.next_due,
+      },
+      {
+        id: 'plan_status',
+        header: 'Plan Status',
+        accessorFn: (plan) => PLAN_STATUSES[plan.status]?.label ?? plan.status,
+        cell: ({ row }) => <PlanStatusBadge status={row.original.status} />,
+      },
+      {
+        id: 'reservation_status',
+        header: 'Reservation Status',
+        accessorFn: (plan) => RESERVATION_LABELS[plan.reservation_status] ?? '',
+        cell: ({ row }) => <ReservationBadge status={row.original.reservation_status} />,
+      },
+      {
+        id: 'actions',
+        header: ' ',
+        enableSorting: false,
+        enableColumnFilter: false,
+        cell: ({ row }) => (
+          <Button variant="outline" size="sm" onClick={() => handleView(row.original)}>
+            View
+          </Button>
+        ),
+      },
+    ],
+    [handleView],
+  );
 
   async function handleRetry() {
     try {
@@ -235,48 +313,7 @@ export default function Orders() {
             <OrdersTableSkeleton />
           </Skeleton>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Order</th>
-                <th>Customer</th>
-                <th>Item</th>
-                <th>Total</th>
-                <th>Next Due</th>
-                <th>Plan Status</th>
-                <th>Reservation Status</th>
-                <th> </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((plan) => (
-                <tr key={plan.id}>
-                  <td>
-                    <b>{plan.id}</b>
-                  </td>
-                  <td>{plan.customer_name}</td>
-                  <td>{plan.item_name}</td>
-                  <td>{peso(plan.total_price)}</td>
-                  <td>{plan.next_due}</td>
-                  <td>
-                    <PlanStatusBadge status={plan.status} />
-                  </td>
-                  <td>
-                    <ReservationBadge status={plan.reservation_status} />
-                  </td>
-                  <td>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleView(plan)}
-                    >
-                      View
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DataTable columns={columns} data={rows} getRowId={(plan) => String(plan.id)} />
         )}
       </div>
       {active ? (

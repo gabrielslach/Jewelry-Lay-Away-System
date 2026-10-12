@@ -44,7 +44,7 @@ describe('PendingPayments', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByText('Sample Client')).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Order' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /^Order/ })).toBeInTheDocument();
     expect(screen.getByText('#LA-1001')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Confirm' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Reject' })).not.toBeInTheDocument();
@@ -93,5 +93,39 @@ describe('PendingPayments', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
     expect(list).toHaveBeenCalledTimes(2);
+  });
+
+  it('sorts by the expected amount number rather than its text', async () => {
+    const payment = (id, plan, amount) => ({
+      id,
+      kind: 'down_payment',
+      plan_id: plan,
+      customer_name: `Client ${id}`,
+      amount,
+      amount_submitted: amount,
+      amount_mismatch: 0,
+      reference_number: `BT-${id}`,
+      paid_on: '2026-10-09',
+    });
+    vi.spyOn(adminPayments, 'getAdminPendingPayments').mockResolvedValue([
+      payment(1, 'LA-1', '9000'),
+      payment(2, 'LA-2', '10000'),
+    ]);
+    render(
+      <MemoryRouter initialEntries={['/admin/payments']}>
+        <App />
+      </MemoryRouter>,
+    );
+    await screen.findByText('Client 1');
+    fireEvent.click(
+      within(
+        screen.getByRole('columnheader', { name: /^Amount Expected/ }),
+      ).getByRole('button'),
+    );
+    const customers = screen
+      .getAllByRole('row')
+      .slice(1)
+      .map((row) => within(row).getAllByRole('cell')[1].textContent);
+    expect(customers).toEqual(['Client 1', 'Client 2']);
   });
 });

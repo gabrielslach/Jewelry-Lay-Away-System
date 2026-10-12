@@ -66,6 +66,7 @@ describe('getAdminPlans', () => {
       item_name: 'Solitaire Halo Ring',
       status: 'defaulted',
       next_due: 'Oct 25',
+      next_due_date: '2026-10-25T00:00:00.000Z',
       reservation_status: 'reserved',
       reservation_error: null,
       installments: [],
@@ -74,12 +75,14 @@ describe('getAdminPlans', () => {
       id: 9,
       status: 'overdue',
       next_due: 'Sep 15',
+      next_due_date: '2026-09-15',
       installments: [{ id: 'i1', status: 'overdue' }],
     });
     expect(plans[2]).toMatchObject({
       id: 10,
       status: 'on_track',
       next_due: 'Nov 1',
+      next_due_date: '2026-11-01T12:00:00.000Z',
       installments: [],
     });
   });

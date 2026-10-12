@@ -77,6 +77,38 @@ describe('admin orders', () => {
     ).toBeInTheDocument();
   });
 
+  it('lists active plans under All and On Track without an Active filter', async () => {
+    vi.spyOn(getAdminPlansModule, 'getAdminPlans').mockResolvedValue([
+      {
+        id: 'LA-72',
+        customer_name: 'Ana',
+        item_name: 'Ring',
+        status: 'active',
+      },
+      {
+        id: 'LA-73',
+        customer_name: 'Ben',
+        item_name: 'Chain',
+        status: 'overdue',
+      },
+    ]);
+    render(
+      <MemoryRouter initialEntries={['/admin/orders']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('LA-72')).toBeInTheDocument();
+    expect(screen.getByText('Active')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Show Active orders' }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Show On Track orders' }),
+    );
+    expect(screen.getByText('LA-72')).toBeInTheDocument();
+    expect(screen.queryByText('LA-73')).not.toBeInTheDocument();
+  });
+
   it('offers a filter per plan status', async () => {
     render(
       <MemoryRouter initialEntries={['/admin/orders']}>
@@ -138,7 +170,7 @@ describe('admin orders', () => {
     );
     await screen.findByText('LA-7');
     expect(
-      screen.getByRole('columnheader', { name: 'Total' }),
+      screen.getByRole('columnheader', { name: /^Total/ }),
     ).toBeInTheDocument();
     const table = within(screen.getByRole('table'));
     expect(table.getByText('Defaulted')).toHaveClass('badge-warn');
@@ -282,5 +314,36 @@ describe('admin orders', () => {
     expect(
       within(await screen.findByRole('dialog')).getAllByText('₱444').length,
     ).toBeGreaterThan(0);
+  });
+
+  it('sorts order ids by number and next due by date with empty dates last', async () => {
+    vi.spyOn(getAdminPlansModule, 'getAdminPlans').mockResolvedValue([
+      { id: 'LA-10', customer_name: 'Ana', next_due: 'Nov 1', next_due_date: '2026-11-01' },
+      { id: 'LA-7', customer_name: 'Ben', next_due: '', next_due_date: null },
+      { id: 'LA-9', customer_name: 'Cy', next_due: 'Jan 5', next_due_date: '2027-01-05' },
+      { id: 'LA-8', customer_name: 'Di', next_due: 'Oct 2', next_due_date: '2026-10-02' },
+    ]);
+    render(
+      <MemoryRouter initialEntries={['/admin/orders']}>
+        <App />
+      </MemoryRouter>,
+    );
+    await screen.findByText('LA-10');
+    const orderIds = () =>
+      screen
+        .getAllByRole('row')
+        .slice(1)
+        .map((row) => within(row).getAllByRole('cell')[0].textContent);
+
+    fireEvent.click(
+      within(screen.getByRole('columnheader', { name: /^Order/ })).getByRole('button'),
+    );
+    expect(orderIds()).toEqual(['LA-7', 'LA-8', 'LA-9', 'LA-10']);
+
+    const nextDue = within(screen.getByRole('columnheader', { name: /^Next Due/ }));
+    fireEvent.click(nextDue.getByRole('button'));
+    expect(orderIds()).toEqual(['LA-8', 'LA-10', 'LA-9', 'LA-7']);
+    fireEvent.click(nextDue.getByRole('button'));
+    expect(orderIds()).toEqual(['LA-9', 'LA-10', 'LA-8', 'LA-7']);
   });
 });

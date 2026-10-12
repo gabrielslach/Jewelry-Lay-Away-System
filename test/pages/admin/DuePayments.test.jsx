@@ -83,4 +83,37 @@ describe('DuePayments', () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'View' })).not.toBeInTheDocument();
   });
+
+  it('sorts by the numeric amount when the header is clicked', async () => {
+    const row = (id, name, amount) => ({
+      installment_id: id,
+      plan_id: `LA-${id}`,
+      term_number: 1,
+      due_date: '2026-10-10',
+      amount,
+      days_overdue: 0,
+      due_today: true,
+      customer_name: name,
+      customer_email: `${id}@example.com`,
+      customer_phone: '1',
+    });
+    vi.spyOn(adminPayments, 'getAdminDuePayments').mockResolvedValue({
+      items: [row('a', 'Big Client', '10000'), row('b', 'Small Client', '900')],
+    });
+    render(
+      <MemoryRouter initialEntries={['/admin/payments/due']}>
+        <App />
+      </MemoryRouter>,
+    );
+    await screen.findByText('Big Client');
+    fireEvent.click(
+      within(screen.getByRole('columnheader', { name: /^Amount/ })).getByRole('button'),
+    );
+    const names = screen
+      .getAllByRole('row')
+      .slice(1)
+      .map((r) => within(r).getAllByRole('cell')[1].textContent);
+    expect(names[0]).toContain('Small Client');
+    expect(names[1]).toContain('Big Client');
+  });
 });

@@ -8,7 +8,7 @@ import Skeleton, { Bone } from './Skeleton.jsx';
 import { useToast } from './useToast.js';
 import { formatDisplayDate } from '../lib/dates.js';
 import { formatPesoDecimals } from '../lib/money.js';
-import { paymentKindLabel, paymentTermLabel } from '../lib/paymentLabels.js';
+import { paymentKindLabel, paymentDueDateLabel } from '../lib/paymentLabels.js';
 import {
   confirmAdminPayment,
   fetchPaymentProof,
@@ -365,8 +365,8 @@ export default function PaymentReviewModal({
           <SpecItem label="Kind">
             <b>{paymentKindLabel(payment)}</b>
           </SpecItem>
-          <SpecItem label="Term / due">
-            <b>{paymentTermLabel(payment)}</b>
+          <SpecItem label="Due date">
+            <b>{paymentDueDateLabel(payment)}</b>
           </SpecItem>
           <SpecItem label="Reference number">
             <b>{payment.reference_number}</b>

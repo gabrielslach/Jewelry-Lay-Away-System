@@ -122,6 +122,11 @@
   color: var(--text-soft);
 }
 
+.badge + .table-sub,
+.table-sub + .table-sub {
+  margin-top: 4px;
+}
+
 .checkbox-row {
   display: flex;
   gap: 10px;

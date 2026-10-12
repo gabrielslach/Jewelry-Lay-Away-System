@@ -6,9 +6,9 @@ export function paymentKindLabel(payment) {
     : `Payment ${payment.term_number}`;
 }
 
-export function paymentTermLabel(payment) {
+export function paymentDueDateLabel(payment) {
   if (payment.kind !== 'installment') {
     return '—';
   }
-  return `${payment.term_number ? `Payment ${payment.term_number}` : ''} ${formatDisplayDate(payment.due_date)}`;
+  return formatDisplayDate(payment.due_date);
 }

@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Button from '../../components/Button.jsx';
+import DataTable from '../../components/DataTable.jsx';
 import ErrorMessage from '../../components/ErrorMessage.jsx';
 import Modal from '../../components/Modal.jsx';
 import { addDaysIso, formatDisplayDate, todayIsoLocal } from '../../lib/dates.js';
 import { formatPesoDecimals } from '../../lib/money.js';
+import { idNumber, sortByValue } from '../../lib/tableSort.js';
 import { getAdminDuePayments } from '../../services/adminPayments.js';
 import { ServiceError } from '../../services/http.js';
 import '../../components/PieceDetail.css';
@@ -57,13 +59,82 @@ export default function DuePayments() {
       });
   }, []);
 
-  const items = data?.items ?? [];
-  const filtered =
-    filter === 'due_today'
-      ? items.filter((row) => row.due_today)
-      : filter === 'overdue'
-        ? items.filter((row) => row.days_overdue > 0)
-        : items;
+  const items = useMemo(() => data?.items ?? [], [data]);
+  const filtered = useMemo(
+    () =>
+      filter === 'due_today'
+        ? items.filter((row) => row.due_today)
+        : filter === 'overdue'
+          ? items.filter((row) => row.days_overdue > 0)
+          : items,
+    [items, filter],
+  );
+
+  const columns = useMemo(
+    () => [
+      {
+        id: 'order',
+        header: 'Order',
+        accessorFn: (row) => `#${row.plan_id}`,
+        sortingFn: sortByValue((row) => idNumber(row.plan_id)),
+        cell: ({ row }) => `#${row.original.plan_id}`,
+      },
+      {
+        id: 'customer',
+        header: 'Customer',
+        accessorFn: (row) =>
+          [row.customer_name, row.customer_email, row.customer_phone].join(' '),
+        cell: ({ row }) => (
+          <>
+            <div>{row.original.customer_name}</div>
+            <div className="table-sub">{row.original.customer_email}</div>
+            <div className="table-sub">{row.original.customer_phone}</div>
+          </>
+        ),
+      },
+      {
+        id: 'term',
+        header: 'Term',
+        accessorFn: (row) => `Payment ${row.term_number}`,
+        sortingFn: sortByValue((row) => Number(row.term_number)),
+        cell: ({ row }) => `Payment ${row.original.term_number}`,
+      },
+      {
+        id: 'amount',
+        header: 'Amount',
+        accessorFn: (row) => formatPesoDecimals(row.amount),
+        sortingFn: sortByValue((row) => Number(row.amount)),
+        cell: ({ row }) => formatPesoDecimals(row.original.amount),
+      },
+      {
+        id: 'due_date',
+        header: 'Due date',
+        accessorFn: (row) => formatDisplayDate(row.due_date),
+        sortingFn: sortByValue((row) => row.due_date),
+        cell: ({ row }) => formatDisplayDate(row.original.due_date),
+      },
+      {
+        id: 'status',
+        header: 'Status',
+        accessorFn: (row) =>
+          row.due_today ? 'Due today' : row.days_overdue > 0 ? `${row.days_overdue} days overdue` : '',
+        sortingFn: sortByValue((row) => Number(row.days_overdue) || 0),
+        cell: ({ row }) => statusCell(row.original),
+      },
+      {
+        id: 'view',
+        header: 'View',
+        enableSorting: false,
+        enableColumnFilter: false,
+        cell: ({ row }) => (
+          <Button variant="outline" size="sm" onClick={() => setViewRow(row.original)}>
+            View
+          </Button>
+        ),
+      },
+    ],
+    [],
+  );
 
   const dueCount = items.filter((row) => row.due_today).length;
   const overdueCount = items.filter((row) => row.days_overdue > 0).length;
@@ -94,40 +165,11 @@ export default function DuePayments() {
         ))}
       </div>
       <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Order</th>
-              <th>Customer</th>
-              <th>Term</th>
-              <th>Amount</th>
-              <th>Due date</th>
-              <th>Status</th>
-              <th>View</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((row) => (
-              <tr key={`${row.plan_id}-${row.installment_id}`}>
-                <td>#{row.plan_id}</td>
-                <td>
-                  <div>{row.customer_name}</div>
-                  <div className="table-sub">{row.customer_email}</div>
-                  <div className="table-sub">{row.customer_phone}</div>
-                </td>
-                <td>Payment {row.term_number}</td>
-                <td>{formatPesoDecimals(row.amount)}</td>
-                <td>{formatDisplayDate(row.due_date)}</td>
-                <td>{statusCell(row)}</td>
-                <td>
-                  <Button variant="outline" size="sm" onClick={() => setViewRow(row)}>
-                    View
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataTable
+          columns={columns}
+          data={filtered}
+          getRowId={(row) => `${row.plan_id}-${row.installment_id}`}
+        />
       </div>
       {!filtered.length ? <p className="empty-copy">Nothing due or overdue.</p> : null}
 

@@ -13,6 +13,7 @@ function presentPlan(row) {
   return {
     ...row,
     next_due: formatDate(row.next_due_date ?? row.next_due, NEXT_DUE),
+    next_due_date: row.next_due_date ?? row.next_due ?? null,
     installments: row.installments ?? [],
   };
 }

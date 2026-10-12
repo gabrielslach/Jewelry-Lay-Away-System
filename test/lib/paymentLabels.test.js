@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { formatDisplayDate } from '../../src/lib/dates.js';
 import {
   paymentKindLabel,
-  paymentTermLabel,
+  paymentDueDateLabel,
 } from '../../src/lib/paymentLabels.js';
 
 describe('paymentLabels', () => {
@@ -12,14 +13,14 @@ describe('paymentLabels', () => {
     );
   });
 
-  it('shows a dash for down payments and the term for installments', () => {
-    expect(paymentTermLabel({ kind: 'down_payment' })).toBe('—');
+  it('shows a dash for down payments and the due date for installments', () => {
+    expect(paymentDueDateLabel({ kind: 'down_payment' })).toBe('—');
     expect(
-      paymentTermLabel({
+      paymentDueDateLabel({
         kind: 'installment',
         term_number: 2,
         due_date: '2026-11-01',
       }),
-    ).toMatch(/^Payment 2 /);
+    ).toBe(formatDisplayDate('2026-11-01'));
   });
 });
