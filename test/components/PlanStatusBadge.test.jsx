@@ -5,6 +5,7 @@ import PlanStatusBadge from '../../src/components/PlanStatusBadge.jsx';
 describe('PlanStatusBadge', () => {
   it.each([
     ['on_track', 'On Track', 'badge-ok'],
+    ['active', 'Active', 'badge-ok'],
     ['overdue', 'Overdue', 'badge-warn'],
     ['completed', 'Completed', 'badge-info'],
     ['cancelled', 'Cancelled', 'badge-mute'],
@@ -14,8 +15,13 @@ describe('PlanStatusBadge', () => {
     expect(screen.getByText(label)).toHaveClass('badge', className);
   });
 
-  it('renders nothing for an unknown status', () => {
-    const { container } = render(<PlanStatusBadge status="weird" />);
+  it('falls back to a muted title-cased badge for an unknown status', () => {
+    render(<PlanStatusBadge status="on_hold" />);
+    expect(screen.getByText('On Hold')).toHaveClass('badge', 'badge-mute');
+  });
+
+  it('renders nothing without a status', () => {
+    const { container } = render(<PlanStatusBadge status={null} />);
     expect(container).toBeEmptyDOMElement();
   });
 });

@@ -20,7 +20,7 @@ const SETTLED = ['paid', 'submitted', 'awaiting_confirmation'];
 
 function planBadge(plan, waitingForStock) {
   if (waitingForStock) {
-    return { className: 'badge badge-warn', label: 'Waiting for stock' };
+    return { className: 'badge badge-amber', label: 'Waiting for stock' };
   }
   return plan.status === 'ok' || plan.status === 'on_track'
     ? { className: 'badge badge-ok', label: 'On Track' }

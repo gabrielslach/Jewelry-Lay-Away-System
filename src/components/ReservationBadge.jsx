@@ -13,7 +13,7 @@ export default function ReservationBadge({ status }) {
   return (
     <span
       className={
-        status === 'waiting_for_stock' ? 'badge badge-warn' : 'badge badge-ok'
+        status === 'waiting_for_stock' ? 'badge badge-amber' : 'badge badge-ok'
       }
     >
       {label}

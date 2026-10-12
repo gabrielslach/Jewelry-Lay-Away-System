@@ -99,6 +99,10 @@ describe('LayawayPlanCard', () => {
     renderCard({ ...basePlan, reservation_status: 'waiting_for_stock' });
     expand();
     expect(screen.getAllByText('Waiting for stock').length).toBeGreaterThan(0);
+    const badge = screen
+      .getAllByText('Waiting for stock')
+      .find((el) => el.classList.contains('badge'));
+    expect(badge).toHaveClass('badge-amber');
     expect(screen.queryByText('On Track')).not.toBeInTheDocument();
     expect(screen.getByText('Payment 1')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Pay' })).not.toBeInTheDocument();

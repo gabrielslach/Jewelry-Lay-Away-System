@@ -5,7 +5,7 @@ import ReservationBadge from '../../src/components/ReservationBadge.jsx';
 describe('ReservationBadge', () => {
   it('renders a label for known statuses', () => {
     render(<ReservationBadge status="waiting_for_stock" />);
-    expect(screen.getByText('Waiting for stock')).toHaveClass('badge-warn');
+    expect(screen.getByText('Waiting for stock')).toHaveClass('badge-amber');
   });
 
   it('renders nothing for unknown statuses', () => {
