@@ -72,6 +72,10 @@ export default function Login() {
             <Link to="/forgot-password">Forgot password?</Link>
           </p>
         </div>
+        <p className="auth-agreement">
+          By signing in, you agree to our <Link to="/terms">Terms and Conditions</Link> and{' '}
+          <Link to="/privacy">Privacy Policy</Link>.
+        </p>
         <Button variant="primary" type="submit">
           Sign in
         </Button>

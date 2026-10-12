@@ -42,10 +42,9 @@ describe('StorefrontLayout', () => {
     expect(
       screen.getByRole('navigation', { name: 'Storefront' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Start a Lay-Away' })).toHaveAttribute(
-      'href',
-      '/collections',
-    );
+    expect(
+      screen.getByRole('link', { name: 'Start a Lay-Away' }),
+    ).toHaveAttribute('href', '/collections');
     expect(screen.getByRole('link', { name: 'Start a Lay-Away' })).toHaveClass(
       'btn',
       'btn-primary',
@@ -88,10 +87,9 @@ describe('StorefrontLayout', () => {
       'href',
       '/collections',
     );
-    expect(menu.getByRole('link', { name: 'How Lay-Away Works' })).toHaveAttribute(
-      'href',
-      '/#how',
-    );
+    expect(
+      menu.getByRole('link', { name: 'How Lay-Away Works' }),
+    ).toHaveAttribute('href', '/#how');
     expect(menu.getByRole('link', { name: 'Reviews' })).toHaveAttribute(
       'href',
       '/#reviews',
@@ -116,21 +114,30 @@ describe('StorefrontLayout', () => {
     expect(
       within(panel()).getByRole('link', { name: 'Sign in' }),
     ).toHaveAttribute('href', '/login');
-    expect(nav.queryByRole('link', { name: 'My Account' })).not.toBeInTheDocument();
+    expect(
+      nav.queryByRole('link', { name: 'My Account' }),
+    ).not.toBeInTheDocument();
   });
 
   it('shows My Account to /account in chrome and panel when signed in', async () => {
-    await loginCustomer({ email: 'client@sampleemail.com', password: 'password' });
+    await loginCustomer({
+      email: 'client@sampleemail.com',
+      password: 'password',
+    });
     renderLayout();
     openMenu();
     const nav = within(screen.getByRole('navigation', { name: 'Storefront' }));
     const accounts = nav.getAllByRole('link', { name: 'My Account' });
     expect(accounts).toHaveLength(2);
-    accounts.forEach((link) => expect(link).toHaveAttribute('href', '/account'));
+    accounts.forEach((link) =>
+      expect(link).toHaveAttribute('href', '/account'),
+    );
     expect(
       within(panel()).getByRole('link', { name: 'My Account' }),
     ).toHaveAttribute('href', '/account');
-    expect(nav.queryByRole('link', { name: 'Sign in' })).not.toBeInTheDocument();
+    expect(
+      nav.queryByRole('link', { name: 'Sign in' }),
+    ).not.toBeInTheDocument();
   });
 
   it('closes the menu when the panel Sign in is tapped', () => {
@@ -197,18 +204,15 @@ describe('StorefrontLayout', () => {
     );
 
     const footer = screen.getByRole('contentinfo');
-    expect(within(footer).getByRole('link', { name: 'Lay-Away Plans' })).toHaveAttribute(
-      'href',
-      '/#how',
-    );
-    expect(within(footer).getByRole('link', { name: 'Reviews' })).toHaveAttribute(
-      'href',
-      '/#reviews',
-    );
-    expect(within(footer).getAllByRole('link', { name: 'Contact Us' })[0]).toHaveAttribute(
-      'href',
-      '/#contact',
-    );
+    expect(
+      within(footer).getByRole('link', { name: 'Lay-Away Plans' }),
+    ).toHaveAttribute('href', '/#how');
+    expect(
+      within(footer).getByRole('link', { name: 'Reviews' }),
+    ).toHaveAttribute('href', '/#reviews');
+    expect(
+      within(footer).getAllByRole('link', { name: 'Contact Us' })[0],
+    ).toHaveAttribute('href', '/#contact');
   });
 
   it('scrolls hash targets into view', () => {
@@ -221,5 +225,16 @@ describe('StorefrontLayout', () => {
     } finally {
       Element.prototype.scrollIntoView = original;
     }
+  });
+
+  it('links the legal pages in the footer', () => {
+    renderLayout();
+    const legal = screen.getByRole('navigation', { name: 'Legal' });
+    expect(
+      within(legal).getByRole('link', { name: 'Terms and Conditions' }),
+    ).toHaveAttribute('href', '/terms');
+    expect(
+      within(legal).getByRole('link', { name: 'Privacy Policy' }),
+    ).toHaveAttribute('href', '/privacy');
   });
 });

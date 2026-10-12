@@ -16,6 +16,7 @@ export default function Register() {
   const from = returnPath(fromParam);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState(null);
@@ -36,7 +37,7 @@ export default function Register() {
       return;
     }
     try {
-      await registerCustomer({ name, email, password });
+      await registerCustomer({ name, email, phone, password });
       navigate(from, { replace: true });
     } catch (err) {
       setError(err instanceof ServiceError ? err.message : 'Unable to register.');
@@ -73,6 +74,17 @@ export default function Register() {
           />
         </div>
         <div className="form-row">
+          <label htmlFor="reg-phone">Phone</label>
+          <input
+            id="reg-phone"
+            type="tel"
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+            autoComplete="tel"
+            required
+          />
+        </div>
+        <div className="form-row">
           <label htmlFor="reg-password">Password</label>
           <input
             id="reg-password"
@@ -94,6 +106,10 @@ export default function Register() {
             required
           />
         </div>
+        <p className="auth-agreement">
+          By registering, you agree to our <Link to="/terms">Terms and Conditions</Link> and{' '}
+          <Link to="/privacy">Privacy Policy</Link>.
+        </p>
         <Button variant="primary" type="submit">
           Register
         </Button>

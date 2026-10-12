@@ -8,6 +8,8 @@ import Collections from './pages/Collections.jsx';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
 import PiecePage from './pages/PiecePage.jsx';
+import PrivacyPage from './pages/PrivacyPage.jsx';
+import TermsPage from './pages/TermsPage.jsx';
 import Register from './pages/Register.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
@@ -35,6 +37,8 @@ export default function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/account" element={<Account />} />
             <Route path="/account/notifications" element={<AccountNotifications />} />
           </Route>

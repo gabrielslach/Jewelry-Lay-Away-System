@@ -206,6 +206,10 @@ export default function StorefrontLayout() {
           </div>
         </div>
         <div className="footer-bottom">
+          <nav className="footer-legal" aria-label="Legal">
+            <Link to="/terms">Terms and Conditions</Link>
+            <Link to="/privacy">Privacy Policy</Link>
+          </nav>
           Sample data shown for demonstration purposes only. © 2026 Mine Credit
           (fictional).
         </div>
