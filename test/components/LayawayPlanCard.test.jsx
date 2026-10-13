@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import LayawayPlanCard from '../../src/components/LayawayPlanCard.jsx';
 import { ToastProvider } from '../../src/components/ToastProvider.jsx';
-import { addDaysIso, todayIsoLocal } from '../../src/lib/dates.js';
+import { addDaysIso, formatDisplayDate, todayIsoLocal } from '../../src/lib/dates.js';
 import * as bankAccounts from '../../src/services/getBankAccounts.js';
 
 function daysFromToday(days) {
@@ -58,7 +58,7 @@ describe('LayawayPlanCard', () => {
     expect(within(header).getByText('On Track')).toBeInTheDocument();
     expect(within(header).getByText('Next due Oct 25')).toBeInTheDocument();
     expect(within(header).getByText('0 of 2 paid')).toBeInTheDocument();
-    expect(screen.getByRole('progressbar', { name: 'Paid ₱1,000.00 of ₱3,000.00' })).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: '0 of 2 installments paid' })).toBeInTheDocument();
     expect(screen.queryByText('Payment schedule')).not.toBeVisible();
   });
 
@@ -71,7 +71,7 @@ describe('LayawayPlanCard', () => {
     );
     expect(screen.getByText(/Order #LA-9/)).toBeVisible();
     expect(screen.getByText('Total to be paid')).toBeVisible();
-    expect(screen.getByText('Paid so far as of Oct 12, 2026')).toBeVisible();
+    expect(screen.getByText(`Paid so far as of ${formatDisplayDate(todayIsoLocal())}`)).toBeVisible();
     expect(screen.getByText('Down payment', { selector: 'b' })).toBeInTheDocument();
     expect(screen.getByText('Payment 1')).toBeVisible();
     expect(screen.getByText('Payment 2')).toBeVisible();
@@ -148,15 +148,35 @@ describe('LayawayPlanCard', () => {
     it('offers Pay ahead on the next future row and a note on the locked one', () => {
       renderCard({ ...basePlan, installments: [paidFirst, ...later] });
       expand();
-      expect(screen.getAllByRole('button', { name: 'Pay ahead' })).toHaveLength(1);
+      const buttons = screen.getAllByRole('button', { name: 'Pay ahead' });
+      expect(buttons[0]).toBeEnabled();
+      expect(buttons[1]).toBeDisabled();
       expect(screen.getByText('Pay Payment 2 first')).toBeInTheDocument();
     });
 
-    it('does not offer Pay ahead while an earlier payment is due', () => {
+    it('disables every later Pay button, with a hint on each, while an earlier payment is open', () => {
       renderCard({ ...basePlan, installments: [basePlan.installments[0], ...later] });
       expand();
-      expect(screen.queryByRole('button', { name: 'Pay ahead' })).not.toBeInTheDocument();
-      expect(screen.getByText('Pay Payment 1 first')).toBeInTheDocument();
+      const locked = screen.getAllByRole('button', { name: 'Pay ahead' });
+      expect(locked).toHaveLength(2);
+      locked.forEach((button) => {
+        expect(button).toBeDisabled();
+        expect(button).toHaveAccessibleDescription('Pay Payment 1 first');
+        expect(button.parentElement).toHaveAttribute('title', 'Pay Payment 1 first');
+      });
+      expect(screen.getByRole('button', { name: 'Pay' })).toBeEnabled();
+      expect(screen.getAllByText('Pay Payment 1 first')).toHaveLength(2);
+    });
+
+    it('does not let an unpaid down payment lock installments', () => {
+      renderCard({
+        ...basePlan,
+        down_payment_status: 'pending',
+        installments: [basePlan.installments[0]],
+      });
+      expand();
+      expect(screen.getAllByRole('button', { name: 'Pay' })[1]).toBeEnabled();
+      expect(screen.queryByText(/first/)).not.toBeInTheDocument();
     });
 
     it('does not offer Pay ahead while the down payment is unpaid', () => {
@@ -173,12 +193,88 @@ describe('LayawayPlanCard', () => {
       vi.spyOn(bankAccounts, 'getBankAccounts').mockResolvedValue([]);
       renderCard({ ...basePlan, installments: [paidFirst, ...later] });
       expand();
-      fireEvent.click(screen.getByRole('button', { name: 'Pay ahead' }));
+      fireEvent.click(screen.getAllByRole('button', { name: 'Pay ahead' })[0]);
       const dialog = await screen.findByRole('dialog');
       expect(dialog).toHaveAccessibleName('Pay Payment 2 early');
       expect(within(dialog).getByText(/isn't due until/)).toBeInTheDocument();
       fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
-      expect(screen.getByRole('button', { name: 'Pay ahead' })).toHaveFocus();
+      expect(screen.getAllByRole('button', { name: 'Pay ahead' })[0]).toHaveFocus();
+    });
+  });
+
+  it('shows installments paid, not money paid, in the progress bar', () => {
+    const installments = Array.from({ length: 6 }, (_, index) => ({
+      id: `LA-9-i${index + 1}`,
+      amount: '1000.00',
+      due_date: daysFromToday(index * 7 + 7),
+      status: 'pending',
+    }));
+    renderCard({ ...basePlan, down_payment_amount: 100000, installments });
+    expect(screen.getByRole('progressbar')).toHaveAccessibleName('0 of 6 installments paid');
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0');
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuemax', '6');
+  });
+
+  it('renders 0 of 0 installments paid with an empty bar', () => {
+    renderCard({ ...basePlan, installments: [] });
+    expect(screen.getByRole('progressbar')).toHaveAccessibleName('0 of 0 installments paid');
+  });
+
+  it('shows the due date on a rejected row and the reason in the warning note', () => {
+    const dueDate = daysFromToday(3);
+    renderCard({
+      ...basePlan,
+      installments: [
+        { ...basePlan.installments[0], due_date: dueDate, payment_status: 'rejected', rejection_reason: 'Blurry proof' },
+      ],
+    });
+    expand();
+    expect(screen.getByText(`Due ${formatDisplayDate(dueDate)}`)).toHaveClass('plan-row-meta');
+    expect(screen.getByText('Rejected: Blurry proof')).toHaveClass('plan-row-warn');
+  });
+
+  describe('read only (closed plans)', () => {
+    const closedPlan = (status) => ({
+      ...basePlan,
+      status,
+      installments: [
+        { id: 'LA-9-i1', amount: '1000.00', due_date: '2026-01-10', status: 'paid' },
+        { id: 'LA-9-i2', amount: '1000.00', due_date: '2026-02-10', status: 'overdue' },
+        { id: 'LA-9-i3', amount: '1000.00', due_date: '2026-03-10', payment_status: 'rejected' },
+        { id: 'LA-9-i4', amount: '1000.00', due_date: '2026-04-10', status: 'pending' },
+      ],
+    });
+
+    it('shows the plan status and only the paid count in the header', () => {
+      renderCard(closedPlan('defaulted'), { readOnly: true });
+      const header = screen.getByRole('button', { name: /Solitaire Halo Ring/ });
+      expect(within(header).getByText('Defaulted')).toHaveClass('badge-warn');
+      expect(within(header).getByText('1 of 4 paid')).toBeInTheDocument();
+      expect(within(header).queryByText(/Next due|No payment due|attention|On Track|Overdue/)).toBeNull();
+      expect(screen.getByRole('progressbar')).toHaveAccessibleName('1 of 4 installments paid');
+      expect(header).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('offers no actions and marks unpaid rows with the plan status, never Overdue', () => {
+      renderCard(closedPlan('cancelled'), { readOnly: true });
+      expand();
+      expect(screen.queryByRole('button', { name: /Pay|Submit proof/ })).not.toBeInTheDocument();
+      expect(screen.queryByText(/first$/)).not.toBeInTheDocument();
+      expect(screen.queryByText('Overdue')).not.toBeInTheDocument();
+      expect(screen.queryByText(/Grace period/)).not.toBeInTheDocument();
+      const body = document.getElementById('plan-LA-9-details');
+      expect(within(body).getAllByText('Cancelled')).toHaveLength(3);
+      expect(within(body).getAllByText('Cancelled')[0]).toHaveClass('badge-mute');
+      expect(within(body).getAllByText('Paid')).toHaveLength(2);
+      expect(within(body).getByText(formatDisplayDate('2026-02-10'))).toBeInTheDocument();
+      expect(within(body).queryByText(/^Due /)).not.toBeInTheDocument();
+    });
+
+    it('marks a pending down payment as defaulted without a button', () => {
+      renderCard({ ...closedPlan('defaulted'), down_payment_status: 'pending' }, { readOnly: true });
+      expand();
+      expect(screen.getAllByText('Defaulted')).toHaveLength(5);
+      expect(screen.queryByRole('button', { name: 'Pay' })).not.toBeInTheDocument();
     });
   });
 

@@ -1,3 +1,4 @@
+import { planStatusDisplay } from './planStatuses.js';
 import { addDaysIso, formatDisplayDate, isSameCalendarDay, todayIsoLocal } from './dates.js';
 
 export function downPaymentRowState(plan) {
@@ -56,6 +57,7 @@ export function installmentRowState(row, { gracePeriodDays, today = todayIsoLoca
       key: 'rejected',
       badge: 'Rejected',
       badgeClass: 'badge badge-warn',
+      dateLabel: `Due ${formatDisplayDate(dueDate)}`,
       note: row.rejection_reason ? `Rejected: ${row.rejection_reason}` : 'Rejected',
       showForm: true,
       payLabel: 'Pay again',
@@ -96,4 +98,12 @@ export function installmentRowState(row, { gracePeriodDays, today = todayIsoLoca
     showForm: advanceEligible,
     payLabel: 'Pay ahead',
   };
+}
+
+export function closedRowState(state, planStatus, dateLabel) {
+  if (state.key === 'paid' || state.key === 'awaiting') {
+    return state;
+  }
+  const { label, className } = planStatusDisplay(planStatus);
+  return { key: 'closed', badge: label, badgeClass: `badge ${className}`, dateLabel, showForm: false };
 }

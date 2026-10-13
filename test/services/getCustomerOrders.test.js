@@ -35,4 +35,12 @@ describe('getCustomerOrders', () => {
       completed_on: 'Jul 2026',
     });
   });
+
+  it('groups cancelled and defaulted plans as closed, keeping their status', async () => {
+    await loginCustomer({ email: 'client@sampleemail.com', password: 'password' });
+    const orders = await getCustomerOrders();
+    expect(orders.closed.map((row) => [row.id, row.status])).toEqual([[988, 'cancelled']]);
+    expect(orders.active.some((row) => row.id === 988)).toBe(false);
+    expect(orders.completed.some((row) => row.id === 988)).toBe(false);
+  });
 });

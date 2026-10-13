@@ -55,4 +55,45 @@ describe('InstallmentSchedule', () => {
     expect(screen.getByText('Rejected')).toBeInTheDocument();
     expect(screen.queryByText(/^Rejected:/)).not.toBeInTheDocument();
   });
+
+  it('shows the closed badge with the due date on unpaid rows of a defaulted plan', () => {
+    render(
+      <InstallmentSchedule
+        planStatus="defaulted"
+        installments={[
+          { id: 1, term_number: 1, amount: 1000, status: 'paid' },
+          { id: 2, term_number: 2, amount: 1000, status: 'overdue', due_date: '2026-01-15' },
+          { id: 3, term_number: 3, amount: 1000, status: 'pending', due_date: '2026-12-15' },
+          { id: 4, term_number: 4, amount: 1000, status: 'pending', payment_status: 'submitted' },
+          {
+            id: 5,
+            term_number: 5,
+            amount: 1000,
+            status: 'pending',
+            due_date: '2027-01-15',
+            payment_status: 'rejected',
+            rejection_reason: 'blurry',
+          },
+        ]}
+      />,
+    );
+    expect(screen.getAllByText('Defaulted')).toHaveLength(3);
+    expect(screen.getAllByText('Defaulted')[0]).toHaveClass('badge-warn');
+    expect(screen.getByText('Jan 15, 2026')).toBeInTheDocument();
+    expect(screen.getByText('Dec 15, 2026')).toBeInTheDocument();
+    expect(screen.getByText('Paid')).toBeInTheDocument();
+    expect(screen.getByText('Awaiting confirmation')).toBeInTheDocument();
+    expect(screen.queryByText('Overdue')).not.toBeInTheDocument();
+    expect(screen.getByText('Rejected: blurry')).toBeInTheDocument();
+  });
+
+  it('uses the muted Cancelled badge for cancelled plans', () => {
+    render(
+      <InstallmentSchedule
+        planStatus="cancelled"
+        installments={[{ id: 1, amount: 1000, status: 'pending', due_date: '2026-12-15' }]}
+      />,
+    );
+    expect(screen.getByText('Cancelled')).toHaveClass('badge-mute');
+  });
 });

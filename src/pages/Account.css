@@ -345,6 +345,17 @@
   min-height: 44px;
 }
 
+.plan-row > .plan-row-action-wrap {
+  grid-column: 1 / -1;
+  display: flex;
+}
+
+.plan-row-action-wrap > .plan-row-action {
+  flex: 1;
+  justify-content: center;
+  min-height: 44px;
+}
+
 .plan-row > .plan-row-meta {
   grid-column: 1 / -1;
 }

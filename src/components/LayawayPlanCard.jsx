@@ -5,9 +5,9 @@ import PlanMoneySummary from './PlanMoneySummary.jsx';
 import ProgressBar from './ProgressBar.jsx';
 import ScheduleRow from './ScheduleRow.jsx';
 import { formatDisplayDate } from '../lib/dates.js';
-import { formatPesoDecimals } from '../lib/money.js';
-import { planTotals } from '../lib/planTotals.js';
+import PlanStatusBadge from './PlanStatusBadge.jsx';
 import {
+  closedRowState,
   downPaymentRowState,
   effectiveStatus,
   installmentRowState,
@@ -27,7 +27,13 @@ function planBadge(plan, waitingForStock) {
     : { className: 'badge badge-warn', label: 'Overdue' };
 }
 
-export default function LayawayPlanCard({ plan, rejectionByPaymentId, onUpdated, focused = false }) {
+export default function LayawayPlanCard({
+  plan,
+  rejectionByPaymentId,
+  onUpdated,
+  focused = false,
+  readOnly = false,
+}) {
   const [openPay, setOpenPay] = useState(null);
   const [expanded, setExpanded] = useState(focused);
   const [highlighted, setHighlighted] = useState(focused);
@@ -39,7 +45,7 @@ export default function LayawayPlanCard({ plan, rejectionByPaymentId, onUpdated,
 
   useEffect(() => {
     if (!focused) return undefined;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     cardRef.current.scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' });
     headerRef.current.focus({ preventScroll: true });
     const timer = setTimeout(() => setHighlighted(false), HIGHLIGHT_MS);
@@ -60,33 +66,35 @@ export default function LayawayPlanCard({ plan, rejectionByPaymentId, onUpdated,
     [plan.installments, rejectionByPaymentId],
   );
 
-  const downState = downPaymentRowState(plan);
+  const closed = (state, dateLabel) => (readOnly ? closedRowState(state, plan.status, dateLabel) : state);
+  const downState = closed(downPaymentRowState(plan));
   const rows = [];
-  let blocked = waitingForStock || downState.key !== 'paid';
   let firstOpenTerm = null;
   installments.forEach((row, index) => {
     const termNumber = row.term_number ?? index + 1;
-    const state = installmentRowState(row, {
-      gracePeriodDays: graceDays,
-      advanceEligible: !blocked,
-    });
-    const lockedBy = state.key === 'pending' && !state.showForm ? firstOpenTerm : null;
+    const state = closed(
+      installmentRowState(row, {
+        gracePeriodDays: graceDays,
+        advanceEligible: downState.key === 'paid',
+      }),
+      formatDisplayDate(row.due_date),
+    );
+    const lockedBy = state.showForm ? firstOpenTerm : null;
     rows.push({ row, state, termNumber, lockedBy });
     if (!SETTLED.includes(effectiveStatus(row))) {
-      blocked = true;
       firstOpenTerm ??= termNumber;
     }
   });
-  const firstLocked = rows.find((item) => item.lockedBy && !waitingForStock);
 
-  const needsAttention = [downState, ...rows.map((item) => item.state)].filter(
-    (state) => state.key === 'rejected' || state.key === 'overdue',
-  ).length;
+  const needsAttention = readOnly
+    ? 0
+    : [downState, ...rows.map((item) => item.state)].filter(
+        (state) => state.key === 'rejected' || state.key === 'overdue',
+      ).length;
   const paidCount = installments.filter((row) => row.status === 'paid').length;
   const detailsId = `plan-${plan.id}-details`;
   const badge = planBadge(plan, waitingForStock);
-  const { amountPaid, totalPayable } = planTotals({ ...plan, installments });
-  const progressLabel = `Paid ${formatPesoDecimals(amountPaid)} of ${formatPesoDecimals(totalPayable)}`;
+  const progressLabel = `${paidCount} of ${installments.length} installments paid`;
 
   function toggle() {
     setExpanded((open) => !open);
@@ -152,7 +160,11 @@ export default function LayawayPlanCard({ plan, rejectionByPaymentId, onUpdated,
           </span>
         </span>
         <span className="plan-header-row plan-header-badges">
-          <span className={badge.className}>{badge.label}</span>
+          {readOnly ? (
+            <PlanStatusBadge status={plan.status} />
+          ) : (
+            <span className={badge.className}>{badge.label}</span>
+          )}
           {needsAttention ? (
             <span className="badge badge-warn">
               {needsAttention} {needsAttention === 1 ? 'payment needs' : 'payments need'} attention
@@ -160,7 +172,9 @@ export default function LayawayPlanCard({ plan, rejectionByPaymentId, onUpdated,
           ) : null}
         </span>
         <span className="plan-header-row plan-header-due">
-          <span>{plan.next_due ? `Next due ${plan.next_due}` : 'No payment due'}</span>
+          {readOnly ? null : (
+            <span>{plan.next_due ? `Next due ${plan.next_due}` : 'No payment due'}</span>
+          )}
           <span className="plan-header-count">
             {paidCount} of {installments.length} paid
           </span>
@@ -168,8 +182,8 @@ export default function LayawayPlanCard({ plan, rejectionByPaymentId, onUpdated,
       </button>
       <div className="plan-progress">
         <ProgressBar
-          value={amountPaid}
-          max={totalPayable}
+          value={paidCount}
+          max={installments.length}
           tone={plan.status === 'ok' || plan.status === 'on_track' ? 'ok' : 'warn'}
           label={progressLabel}
         />
@@ -196,7 +210,6 @@ export default function LayawayPlanCard({ plan, rejectionByPaymentId, onUpdated,
           <ScheduleRow title="Down payment" state={downState} amount={plan.down_payment_amount}>
             {downState.showForm && !waitingForStock ? (
               <Button
-                variant="outline"
                 size="sm"
                 className="plan-row-action"
                 onClick={() => setOpenPay({ kind: 'down_payment' })}
@@ -205,38 +218,47 @@ export default function LayawayPlanCard({ plan, rejectionByPaymentId, onUpdated,
               </Button>
             ) : null}
           </ScheduleRow>
-          {rows.map(({ row, state, termNumber }) => (
-            <ScheduleRow
-              key={row.id}
-              title={`Payment ${termNumber}`}
-              state={state}
-              amount={row.amount}
-            >
-              {state.showForm && !waitingForStock ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="plan-row-action"
-                  onClick={(event) => {
-                    payTriggerRef.current = event.currentTarget;
-                    setOpenPay({
-                      kind: 'installment',
-                      installmentId: row.id,
-                      termNumber,
-                      amount: row.amount,
-                      early: state.key === 'pending',
-                      dueDate: row.due_date,
-                    });
-                  }}
-                >
-                  {state.payLabel}
-                </Button>
-              ) : null}
-              {firstLocked?.row === row ? (
-                <span className="plan-row-meta">Pay Payment {firstLocked.lockedBy} first</span>
-              ) : null}
-            </ScheduleRow>
-          ))}
+          {rows.map(({ row, state, termNumber, lockedBy }) => {
+            const hintId = `${plan.id}-pay-hint-${termNumber}`;
+            const hint = `Pay Payment ${lockedBy} first`;
+            return (
+              <ScheduleRow
+                key={row.id}
+                title={`Payment ${termNumber}`}
+                state={state}
+                amount={row.amount}
+              >
+                {state.showForm && !waitingForStock ? (
+                  <span className="plan-row-action-wrap" title={lockedBy ? hint : undefined}>
+                    <Button
+                      size="sm"
+                      className="plan-row-action"
+                      disabled={Boolean(lockedBy)}
+                      aria-describedby={lockedBy ? hintId : undefined}
+                      onClick={(event) => {
+                        payTriggerRef.current = event.currentTarget;
+                        setOpenPay({
+                          kind: 'installment',
+                          installmentId: row.id,
+                          termNumber,
+                          amount: row.amount,
+                          early: state.key === 'pending',
+                          dueDate: row.due_date,
+                        });
+                      }}
+                    >
+                      {state.payLabel}
+                    </Button>
+                  </span>
+                ) : null}
+                {lockedBy && !waitingForStock ? (
+                  <span className="plan-row-meta" id={hintId}>
+                    {hint}
+                  </span>
+                ) : null}
+              </ScheduleRow>
+            );
+          })}
         </div>
       </div>
       {payModal}

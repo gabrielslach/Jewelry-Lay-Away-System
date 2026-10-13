@@ -44,6 +44,9 @@ export async function getCustomerOrders() {
     active: rows
       .filter((row) => row.status === 'on_track' || row.status === 'overdue')
       .map(presentOrder),
+    closed: rows
+      .filter((row) => row.status === 'cancelled' || row.status === 'defaulted')
+      .map(presentOrder),
     completed: rows.filter((row) => row.status === 'completed').map(presentOrder),
   };
 }

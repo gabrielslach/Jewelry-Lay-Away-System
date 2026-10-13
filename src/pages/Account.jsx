@@ -1,5 +1,6 @@
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { useCallback, useEffect, useState } from 'react';
+import { formatDisplayDate } from '../lib/dates.js';
 import ChangePasswordModal from '../components/ChangePasswordModal.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
 import LayawayPlanCard from '../components/LayawayPlanCard.jsx';
@@ -26,7 +27,7 @@ export default function Account() {
   const { customer } = useSession();
   const [searchParams] = useSearchParams();
   const focusedPlan = searchParams.get('plan');
-  const [orders, setOrders] = useState({ active: [], completed: [] });
+  const [orders, setOrders] = useState({ active: [], closed: [], completed: [] });
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [error, setError] = useState(null);
   const [rejections, setRejections] = useState({});
@@ -122,7 +123,7 @@ export default function Account() {
         </div>
         <div className="spec-item">
           <span>Member Since</span>
-          <b>{customer.member_since}</b>
+          <b>{formatDisplayDate(customer.created_at) || '—'}</b>
         </div>
       </div>
       <div className="account-actions">
@@ -169,6 +170,14 @@ export default function Account() {
       ) : (
         <p className="empty-copy">No completed lay-aways yet.</p>
       )}
+      {!loadingOrders && orders.closed.length ? (
+        <>
+          <h2>Closed Lay-Aways</h2>
+          {orders.closed.map((plan) => (
+            <LayawayPlanCard key={plan.id} plan={plan} readOnly />
+          ))}
+        </>
+      ) : null}
     </section>
   );
 }

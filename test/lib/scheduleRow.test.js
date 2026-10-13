@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   downPaymentRowState,
+  closedRowState,
   effectiveStatus,
   installmentRowState,
 } from '../../src/lib/scheduleRow.js';
@@ -92,5 +93,45 @@ describe('scheduleRow', () => {
       note: 'Submitted - waiting for our confirmation.',
       showForm: false,
     });
+  });
+});
+
+describe('closedRowState', () => {
+  const dueLater = { due_date: '2099-01-01', status: 'pending' };
+
+  it('keeps paid and awaiting rows unchanged', () => {
+    const paid = installmentRowState({ status: 'paid' });
+    expect(closedRowState(paid, 'defaulted', 'x')).toBe(paid);
+    const awaiting = installmentRowState({ ...dueLater, payment_status: 'submitted' });
+    expect(closedRowState(awaiting, 'cancelled', 'x')).toBe(awaiting);
+  });
+
+  it('shows the plan status badge on other rows', () => {
+    const state = closedRowState(installmentRowState(dueLater), 'defaulted', 'Jan 1, 2099');
+    expect(state).toMatchObject({
+      key: 'closed',
+      badge: 'Defaulted',
+      badgeClass: 'badge badge-warn',
+      dateLabel: 'Jan 1, 2099',
+      showForm: false,
+    });
+  });
+
+  it('falls back to a muted title-cased badge for unknown plan statuses', () => {
+    expect(closedRowState(installmentRowState(dueLater), 'on_hold', 'x')).toMatchObject({
+      badge: 'On Hold',
+      badgeClass: 'badge badge-mute',
+    });
+  });
+});
+
+describe('installmentRowState rejected', () => {
+  it('prefixes the due date label with Due', () => {
+    const state = installmentRowState({
+      status: 'pending',
+      due_date: '2026-12-15',
+      payment_status: 'rejected',
+    });
+    expect(state.dateLabel).toBe('Due Dec 15, 2026');
   });
 });
