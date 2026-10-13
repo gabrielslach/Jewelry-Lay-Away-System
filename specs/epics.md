@@ -831,3 +831,79 @@ Admin plan objects/rows (**AD-4**, **AD-5**) show `reservation_status` (`none`, 
 ### HP-3 Cancel a reservation
 
 **Admin only, manual, never automatic.** Cancel opens a confirmation requiring a `reason` and a tick for "termination handed off and agreed with the customer" (`handoff_confirmed: true`) — both required, `400` otherwise. Calls `POST /api/admin/plans/:id/reservation/cancel`. Holds never expire on their own, so this is the only way to close out a held piece.
+
+---
+
+## Epic 22 — Stakeholder review (Oct 13)
+
+Backend contract changes and defects from the Oct 13 stakeholder review. Contract is in `api-definition.md` v1.17. Ids are `SR-<area><n>`: **A** contract alignment (logic only), **B** customer, **C** admin, **D** new admin screens. Each id goes through its own ux → developer → ux → reviewer loop. Mock: `mock-server/` already enforces the new rules (Epic 4).
+
+### SR-0 Specs and mock API
+
+`api-definition.md` v1.17 and the mock cover: plan-detail auth, 409 sequencing and closed-plan rules, `/orders` fields (`cancelled`, `defaulted`, per-installment `payment_status`), dashboard fields, the single `accounting` role and staff caps. The mock seeds a cancelled and a defaulted order and a second staff account (`accounting@samplejewelry.example`, password `password`).
+
+### SR-A1 Plan detail needs a token
+
+`GET /api/layaway/plans/:id` needs `Authorization: Bearer`. `getLayawayPlan` uses `adminRequest`; its only callers are admin pages. Add a customer variant through `customerRequest` only when a storefront caller needs one. No visual change.
+
+### SR-A2 One `accounting` role
+
+`receivables`, `ledger` and `reporting` are replaced by `accounting`. Admins and accounting confirm and reject payments (Epic 20 **AP-2**). Copy: "Only admins and accounting can confirm or reject." Retry and Cancel reservation (Epic 21) stay admin-only: accounting sees them disabled.
+
+### SR-A3 Dashboard fields
+
+`active_layaways`, `overdue_payments` and `active_customers` can arrive as plain numbers or as `{ count }`. `getAdminDashboard` returns plain numbers either way. No visual change.
+
+### SR-A4 Payment 409 messages
+
+The manual-payment form shows the server's 409 text ("Pay the earlier installment first", "Plan is cancelled | defaulted | completed") instead of a generic error.
+
+### SR-B1 Cancelled and defaulted orders on My Account
+
+`GET /api/customers/orders` also returns `cancelled` and `defaulted`. My Account shows them in a read-only group using `LayawayPlanCard` with its status badge (`planStatuses.js`) and no Pay or Submit proof actions. On a **defaulted** plan the unpaid installments read **"Defaulted"**; on a **cancelled** plan they read **"Cancelled"** (never "Overdue").
+
+### SR-B2 Progress bar counts installments
+
+Plan card progress is paid installments / installment count so it matches "X of N paid". The down payment is not part of the bar.
+
+### SR-B3 Member since
+
+My Account reads `created_at` and formats it with `formatDisplayDate`.
+
+### SR-B4 Rejected installment due date
+
+A rejected row shows its `due_date` next to "Rejected: <reason>".
+
+### SR-B5 Pay sequencing
+
+Pay on installment N is disabled unless every earlier installment is `paid` or `awaiting_confirmation` (server rule: 409 "Pay the earlier installment first"). All pay actions are disabled on closed plans (`cancelled`, `defaulted`, `completed`). The down payment does not gate installments.
+
+### SR-B6 Action button style
+
+Pay and Submit proof use the filled `primary` `Button` variant, and `Button` gets a visible `:disabled` style.
+
+### SR-B7 Image sizes and zoom
+
+`thumb_url` for cards, gallery and the piece thumbnail strip; `web_url` for the main image on the piece page and detail. **Tap-to-zoom** on the piece page opens the original `url` full-screen in `Modal`; the original loads only on tap. Images below the fold use `loading="lazy"`.
+
+### SR-C1 Customers "Active Lay-Aways"
+
+The column reads `active_layaway_count`.
+
+### SR-C2 Orders list for closed plans
+
+A `none` reservation shows a "None" badge. Defaulted and other closed plans hide Next Due. Unpaid installments on a **defaulted** plan show **"Defaulted"**; on a **cancelled** plan **"Cancelled"**.
+
+### SR-C3 Settings copy
+
+The notify hint reads "…to include accounting accounts…".
+
+### SR-D1 Staff (`/admin/staff`, admin only)
+
+List from `GET /api/admin/staff`; create with `POST`; edit name, role, active state and reset password with `PATCH`. Caps: 2 admins and 3 accounting (active accounts). Disable creation, or the role option, when a cap is full, and show the API error on 403/409. Sidebar link in `AdminLayout` and a route in `App.jsx`. Reuse `DataTable`, `Modal`, `Button` and the `SettingsSwitch` pattern.
+
+### SR-D2 Bank accounts (`/admin/bank-accounts`, admin only, read-only)
+
+Read-only list from `GET /api/bank-accounts` (bank, account name, number, QR). Create and edit are not offered: the write endpoints are not documented (see `tech-debt.md`). Sidebar link and route as for SR-D1.
+
+- **Tests:** `test/` mirroring `src/`, Vitest + Testing Library.

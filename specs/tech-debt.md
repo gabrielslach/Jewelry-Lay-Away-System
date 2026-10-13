@@ -24,6 +24,10 @@ The Sep 26 update (v1.6–v1.9) turned several of our *invented* mocks into real
 | 10 | **Fixed server-side, no frontend change needed — but check the mock:** installment amounts on plan create now always sum exactly to `total_price` (only the last installment absorbs rounding). | Confirm `mock-server` does the same, so dev matches production rounding. | SF-7, MS-3 |
 | 11 | **New optional field:** `POST /api/customers/register` now accepts `phone` in the body. | `Register.jsx` doesn't collect it; `phone` will stay `null` for every real signup until the form is updated. | AU-1 |
 
+### Missing bank-account write endpoints (Oct 13)
+
+Only `GET /api/bank-accounts` (public) and an admin `POST /api/bank-accounts` (multipart) are documented. There is no documented edit, deactivate or delete endpoint, so the admin Bank accounts screen (Epic 22 **SR-D2**) is read-only and has no create or edit form. Ask the backend for `PATCH`/`DELETE /api/bank-accounts/:id` before adding them.
+
 ---
 
 ## Mocked to match the demo (or new storefront pages) — still open

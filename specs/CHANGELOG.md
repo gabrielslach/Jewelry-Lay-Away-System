@@ -2,6 +2,13 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-10-13 (stakeholder review)
+
+- `api-definition.md` updated to **v1.17**: plan-detail auth, manual-payment 409 rules (earlier installment, closed plan), `/orders` statuses `cancelled`/`defaulted` with per-installment `payment_status`/`rejection_reason`, dashboard fields, and the single `accounting` staff role (caps 2 admins / 3 accounting, Retry and Cancel reservation admin-only).
+- Added **Epic 22** (SR-A1 to SR-D2): contract alignment, customer fixes, admin fixes, Staff and read-only Bank accounts screens. Decisions: defaulted plans show unpaid installments as "Defaulted", cancelled as "Cancelled"; piece tap-to-zoom opens the original `url`.
+- `tech-debt.md`: bank-account create/edit endpoints are missing from the API definition.
+- `mock-server/` now matches v1.17 (auth, 409s, `accounting`, `/api/admin/staff`, cancelled and defaulted seed orders).
+
 ## 2026-10-10 (manual payments, notifications, password, admin ops)
 
 - `api-definition.md` updated to **v1.15** (fixed 15-day installment schedule, manual bank-transfer payments for both down payment and installments, customer and admin notifications, forgot/reset/change password, admin pending-payments queue and due/overdue list, held-piece reservation retry/cancel, `notify_accounting_roles` setting). See `specs/1010-updates.txt` for the plain-English summary and `specs/index-1010-updates.html` for the mock screens.

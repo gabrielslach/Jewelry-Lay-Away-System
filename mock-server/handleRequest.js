@@ -8,6 +8,7 @@ import {
   pushAdminNotification,
   rejectPayment,
 } from './epicRoutes.js';
+import { handleStaffRoutes } from './staffRoutes.js';
 import {
   createStore,
   hitRate,
@@ -59,7 +60,9 @@ function refreshPlan(store, plan) {
   plan.overdue_count = overdue;
   plan.pending_count = pending;
   plan.paid_count = paid;
-  if (!plan.completed) {
+  if (plan.closed_status) {
+    plan.next_due = null;
+  } else if (!plan.completed) {
     const next = plan.installments.find((i) => i.status === 'pending' || i.status === 'overdue');
     plan.next_due = next?.due_date ?? null;
     plan.list_status = plan.force_on_track
@@ -69,6 +72,10 @@ function refreshPlan(store, plan) {
         : 'ok';
   }
   return plan;
+}
+
+function isOpen(plan) {
+  return !plan.completed && !plan.closed_status;
 }
 
 function findPlan(store, id) {
@@ -101,10 +108,11 @@ function requireCustomer(store, headers) {
 
 function requireAdmin(store, headers) {
   const auth = readToken(store, headers.authorization || headers.Authorization);
-  if (!auth || auth.kind !== 'admin') {
+  const admin = auth?.kind === 'admin' && store.staff.find((member) => member.id === auth.id);
+  if (!admin || !admin.is_active) {
     return { error: json(401, { error: 'Unauthorized' }) };
   }
-  return { admin: store.admin };
+  return { admin };
 }
 
 function galleryItem(piece) {
@@ -143,7 +151,20 @@ function listStatusToContract(plan) {
   if (plan.completed) {
     return 'completed';
   }
+  if (plan.closed_status) {
+    return plan.closed_status;
+  }
   return plan.list_status === 'warn' ? 'overdue' : 'on_track';
+}
+
+function paymentStatus(row) {
+  if (row.status === 'paid') {
+    return 'paid';
+  }
+  if (row.status === 'submitted') {
+    return 'awaiting_confirmation';
+  }
+  return row.rejection_reason ? 'rejected' : 'unpaid';
 }
 
 function orderMoney(plan) {
@@ -183,7 +204,7 @@ function orderView(store, plan) {
     grace_period_days: plan.grace_period_days ?? store.settings.grace_period_days ?? null,
     currency: plan.currency,
     status: listStatusToContract(plan),
-    plan_status: plan.completed ? 'completed' : 'active',
+    plan_status: plan.completed || plan.closed_status ? listStatusToContract(plan) : 'active',
     completed_on: plan.completed ? asIso(plan.completed_on) : null,
     created_at: asIso(plan.created_at) ?? '2026-01-15T00:00:00.000Z',
     installments: plan.installments.map((row, index) => ({
@@ -192,6 +213,7 @@ function orderView(store, plan) {
       due_date: asIso(row.due_date),
       amount: row.amount,
       status: row.status,
+      payment_status: paymentStatus(row),
       paid_at: asIso(row.paid_at),
       rejection_reason: row.rejection_reason ?? null,
     })),
@@ -294,6 +316,7 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
       password: body.password,
       phone: body.phone || '',
       member_since: store.now().toLocaleString('en-US', { month: 'short', year: 'numeric' }),
+      created_at: store.now().toISOString(),
     };
     store.nextCustomerId += 1;
     store.customers.push(customer);
@@ -364,6 +387,9 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     if (!plan || plan.customer_id !== gate.customer.id) {
       return json(404, { error: 'Not found' });
     }
+    if (plan.completed || plan.closed_status) {
+      return json(409, { error: `Plan is ${listStatusToContract(plan)}` });
+    }
     const fieldError = paymentFieldErrors(body, store);
     if (fieldError) {
       const status = fieldError.includes('reference') ? 409 : 400;
@@ -380,18 +406,11 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     if (inst.status === 'submitted') {
       return json(409, { error: 'Payment already awaiting confirmation' });
     }
-    if (inst.status === 'pending' && inst.due_date > todayIso(store)) {
-      const earlierOpen = plan.installments.some(
-        (i) =>
-          i !== inst &&
-          i.status !== 'superseded' &&
-          i.due_date < inst.due_date &&
-          i.status !== 'paid' &&
-          i.status !== 'submitted',
-      );
-      if (earlierOpen) {
-        return json(409, { error: 'Earlier payments must be paid first' });
-      }
+    const earlierUnpaid = plan.installments
+      .slice(0, plan.installments.indexOf(inst))
+      .some((i) => i.status !== 'superseded' && i.status !== 'paid' && i.status !== 'submitted');
+    if (earlierUnpaid) {
+      return json(409, { error: 'Pay the earlier installment first' });
     }
     store.usedReferences.add(body.reference_number.trim());
     const payment = {
@@ -451,9 +470,16 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
 
   params = match(path, '/api/layaway/plans/:id');
   if (verb === 'GET' && params) {
+    const auth = readToken(store, headers.authorization || headers.Authorization);
+    if (!auth) {
+      return json(401, { error: 'Unauthorized' });
+    }
     const plan = findPlan(store, params.id);
     if (!plan) {
       return json(404, { error: 'Not found' });
+    }
+    if (auth.kind === 'customer' && plan.customer_id !== auth.id) {
+      return json(403, { error: 'Forbidden' });
     }
     refreshPlan(store, plan);
     return json(200, {
@@ -461,8 +487,8 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
       total_price: plan.total_price,
       currency: plan.currency,
       term_months: plan.term_months,
-      installments: plan.installments,
-      status: plan.completed ? 'completed' : plan.list_status,
+      installments: plan.installments.map((row) => ({ ...row, payment_status: paymentStatus(row) })),
+      status: plan.completed || plan.closed_status ? listStatusToContract(plan) : plan.list_status,
       item_name: plan.item_name,
       plan_label: plan.plan_label,
       reservation_status: plan.reservation_status ?? 'none',
@@ -491,10 +517,11 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     if (hitRate(store, `${ip}:admin-login`)) {
       return json(429, { error: 'too many attempts' });
     }
-    if (body?.email !== store.admin.email || body?.password !== store.admin.password) {
+    const member = store.staff.find((m) => m.email === body?.email && m.is_active);
+    if (!member || member.password !== body?.password) {
       return json(401, { error: 'Invalid credentials' });
     }
-    return json(200, issueAdminSession(store, store.admin));
+    return json(200, issueAdminSession(store, member));
   }
 
   if (verb === 'POST' && path === '/api/admin/refresh') {
@@ -518,6 +545,17 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
       return gate.error;
     }
     return json(200, { results: store.ledger });
+  }
+
+  if (path === '/api/admin/staff' || match(path, '/api/admin/staff/:id')) {
+    const gate = requireAdmin(store, headers);
+    if (gate.error) {
+      return gate.error;
+    }
+    if (gate.admin.role !== 'admin') {
+      return json(403, { error: 'Forbidden' });
+    }
+    return handleStaffRoutes(store, { verb, path, body, admin: gate.admin }, { json, match });
   }
 
   if (verb === 'GET' && path === '/api/admin/plans') {
@@ -619,6 +657,7 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
       json,
       refreshPlan,
       todayIso,
+      admin: gate.admin,
     });
     const plan = findPlan(store, payment.plan_id);
     const inst = plan?.installments.find((i) => i.id === payment.installment_id);
@@ -636,7 +675,7 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     if (!payment) {
       return json(404, { error: 'Not found' });
     }
-    return rejectPayment(store, payment, body, { json });
+    return rejectPayment(store, payment, body, { json, admin: gate.admin });
   }
 
   if (verb === 'GET' && path === '/api/admin/dashboard') {
@@ -644,7 +683,7 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     if (gate.error) {
       return gate.error;
     }
-    const active = store.plans.filter((p) => !p.completed);
+    const active = store.plans.filter(isOpen);
     active.forEach((p) => refreshPlan(store, p));
     return json(200, {
       active_layaways: active.length,
@@ -679,7 +718,7 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
       email: c.email,
       phone: c.phone,
       member_since: c.member_since,
-      active_layaways: store.plans.filter((p) => p.customer_id === c.id && !p.completed).length,
+      active_layaway_count: store.plans.filter((p) => p.customer_id === c.id && isOpen(p)).length,
     }));
     return json(200, rows);
   }
@@ -714,7 +753,7 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     }
     return json(200, {
       ...publicCustomer(customer),
-      active_layaways: store.plans.filter((p) => p.customer_id === customer.id && !p.completed)
+      active_layaway_count: store.plans.filter((p) => p.customer_id === customer.id && isOpen(p))
         .length,
     });
   }

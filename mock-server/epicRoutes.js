@@ -150,13 +150,13 @@ export function handleEpicRoutes(ctx) {
     if (gate.error) {
       return gate.error;
     }
-    if (store.admin.password !== body?.current_password) {
+    if (gate.admin.password !== body?.current_password) {
       return json(401, { error: 'Current password is incorrect' });
     }
     if (!body?.new_password || body.new_password.length < 8) {
       return json(400, { error: 'Password must be at least 8 characters' });
     }
-    store.admin.password = body.new_password;
+    gate.admin.password = body.new_password;
     return json(200, { ok: true });
   }
 
@@ -394,7 +394,7 @@ export function handleEpicRoutes(ctx) {
     if (gate.error) {
       return gate.error;
     }
-    if (store.admin.role !== 'admin') {
+    if (gate.admin.role !== 'admin') {
       return json(403, { error: 'Forbidden' });
     }
     const plan = findPlan(store, routeParams.id);
@@ -415,7 +415,7 @@ export function handleEpicRoutes(ctx) {
     if (gate.error) {
       return gate.error;
     }
-    if (store.admin.role !== 'admin') {
+    if (gate.admin.role !== 'admin') {
       return json(403, { error: 'Forbidden' });
     }
     if (!body?.reason?.trim()) {
@@ -589,8 +589,8 @@ export function createPlanFromProduct(store, gate, body, helpers) {
 }
 
 export function confirmPayment(store, payment, body, helpers) {
-  const { json, refreshPlan, todayIso } = helpers;
-  if (store.admin.role !== 'admin' && store.admin.role !== 'receivables') {
+  const { json, refreshPlan, todayIso, admin } = helpers;
+  if (admin.role !== 'admin' && admin.role !== 'accounting') {
     return json(403, { error: 'Forbidden' });
   }
   payment.status = 'confirmed';
@@ -645,8 +645,8 @@ export function confirmPayment(store, payment, body, helpers) {
 }
 
 export function rejectPayment(store, payment, body, helpers) {
-  const { json } = helpers;
-  if (store.admin.role !== 'admin' && store.admin.role !== 'receivables') {
+  const { json, admin } = helpers;
+  if (admin.role !== 'admin' && admin.role !== 'accounting') {
     return json(403, { error: 'Forbidden' });
   }
   if (!body?.reason?.trim()) {
