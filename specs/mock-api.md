@@ -25,6 +25,9 @@ Merged onto each JSON item (cycled from the six demo styles):
 | POST | `/api/admin/plans/:id/mark-next-paid` | admin |
 | GET | `/api/admin/settings` | admin |
 | PUT | `/api/admin/settings` | admin |
+| GET | `/api/admin/bank-accounts` | admin, accounting |
+| POST, PATCH | `/api/admin/bank-accounts[/:id]` | admin only (`403` otherwise); `400 { error, fields }` when invalid |
+| GET | `/api/admin/reports/receivables`, `/api/admin/reports/profit`, `/api/finance/ledger` | any staff; `format=csv` supported; ledger returns `{ results, count }` (mock-only `count`) |
 
 Customer tokens: login, register, and dev session return `{ access_token, refresh_token, customer }`. Send `Authorization: Bearer <access_token>` (expires 15 minutes after issue). `POST /api/customers/refresh` with `{ refresh_token }` (expires 24 hours after issue) returns a new `{ access_token }`; `POST /api/customers/logout` revokes that one refresh token. Expiry uses the store clock (`store.now()`). Admin tokens do not expire.
 

@@ -22,16 +22,17 @@ describe('Hero', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /secure any jewelry with a flexible lay-away — up to 3 months, on dates you choose/i,
+        /choose a piece, pay a down payment, and settle the balance in fixed installments every 15 days, for up to 3 months\./i,
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Browse Collections' })).toHaveAttribute(
       'href',
       '/collections',
     );
-    expect(screen.getByText('3,000+ pieces')).toBeInTheDocument();
+    expect(screen.getByText('Curated pieces')).toBeInTheDocument();
     expect(screen.getByText('Up to 3 months')).toBeInTheDocument();
-    expect(screen.getByText('Dates you choose')).toBeInTheDocument();
+    expect(screen.getByText('Every 15 days')).toBeInTheDocument();
+    expect(screen.queryByText(/3,000\+ pieces|Dates you choose/)).not.toBeInTheDocument();
     expect(container.querySelector('img')).toHaveAttribute('src', '/hero-1.png');
     expect(
       screen.queryByRole('button', { name: /slide/i }),

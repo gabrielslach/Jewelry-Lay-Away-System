@@ -18,7 +18,8 @@
 .legal-contents a {
   display: block;
   padding: 12px 0;
-  color: var(--accent);
+  color: var(--text);
+  text-decoration: underline;
 }
 
 .legal-page section p,
@@ -49,6 +50,7 @@
 }
 
 .legal-page section a {
-  color: var(--accent);
+  color: var(--text);
+  text-decoration: underline;
   text-decoration: underline;
 }

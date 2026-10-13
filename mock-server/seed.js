@@ -324,6 +324,8 @@ export function initialBankAccounts() {
       account_name: 'AlMar Corp',
       account_number: '0011-2233-4455',
       qr_code_url: '/placeholders/1.svg',
+      is_active: true,
+      created_at: '2026-09-23T08:00:00.000Z',
     },
     {
       id: 2,
@@ -331,6 +333,8 @@ export function initialBankAccounts() {
       account_name: 'AlMar Corp',
       account_number: '1293-2233-3456',
       qr_code_url: '/placeholders/1.svg',
+      is_active: true,
+      created_at: '2026-09-23T08:00:00.000Z',
     },
   ];
 }
@@ -339,7 +343,6 @@ export function initialSettings() {
   return {
     business_name: 'Mine Credit',
     max_term_months: 3,
-    late_penalty_per_day: 50,
     require_full_payment_before_release: true,
     sms_reminders: true,
     customer_selected_due_dates: true,

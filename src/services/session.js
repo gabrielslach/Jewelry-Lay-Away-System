@@ -71,6 +71,10 @@ export function getAdmin() {
   }
 }
 
+export function isAdminRole() {
+  return (getAdmin()?.role ?? 'admin') === 'admin';
+}
+
 export function getAdminSession() {
   const admin = getAdmin();
   return admin ? { admin } : null;

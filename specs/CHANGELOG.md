@@ -2,6 +2,12 @@
 
 Track edits to files under `specs/`. Newest first. Implementation work is not listed here unless the spec changed.
 
+## 2026-10-14 (stakeholder follow-up)
+
+- Added **Epic 23** (SF-1 to SF-8): brand palette, homepage copy, writable Bank accounts, Reports (receivables, ledger, profit with CSV), Customers and Settings fixes, pending-payments badge refresh, reject-reason textarea. Supersedes **SR-D2** (Bank accounts is no longer read-only for admins, and accounting can view it).
+- Documented the `400 { error, fields }` shape (Epic 23 SF-3) and `ServiceError.fields`.
+- `mock-server/` now serves `/api/admin/bank-accounts` (admin writes, `403` for accounting), receivables, ledger and profit with CSV, and `403` for accounting on customer session delete.
+
 ## 2026-10-13 (stakeholder review)
 
 - `api-definition.md` updated to **v1.17**: plan-detail auth, manual-payment 409 rules (earlier installment, closed plan), `/orders` statuses `cancelled`/`defaulted` with per-installment `payment_status`/`rejection_reason`, dashboard fields, and the single `accounting` staff role (caps 2 admins / 3 accounting, Retry and Cancel reservation admin-only).

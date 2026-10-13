@@ -38,6 +38,7 @@ export function createStore() {
     passwordResetTokens: new Map(),
     nextCustomerId: 6,
     nextStaffId: 3,
+    nextBankAccountId: 3,
     nextPlanSeq: 1006,
     nextPaymentId: 1,
     nextNotificationId: 1,

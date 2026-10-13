@@ -22,6 +22,7 @@ import AdminLogin from './pages/admin/Login.jsx';
 import AdminNotifications from './pages/admin/Notifications.jsx';
 import Orders from './pages/admin/Orders.jsx';
 import PendingPayments from './pages/admin/PendingPayments.jsx';
+import Reports from './pages/admin/Reports.jsx';
 import Settings from './pages/admin/Settings.jsx';
 import Staff from './pages/admin/Staff.jsx';
 import './App.css';
@@ -54,6 +55,7 @@ export default function App() {
             <Route path="customers" element={<Customers />} />
             <Route path="staff" element={<Staff />} />
             <Route path="bank-accounts" element={<BankAccounts />} />
+            <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>

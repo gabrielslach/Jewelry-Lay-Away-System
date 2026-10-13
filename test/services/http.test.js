@@ -15,6 +15,31 @@ describe('http request', () => {
     });
     expect(new ServiceError('x', 400)).toBeInstanceOf(Error);
   });
+
+  it('keeps the per-field messages of a 400 response on the error', async () => {
+    vi.stubGlobal('fetch', async () => ({
+      ok: false,
+      status: 400,
+      text: async () =>
+        JSON.stringify({ error: 'Invalid bank account', fields: { bank_name: 'Too long' } }),
+    }));
+    await expect(request('/api/x')).rejects.toMatchObject({
+      message: 'Invalid bank account',
+      fields: { bank_name: 'Too long' },
+    });
+  });
+
+  it('leaves fields null when the response has none', async () => {
+    vi.stubGlobal('fetch', async () => ({
+      ok: false,
+      status: 404,
+      text: async () => '',
+    }));
+    await expect(request('/api/x')).rejects.toMatchObject({
+      message: 'We could not find that item.',
+      fields: null,
+    });
+  });
 });
 
 describe('http requestBlob', () => {

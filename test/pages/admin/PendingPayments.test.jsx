@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../../../src/App.jsx';
 import { signInAdmin, signOutAdmin } from '../../helpers/adminAuth.js';
+import * as adminAlerts from '../../../src/services/adminAlerts.js';
 import * as adminPayments from '../../../src/services/adminPayments.js';
 import * as getLayawayPlanModule from '../../../src/services/getLayawayPlan.js';
 
@@ -93,6 +94,40 @@ describe('PendingPayments', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
     expect(list).toHaveBeenCalledTimes(2);
+  });
+
+  it('updates the sidebar badge right after a payment is confirmed', async () => {
+    vi.spyOn(adminAlerts, 'getAdminAlerts')
+      .mockResolvedValueOnce({ pending_payments: 6 })
+      .mockResolvedValue({ pending_payments: 5 });
+    vi.spyOn(adminPayments, 'getAdminPendingPayments').mockResolvedValue([
+      {
+        id: 11,
+        kind: 'down_payment',
+        plan_id: 'LA-1001',
+        customer_name: 'Sample Client',
+        amount: '14400',
+        amount_submitted: '14400',
+        amount_mismatch: 0,
+        reference_number: 'BT-11',
+        paid_on: '2026-10-09',
+      },
+    ]);
+    vi.spyOn(adminPayments, 'fetchPaymentProof').mockRejectedValue(new Error('none'));
+    vi.spyOn(getLayawayPlanModule, 'getLayawayPlan').mockResolvedValue({ installments: [] });
+    vi.spyOn(adminPayments, 'confirmAdminPayment').mockResolvedValue({ reservation: null });
+    render(
+      <MemoryRouter initialEntries={['/admin/payments']}>
+        <App />
+      </MemoryRouter>,
+    );
+    const link = () => screen.getByRole('link', { name: /Pending payments/ });
+    await waitFor(() => expect(link()).toHaveTextContent('6'));
+    fireEvent.click(await screen.findByRole('button', { name: 'View' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm payment' }));
+    await waitFor(() => expect(link()).toHaveTextContent('5'));
   });
 
   it('sorts by the expected amount number rather than its text', async () => {

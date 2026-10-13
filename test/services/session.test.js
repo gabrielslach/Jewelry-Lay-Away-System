@@ -8,6 +8,7 @@ import {
   getCustomer,
   getCustomerRefreshToken,
   getCustomerToken,
+  isAdminRole,
   setAdminSession,
   setCustomerSession,
   subscribeCustomerSession,
@@ -84,5 +85,14 @@ describe('session', () => {
     const fresh = await import('../../src/services/session.js');
     expect(sessionStorage.getItem('adminSession')).toBeNull();
     expect(fresh.getAdminToken()).toBeNull();
+  });
+
+  it('treats a missing session or the admin role as admin and anything else as not', () => {
+    expect(isAdminRole()).toBe(true);
+    setAdminSession({ ...adminEnvelope, admin: { id: 2, role: 'accounting' } });
+    expect(isAdminRole()).toBe(false);
+    setAdminSession(adminEnvelope);
+    expect(isAdminRole()).toBe(true);
+    clearAdminSession();
   });
 });

@@ -907,3 +907,46 @@ List from `GET /api/admin/staff`; create with `POST`; edit name, role, active st
 Read-only list from `GET /api/bank-accounts` (bank, account name, number, QR). Create and edit are not offered: the write endpoints are not documented (see `tech-debt.md`). Sidebar link and route as for SR-D1.
 
 - **Tests:** `test/` mirroring `src/`, Vitest + Testing Library.
+
+
+---
+
+## Epic 23 — Stakeholder follow-up (Oct 14)
+
+Frontend work from the Oct 14 retest of Epic 22. Contract is `api-definition.md` v1.28. Ids are `SF-<n>`. **Every admin screen works for both roles** (`admin`, `accounting`); accounting differs only by hidden write controls. Role is read with `isAdminRole()` (session `admin.role`), as `AdminLayout` does.
+
+### SF-1 Palette
+
+Tokens only (`src/theme/tokens.css`): `--primary` charcoal `#2C2C2C` (`--primary-dark` `#1A1A1A`), `--accent` gold `#A3804D` (`--accent-hover` `#8A6B3E`), `--bg` cream `#EDE6E0`, `--surface` `#F7F3F0`, `--surface-2` `#E3DAD2`, `--text` `#2C2C2C`, `--text-soft` `#5E5750`, `--border` `#D4C9BF`, footer `#EDE6E0` / `#BDB4AB` / `#8F867D` / `#444`, shadow `rgba(44,44,44,.08)`. `--ok`, `--warn`, `--info`, `--amber` unchanged. **Gold is never used for small text or links on cream** (fails AA); it is for fills, borders, underlines and large display text. Primary buttons are charcoal with `--on-accent` (white) text; links and prices use `--text` / `--primary`.
+
+### SF-2 Homepage copy
+
+Hero paragraph: "Choose a piece, pay a down payment, and settle the balance in fixed installments every 15 days, for up to 3 months." Stats: "Curated pieces", "Up to 3 months", "Every 15 days". Layout unchanged.
+
+### SF-3 Bank accounts (`/admin/bank-accounts`, both roles)
+
+`GET /api/admin/bank-accounts` (includes inactive). Columns: Bank, Account name, Account number, QR (40px thumbnail), Status (Active / Inactive), Actions (admin only). **Admin:** "Add bank account" and per-row Edit and Deactivate / Activate. Deactivate asks "Deactivate this account?" and names the bank; Activate does not confirm. Add / Edit modal: Bank name, Account name, Account number, QR code (`image/*`, preview, "Remove QR" sends `remove_qr_code=true`; choosing a new file cancels removal), multipart `POST` / `PATCH /api/admin/bank-accounts[/:id]`. **Accounting:** the same table, view only (the API answers `403` to writes).
+
+**Error shape.** A rejected save is `400 { error: 'Invalid bank account', fields: { bank_name: '…', qr_code: '…' } }`. `http.js` copies `fields` onto `ServiceError.fields` (`null` when absent). The modal shows each `fields` message under its input (`aria-invalid`), shows `error` as a banner, stays open and keeps the typed values and chosen QR. Editing a field clears its message. `409` (duplicate, or "At least one bank account must stay active") shows `error` in the modal or above the table.
+
+### SF-4 Reports (`/admin/reports`, both roles)
+
+Tabs Receivables, Ledger, Profit (component state, no extra routes), each with an "Export CSV" button (`format=csv`). Receivables (`GET /api/admin/reports/receivables`): snapshot, totals for outstanding and overdue plus one tile per `aging` key returned (not hard-coded), items table. Ledger (`GET /api/finance/ledger`): filters From, To, Entry type, Plan ID, 25 rows per page via `limit` / `offset`; the CSV export omits `limit` / `offset`. Profit (`GET /api/admin/reports/profit`): interest and markup profit kept separate, only "Total realized" combines them, by-month table; CSV is `profit-by-month.csv`. Columns of receivables items and ledger rows, `aging` keys, and the ledger total are not fully documented, so tables show a column only when a row has the field (`-` for gaps) and totals the server does not send are not shown. See `backend-asks.md`.
+
+### SF-5 Customers
+
+Accounting sees the table with no actions column, no "Delete sessions" button and no modal. Admin unchanged. The mock answers `403` to `DELETE /api/admin/customers/:id/sessions` for accounting.
+
+### SF-6 Settings
+
+"Late Payment Penalty (per day)" is removed from the UI, form state and mock seed (it read `late_penalty_per_day`, while the API field is `penalty_per_day`, hence "₱undefined").
+
+### SF-7 Pending payments
+
+The sidebar badge refreshes as soon as a confirm or reject resolves (`AdminLayout` exposes `refreshAlerts` through the outlet context; `PendingPayments.handleDone` calls it). The reject reason is a 4-row, full-width, vertically resizable textarea labelled "Reason for rejection" with a placeholder; the "Rejecting…" disabled state is kept.
+
+### SF-8 Checks only
+
+Staff screen shows the server error text for cap full, last admin, own role and duplicate email (tests added). The piece page main image uses `web_url` (test exists).
+
+- **Tests:** `test/` mirroring `src/`, Vitest + Testing Library.

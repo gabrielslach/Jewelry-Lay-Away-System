@@ -9,7 +9,9 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../../../src/App.jsx';
 import { ServiceError } from '../../../src/services/http.js';
+import * as createStaffModule from '../../../src/services/createAdminStaff.js';
 import * as getStaffModule from '../../../src/services/getAdminStaff.js';
+import * as updateStaffModule from '../../../src/services/updateAdminStaff.js';
 import { signInAdmin, signOutAdmin } from '../../helpers/adminAuth.js';
 
 function renderStaff() {
@@ -88,6 +90,65 @@ describe('admin staff page', () => {
     expect(await screen.findByText('Staff added.')).toBeInTheDocument();
     expect(await screen.findByText('Ann Lee')).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['the role is full', 'The accounting role is full (3 active accounts)', 409],
+    ['the email already exists', 'Email already exists', 409],
+  ])('shows the server message when adding fails because %s', async (_, message, status) => {
+    vi.spyOn(createStaffModule, 'createAdminStaff').mockRejectedValue(
+      new ServiceError(message, status),
+    );
+    renderStaff();
+    await screen.findByText('Sample Accountant');
+    fireEvent.click(screen.getByRole('button', { name: 'Add staff' }));
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Ann Lee' } });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'ann@example.com' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'longenough' } });
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add staff' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(message);
+    expect(within(dialog).getByRole('button', { name: 'Add staff' })).toBeEnabled();
+  });
+
+  it('shows the real duplicate-email message from the server', async () => {
+    renderStaff();
+    await screen.findByText('Sample Accountant');
+    fireEvent.click(screen.getByRole('button', { name: 'Add staff' }));
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Ann Lee' } });
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'accounting@samplejewelry.example' },
+    });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'longenough' } });
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add staff' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Email already exists');
+  });
+
+  it.each([
+    [
+      'changing your own role',
+      'Sample Admin',
+      'You cannot change your own role or deactivate yourself',
+      403,
+    ],
+    [
+      'demoting the last admin',
+      'Sample Accountant',
+      'The last active admin cannot be demoted or deactivated',
+      409,
+    ],
+  ])('shows the server message when editing fails by %s', async (_, name, message, status) => {
+    vi.spyOn(updateStaffModule, 'updateAdminStaff').mockRejectedValue(
+      new ServiceError(message, status),
+    );
+    renderStaff();
+    await screen.findByText('Sample Accountant');
+    fireEvent.click(screen.getByRole('button', { name: `Edit ${name}` }));
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Renamed' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(message);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
   it('edits staff, toasts and refetches', async () => {
