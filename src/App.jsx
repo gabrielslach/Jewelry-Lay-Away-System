@@ -14,6 +14,7 @@ import Register from './pages/Register.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
 import AccountNotifications from './pages/AccountNotifications.jsx';
+import BankAccounts from './pages/admin/BankAccounts.jsx';
 import Customers from './pages/admin/Customers.jsx';
 import Dashboard from './pages/admin/Dashboard.jsx';
 import DuePayments from './pages/admin/DuePayments.jsx';
@@ -22,6 +23,7 @@ import AdminNotifications from './pages/admin/Notifications.jsx';
 import Orders from './pages/admin/Orders.jsx';
 import PendingPayments from './pages/admin/PendingPayments.jsx';
 import Settings from './pages/admin/Settings.jsx';
+import Staff from './pages/admin/Staff.jsx';
 import './App.css';
 
 export default function App() {
@@ -50,6 +52,8 @@ export default function App() {
             <Route path="payments/due" element={<DuePayments />} />
             <Route path="notifications" element={<AdminNotifications />} />
             <Route path="customers" element={<Customers />} />
+            <Route path="staff" element={<Staff />} />
+            <Route path="bank-accounts" element={<BankAccounts />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>

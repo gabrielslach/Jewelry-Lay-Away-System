@@ -2,19 +2,27 @@ import {
   buildCatalog,
   initialAdmin,
   initialBankAccounts,
+  initialClosedPlans,
   initialCompletedPlan,
   initialCustomers,
   initialPlans,
   initialSettings,
+  initialStaff,
 } from './seed.js';
 
 export function createStore() {
   const catalog = buildCatalog();
+  const admin = initialAdmin();
   return {
     catalog,
     customers: initialCustomers(),
-    admin: initialAdmin(),
-    plans: [...initialPlans(catalog), initialCompletedPlan(catalog)],
+    admin,
+    staff: initialStaff(admin),
+    plans: [
+      ...initialPlans(catalog),
+      initialCompletedPlan(catalog),
+      ...initialClosedPlans(catalog),
+    ],
     bankAccounts: initialBankAccounts(),
     settings: initialSettings(),
     tokens: new Map(),
@@ -29,6 +37,7 @@ export function createStore() {
     adminNotifications: [],
     passwordResetTokens: new Map(),
     nextCustomerId: 6,
+    nextStaffId: 3,
     nextPlanSeq: 1006,
     nextPaymentId: 1,
     nextNotificationId: 1,
@@ -43,11 +52,24 @@ export function publicCustomer(customer) {
     email: customer.email,
     phone: customer.phone,
     member_since: customer.member_since,
+    created_at: customer.created_at,
   };
 }
 
 export function publicAdmin(admin) {
   return { id: admin.id, name: admin.name, email: admin.email, role: admin.role ?? 'admin' };
+}
+
+export function publicStaff(member) {
+  return {
+    id: member.id,
+    name: member.name,
+    email: member.email,
+    role: member.role,
+    is_active: member.is_active,
+    created_by: member.created_by,
+    created_at: member.created_at,
+  };
 }
 
 const ACCESS_TTL_MS = 15 * 60 * 1000;

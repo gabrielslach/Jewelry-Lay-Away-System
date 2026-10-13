@@ -52,12 +52,13 @@ describe('Account', () => {
     expect(screen.queryByText('No active lay-aways right now.')).not.toBeInTheDocument();
     expect(screen.queryByText('No completed lay-aways yet.')).not.toBeInTheDocument();
     expect(screen.queryByText('0')).not.toBeInTheDocument();
-    resolve({ active: [], completed: [] });
+    resolve({ active: [], closed: [], completed: [] });
     expect(await screen.findByText('No active lay-aways right now.')).toBeInTheDocument();
     await waitFor(() => {
       expect(document.querySelector('.skeleton[aria-busy="true"]')).not.toBeInTheDocument();
     });
     expect(screen.getByText('0')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Closed Lay-Aways' })).not.toBeInTheDocument();
   });
 
   it('shows Sample Client lay-aways after login', async () => {
@@ -77,6 +78,28 @@ describe('Account', () => {
     expect(screen.getByText('On Track')).toBeInTheDocument();
     expect(screen.getByText(/Next due Oct 25/)).toBeInTheDocument();
     expect(screen.getByText(/Completed Jul 2026/)).toBeInTheDocument();
+    expect(screen.getByText('Jan 15, 2026')).toBeInTheDocument();
+  });
+
+  it('lists cancelled and defaulted plans in a collapsed Closed Lay-Aways section', async () => {
+    await signIn();
+    renderApp();
+    expect(await screen.findByRole('heading', { name: 'Closed Lay-Aways' })).toBeInTheDocument();
+    const header = await screen.findByRole('button', { name: /Emerald Drop Earrings/ });
+    expect(header).toHaveAttribute('aria-expanded', 'false');
+    expect(within(header).getByText('Cancelled')).toBeInTheDocument();
+  });
+
+  it.each([
+    [undefined, '—'],
+    ['not a date', '—'],
+  ])('shows an em dash for Member Since when created_at is %s', async (createdAt, expected) => {
+    await signIn();
+    const customer = getCustomer();
+    localStorage.setItem('customer', JSON.stringify({ ...customer, created_at: createdAt }));
+    renderApp();
+    const label = await screen.findByText('Member Since');
+    expect(label.nextElementSibling).toHaveTextContent(expected);
   });
 
   it('expands and highlights the plan named in the plan query', async () => {

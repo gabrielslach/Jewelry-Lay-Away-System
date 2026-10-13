@@ -75,7 +75,7 @@ describe('mock API', () => {
       headers: { authorization: `Bearer ${login.body.access_token}` },
     });
     expect(orders.status).toBe(200);
-    expect(orders.body.map((row) => row.id)).toEqual([1002]);
+    expect(orders.body.map((row) => row.id)).toEqual([1002, 989]);
     expect(orders.body[0].item_name).toBe('Emerald Drop Earrings');
   });
 

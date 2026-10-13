@@ -17,7 +17,7 @@ import '../../components/Checkout.css';
 
 function canReview() {
   const role = getAdminSession()?.admin?.role ?? 'admin';
-  return role === 'admin' || role === 'receivables';
+  return role === 'admin' || role === 'accounting';
 }
 
 export default function PendingPayments() {
@@ -124,7 +124,7 @@ export default function PendingPayments() {
       <ErrorMessage>{error}</ErrorMessage>
       {!reviewer ? (
         <p className="page-lead">
-          Only receivables and admins can confirm or reject.
+          Only admins and accounting can confirm or reject.
         </p>
       ) : null}
       <div className="table-wrap">

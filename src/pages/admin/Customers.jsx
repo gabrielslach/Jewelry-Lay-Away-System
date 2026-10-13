@@ -92,7 +92,7 @@ export default function Customers() {
                   </td>
                   <td>{row.email}</td>
                   <td>{row.phone || '—'}</td>
-                  <td>{row.active_layaways}</td>
+                  <td>{row.active_layaway_count}</td>
                   <td>{formatDisplayDate(row.member_since) || '—'}</td>
                   <td>
                     <Button

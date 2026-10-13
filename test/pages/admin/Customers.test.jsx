@@ -56,8 +56,8 @@ describe('admin customers', () => {
 
   it('shows phone, formatted member since and dashes for missing values', async () => {
     vi.spyOn(getAdminCustomersModule, 'getAdminCustomers').mockResolvedValue([
-      { id: 1, name: 'Ana', email: 'a@x.com', phone: '+63 900 111 2222', member_since: '2026-10-11', active_layaways: 1 },
-      { id: 2, name: 'Ben', email: 'b@x.com', phone: null, member_since: 'not a date', active_layaways: 0 },
+      { id: 1, name: 'Ana', email: 'a@x.com', phone: '+63 900 111 2222', member_since: '2026-10-11', active_layaway_count: 1 },
+      { id: 2, name: 'Ben', email: 'b@x.com', phone: null, member_since: 'not a date', active_layaway_count: 0 },
     ]);
     renderCustomers();
     const ana = (await screen.findByText('Ana')).closest('tr');

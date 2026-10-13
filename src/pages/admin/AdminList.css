@@ -1,0 +1,38 @@
+.list-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.list-toolbar p {
+  margin: 0;
+}
+
+.panel td .btn-sm {
+  min-height: 44px;
+}
+
+.num-cell {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.qr-thumb {
+  display: inline-block;
+  width: 48px;
+  height: 48px;
+}
+
+.qr-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.muted {
+  color: var(--text-soft);
+}

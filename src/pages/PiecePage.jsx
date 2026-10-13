@@ -4,9 +4,11 @@ import Button from '../components/Button.jsx';
 import Checkout from '../components/Checkout.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
 import PieceImage from '../components/PieceImage.jsx';
+import ZoomableImage from '../components/ZoomableImage.jsx';
 import Skeleton, { PiecePageSkeleton } from '../components/Skeleton.jsx';
 import { useSession } from '../components/useSession.js';
 import { formatPeso } from '../lib/money.js';
+import { pickImage } from '../lib/pickImage.js';
 import { ServiceError } from '../services/http.js';
 import { getGalleryPiece } from '../services/getGalleryPiece.js';
 import {
@@ -113,10 +115,11 @@ export default function PiecePage() {
         <div className="piece-layout">
           <div className="carousel">
             <div className="carousel-main">
-              <PieceImage
-                src={images[index]?.url}
-                alt={`${piece.name} photo ${index + 1}`}
-                title={piece.name}
+              <ZoomableImage
+                webSrc={pickImage(images[index], 'web')}
+                originalSrc={images[index]?.url}
+                name={piece.name}
+                number={index + 1}
               />
             </div>
             {images.length > 1 ? (
@@ -129,7 +132,7 @@ export default function PiecePage() {
                     onClick={() => setIndex(thumbIndex)}
                     aria-label={`Show photo ${thumbIndex + 1}`}
                   >
-                    <PieceImage src={image.url} title={piece.name} size={36} />
+                    <PieceImage src={pickImage(image, 'thumb')} title={piece.name} size={36} />
                   </button>
                 ))}
               </div>

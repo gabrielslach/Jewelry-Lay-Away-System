@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Button from '../../components/Button.jsx';
 import ChangePasswordModal from '../../components/ChangePasswordModal.jsx';
 import ErrorMessage from '../../components/ErrorMessage.jsx';
+import SettingsSwitch from '../../components/SettingsSwitch.jsx';
 import Skeleton, { SettingsSkeleton } from '../../components/Skeleton.jsx';
 import { useToast } from '../../components/useToast.js';
 import { ServiceError } from '../../services/http.js';
@@ -11,32 +12,6 @@ import { putAdminSettings } from '../../services/putAdminSettings.js';
 import { getAdminSession } from '../../services/session.js';
 import '../../components/Checkout.css';
 import '../AuthPage.css';
-
-function SettingsSwitch({ id, label, checked, disabled, onToggle }) {
-  return (
-    <div className="toggle-row">
-      <span id={id}>{label}</span>
-      <div
-        className={checked ? 'switch on' : 'switch'}
-        role="switch"
-        aria-checked={checked}
-        aria-labelledby={id}
-        aria-disabled={disabled || undefined}
-        tabIndex={disabled ? -1 : 0}
-        onClick={() => {
-          if (!disabled) {
-            onToggle();
-          }
-        }}
-        onKeyDown={(event) => {
-          if (!disabled && (event.key === 'Enter' || event.key === ' ')) {
-            onToggle();
-          }
-        }}
-      />
-    </div>
-  );
-}
 
 export default function Settings() {
   const { showToast } = useToast();
@@ -152,8 +127,8 @@ export default function Settings() {
           onToggle={() => toggle('notify_accounting_roles')}
         />
         <p className="field-hint">
-          Admins always receive alerts. Turn this on to include receivables, ledger and reporting
-          accounts, by email and in their bell.
+          Admins always receive alerts. Turn this on to include accounting accounts, by
+          email and in their bell.
         </p>
         <div style={{ marginTop: 18 }}>
           <Button variant="primary" onClick={handleSave} disabled={!isAdmin}>

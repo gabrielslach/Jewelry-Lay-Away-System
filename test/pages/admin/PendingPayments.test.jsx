@@ -128,4 +128,23 @@ describe('PendingPayments', () => {
       .map((row) => within(row).getAllByRole('cell')[1].textContent);
     expect(customers).toEqual(['Client 1', 'Client 2']);
   });
+
+  it.each([
+    ['accounting', false],
+    ['admin', false],
+    ['viewer', true],
+  ])('shows the review restriction note for %s: %s', async (role, shown) => {
+    await signInAdmin(role);
+    vi.spyOn(adminPayments, 'getAdminPendingPayments').mockResolvedValue([]);
+    render(
+      <MemoryRouter initialEntries={['/admin/payments']}>
+        <App />
+      </MemoryRouter>,
+    );
+    await waitFor(() => {
+      expect(adminPayments.getAdminPendingPayments).toHaveBeenCalled();
+    });
+    const note = screen.queryByText('Only admins and accounting can confirm or reject.');
+    expect(Boolean(note)).toBe(shown);
+  });
 });

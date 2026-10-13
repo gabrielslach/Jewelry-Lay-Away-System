@@ -95,4 +95,87 @@ describe('mock manual payments', () => {
     expect(active.as_of).toBe(store.now().toISOString().slice(0, 10));
     expect(active).toHaveProperty('image_url');
   });
+
+  it('rejects payments on cancelled and defaulted plans', () => {
+    const store = createStore();
+    const login = call(store, 'POST', '/api/customers/login', {
+      body: { email: 'client@sampleemail.com', password: 'password' },
+    });
+    const auth = { authorization: `Bearer ${login.body.access_token}` };
+    const orders = call(store, 'GET', '/api/customers/orders', { headers: auth });
+    const cancelled = orders.body.find((row) => row.status === 'cancelled');
+    const result = call(store, 'POST', `/api/layaway/plans/${cancelled.id}/payments/manual`, {
+      headers: auth,
+      body: {
+        installment_id: cancelled.installments[3].id,
+        bank_account_id: 1,
+        reference_number: 'BT-CLOSED',
+        amount: '1000',
+        paid_on: store.now().toISOString().slice(0, 10),
+      },
+    });
+    expect(result.status).toBe(409);
+    expect(result.body.error).toBe('Plan is cancelled');
+  });
+
+  it('seeds cancelled and defaulted orders with per-installment payment status', () => {
+    const store = createStore();
+    const login = call(store, 'POST', '/api/customers/login', {
+      body: { email: 'buyer@sampleemail.com', password: 'password' },
+    });
+    const orders = call(store, 'GET', '/api/customers/orders', {
+      headers: { authorization: `Bearer ${login.body.access_token}` },
+    });
+    const defaulted = orders.body.find((row) => row.status === 'defaulted');
+    expect(defaulted.installments.map((row) => row.payment_status)).toEqual([
+      'paid',
+      'paid',
+      'unpaid',
+      'unpaid',
+    ]);
+    expect(defaulted.installments[2]).toMatchObject({
+      due_date: expect.stringMatching(/T/),
+      rejection_reason: null,
+    });
+    expect(defaulted.next_due_date).toBeNull();
+  });
+
+  it('flags submitted and rejected installments in payment_status', () => {
+    const store = createStore();
+    const plan = store.plans.find((row) => row.id === 'LA-1001');
+    plan.installments[3].status = 'submitted';
+    plan.installments[4].status = 'rejected';
+    plan.installments[4].rejection_reason = 'Blurry proof';
+    const login = call(store, 'POST', '/api/customers/login', {
+      body: { email: 'client@sampleemail.com', password: 'password' },
+    });
+    const orders = call(store, 'GET', '/api/customers/orders', {
+      headers: { authorization: `Bearer ${login.body.access_token}` },
+    });
+    const statuses = orders.body
+      .find((row) => row.id === 1001)
+      .installments.map((row) => row.payment_status);
+    expect(statuses.slice(3, 5)).toEqual(['awaiting_confirmation', 'rejected']);
+  });
+
+  it('says to pay the earlier installment first even when the later one is due', () => {
+    const store = createStore();
+    const login = call(store, 'POST', '/api/customers/login', {
+      body: { email: 'client@sampleemail.com', password: 'password' },
+    });
+    const auth = { authorization: `Bearer ${login.body.access_token}` };
+    const plan = store.plans.find((row) => row.id === 'LA-1001');
+    const result = call(store, 'POST', '/api/layaway/plans/1001/payments/manual', {
+      headers: auth,
+      body: {
+        installment_id: plan.installments[4].id,
+        bank_account_id: 1,
+        reference_number: 'BT-SKIPPED',
+        amount: '1000',
+        paid_on: store.now().toISOString().slice(0, 10),
+      },
+    });
+    expect(result.status).toBe(409);
+    expect(result.body.error).toBe('Pay the earlier installment first');
+  });
 });

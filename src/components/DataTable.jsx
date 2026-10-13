@@ -44,7 +44,7 @@ function HeaderCell({ header }) {
   );
 }
 
-export default function DataTable({ columns, data, getRowId }) {
+export default function DataTable({ columns, data, getRowId, emptyMessage }) {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const table = useReactTable({
@@ -82,10 +82,10 @@ export default function DataTable({ columns, data, getRowId }) {
             ))}
           </tr>
         ))}
-        {rows.length === 0 && data.length > 0 ? (
+        {rows.length === 0 && (data.length > 0 || emptyMessage) ? (
           <tr>
             <td colSpan={columns.length} className="table-empty">
-              No matching rows
+              {data.length > 0 ? 'No matching rows' : emptyMessage}
             </td>
           </tr>
         ) : null}

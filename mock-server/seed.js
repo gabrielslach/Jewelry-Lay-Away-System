@@ -72,6 +72,7 @@ export function initialCustomers() {
       password: 'password',
       phone: '+63 900 000 0001',
       member_since: 'Jan 2026',
+      created_at: '2026-01-15T00:00:00.000Z',
     },
     {
       id: 2,
@@ -80,6 +81,7 @@ export function initialCustomers() {
       password: 'password',
       phone: '+63 900 000 0002',
       member_since: 'Mar 2026',
+      created_at: '2026-03-15T00:00:00.000Z',
     },
     {
       id: 3,
@@ -88,6 +90,7 @@ export function initialCustomers() {
       password: 'password',
       phone: '+63 900 000 0003',
       member_since: 'Aug 2025',
+      created_at: '2025-08-15T00:00:00.000Z',
     },
     {
       id: 4,
@@ -96,6 +99,7 @@ export function initialCustomers() {
       password: 'password',
       phone: '+63 900 000 0004',
       member_since: 'Jun 2026',
+      created_at: '2026-06-15T00:00:00.000Z',
     },
     {
       id: 5,
@@ -104,6 +108,7 @@ export function initialCustomers() {
       password: 'password',
       phone: '+63 900 000 0005',
       member_since: 'Apr 2026',
+      created_at: '2026-04-15T00:00:00.000Z',
     },
   ];
 }
@@ -115,7 +120,26 @@ export function initialAdmin() {
     email: 'admin@samplejewelry.example',
     password: 'password',
     role: 'admin',
+    is_active: true,
+    created_by: null,
+    created_at: '2026-01-01T00:00:00.000Z',
   };
+}
+
+export function initialStaff(admin) {
+  return [
+    admin,
+    {
+      id: 2,
+      name: 'Sample Accountant',
+      email: 'accounting@samplejewelry.example',
+      password: 'password',
+      role: 'accounting',
+      is_active: true,
+      created_by: admin.id,
+      created_at: '2026-02-01T00:00:00.000Z',
+    },
+  ];
 }
 
 export function planLabel(termMonths, paymentCount) {
@@ -245,6 +269,51 @@ export function initialCompletedPlan(catalog) {
       paid_at: '2026-06-01',
     })),
   };
+}
+
+export function initialClosedPlans(catalog) {
+  const specs = [
+    { id: 'LA-0988', customer_id: 1, item: 'Emerald Drop Earrings', closed_status: 'cancelled' },
+    { id: 'LA-0989', customer_id: 2, item: 'Pearl Drop Necklace', closed_status: 'defaulted' },
+  ];
+  return specs.map((spec) => {
+    const product = productByName(catalog, spec.item);
+    const amount = String(Math.round(Number(product.price) / 4));
+    return {
+      id: spec.id,
+      customer_id: spec.customer_id,
+      product_id: product.id,
+      item_name: spec.item,
+      plan_label: planLabel(2, 4),
+      next_due: null,
+      list_status: 'ok',
+      closed_status: spec.closed_status,
+      term_months: 2,
+      total_price: product.price,
+      currency: 'PHP',
+      note: null,
+      completed: false,
+      completed_on: null,
+      down_payment_amount: Math.round(Number(product.price) * 1.3 * 0.3),
+      financed_principal: Math.round(Number(product.price) * 1.3 * 0.7),
+      down_payment_status: 'paid',
+      down_payment_rejection_reason: null,
+      reservation_status: 'cancelled',
+      reservation_error: null,
+      down_payment_confirmed_at: '2026-05-01',
+      grace_period_days: 7,
+      created_at: '2026-05-01',
+      installments: Array.from({ length: 4 }, (_, index) => ({
+        id: `${spec.id}-i${index + 1}`,
+        term_number: index + 1,
+        due_date: `2026-0${6 + index}-15`,
+        amount,
+        status: index < 2 ? 'paid' : 'pending',
+        paid_at: index < 2 ? `2026-0${6 + index}-14` : null,
+        rejection_reason: null,
+      })),
+    };
+  });
 }
 
 export function initialBankAccounts() {

@@ -20,7 +20,7 @@ a.btn.btn-primary {
   color: var(--on-accent);
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background: var(--accent-hover);
 }
 
@@ -30,7 +30,7 @@ a.btn.btn-primary {
   color: var(--text);
 }
 
-.btn-outline:hover {
+.btn-outline:hover:not(:disabled) {
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -40,7 +40,7 @@ a.btn.btn-primary {
   color: var(--on-accent);
 }
 
-.btn-danger:hover {
+.btn-danger:hover:not(:disabled) {
   background: color-mix(in srgb, var(--warn) 85%, black);
 }
 
@@ -49,9 +49,20 @@ a.btn.btn-primary {
   font-size: 13px;
 }
 
+.btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 .btn:disabled {
-  opacity: 0.45;
+  background: var(--border);
+  color: var(--text-soft);
   cursor: not-allowed;
+}
+
+.btn-outline:disabled {
+  background: transparent;
+  border-color: var(--border);
 }
 
 .btn-spinner {

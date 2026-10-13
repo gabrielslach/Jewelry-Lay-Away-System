@@ -3,6 +3,27 @@ import { describe, expect, it, vi } from 'vitest';
 import Modal from '../../src/components/Modal.jsx';
 
 describe('Modal', () => {
+  it('closes on Escape', () => {
+    const onClose = vi.fn();
+    render(<Modal title="T" onClose={onClose}>Body</Modal>);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes only the topmost modal on Escape', () => {
+    const onCloseBottom = vi.fn();
+    const onCloseTop = vi.fn();
+    render(
+      <>
+        <Modal title="Bottom" onClose={onCloseBottom}>A</Modal>
+        <Modal title="Top" onClose={onCloseTop}>B</Modal>
+      </>,
+    );
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onCloseTop).toHaveBeenCalledTimes(1);
+    expect(onCloseBottom).not.toHaveBeenCalled();
+  });
+
   it('renders title, body, and footer', () => {
     render(
       <Modal title="Piece Name" footer={<button type="button">Reserve</button>} onClose={() => {}}>

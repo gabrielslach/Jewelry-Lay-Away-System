@@ -2,6 +2,7 @@ import { formatPeso } from '../lib/money.js';
 import Button from './Button.jsx';
 import Modal from './Modal.jsx';
 import PieceImage from './PieceImage.jsx';
+import { pickImage } from '../lib/pickImage.js';
 import './Gallery.css';
 import './PieceDetail.css';
 
@@ -23,7 +24,7 @@ export default function PieceDetail({ piece, onClose, onReserve }) {
     >
       <div className="modal-media">
         <PieceImage
-          src={piece.images?.[0]?.url}
+          src={pickImage(piece.images?.[0], 'thumb')}
           alt={piece.name}
           title={piece.name}
           size={60}

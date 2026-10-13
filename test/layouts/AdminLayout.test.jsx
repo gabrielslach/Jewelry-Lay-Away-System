@@ -72,4 +72,32 @@ describe('AdminLayout', () => {
     expect(screen.getByRole('heading', { name: 'Admin sign in' })).toBeInTheDocument();
     expect(screen.queryByText('Orders')).not.toBeInTheDocument();
   });
+
+  it('shows Staff and Bank accounts links to admins in order', () => {
+    render(
+      <MemoryRouter initialEntries={['/admin']}>
+        <Routes>
+          <Route path="/admin" element={<AdminLayout />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    const labels = within(screen.getByRole('navigation', { name: 'Admin' }))
+      .getAllByRole('link')
+      .map((link) => link.textContent);
+    expect(labels.slice(-4)).toEqual(['Customers', 'Staff', 'Bank accounts', 'Settings']);
+  });
+
+  it('hides Staff and Bank accounts links from accounting', async () => {
+    await signInAdmin('accounting');
+    render(
+      <MemoryRouter initialEntries={['/admin']}>
+        <Routes>
+          <Route path="/admin" element={<AdminLayout />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(screen.queryByRole('link', { name: 'Staff' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Bank accounts' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Customers' })).toBeInTheDocument();
+  });
 });
