@@ -135,4 +135,73 @@ describe('PiecePage', () => {
     expect(within(thumb).getByRole('img')).toHaveClass('gem-mark');
     expect(thumb).toHaveClass('thumb');
   });
+
+  describe('photo zoom', () => {
+    const zoomPiece = {
+      id: 1,
+      name: 'Solitaire Halo Ring',
+      title: 'PJ1',
+      category: 'Rings',
+      priceLabel: '₱1',
+      material: '-',
+      stone: '-',
+      size: '-',
+      cert: '-',
+      images: [
+        { url: 'https://cdn.example/o1.jpg', web_url: 'https://cdn.example/w1.jpg', thumb_url: 'https://cdn.example/t1.jpg' },
+        { url: 'https://cdn.example/o2.jpg', web_url: 'https://cdn.example/w2.jpg', thumb_url: 'https://cdn.example/t2.jpg' },
+      ],
+    };
+
+    function renderPage() {
+      vi.spyOn(getGalleryPieceModule, 'getGalleryPiece').mockResolvedValue(zoomPiece);
+      render(
+        <MemoryRouter initialEntries={['/collections/1']}>
+          <App />
+        </MemoryRouter>,
+      );
+    }
+
+    it('uses web for the eager main image and thumb for lazy thumbnails', async () => {
+      renderPage();
+      const main = await screen.findByRole('img', { name: 'Solitaire Halo Ring photo 1' });
+      expect(main).toHaveAttribute('src', 'https://cdn.example/w1.jpg');
+      expect(main).toHaveAttribute('loading', 'eager');
+      const thumbImg = screen.getByRole('button', { name: 'Show photo 2' }).querySelector('img');
+      expect(thumbImg).toHaveAttribute('src', 'https://cdn.example/t2.jpg');
+      expect(thumbImg).toHaveAttribute('loading', 'lazy');
+    });
+
+    it('opens the original only on tap and returns focus on close', async () => {
+      renderPage();
+      const trigger = await screen.findByRole('button', {
+        name: 'Zoom photo 1: Solitaire Halo Ring',
+      });
+      expect(document.querySelector('img[src="https://cdn.example/o1.jpg"]')).toBeNull();
+      fireEvent.click(trigger);
+      const dialog = await screen.findByRole('dialog');
+      const original = dialog.querySelector('img[src="https://cdn.example/o1.jpg"]');
+      expect(original).toHaveAttribute('alt', 'Solitaire Halo Ring photo 1');
+      expect(within(dialog).getByRole('heading', { name: 'Solitaire Halo Ring' })).toBeInTheDocument();
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(trigger).toHaveFocus();
+    });
+
+    it('shows Original unavailable when the original fails', async () => {
+      renderPage();
+      fireEvent.click(await screen.findByRole('button', { name: /Zoom photo 1/ }));
+      const dialog = await screen.findByRole('dialog');
+      fireEvent.error(dialog.querySelector('img[src="https://cdn.example/o1.jpg"]'));
+      expect(within(dialog).getByText('Original unavailable.')).toBeInTheDocument();
+    });
+
+    it('zooms the selected photo and hides zoom when the main image fails', async () => {
+      renderPage();
+      fireEvent.click(await screen.findByRole('button', { name: 'Show photo 2' }));
+      expect(screen.getByRole('button', { name: 'Zoom photo 2: Solitaire Halo Ring' })).toBeInTheDocument();
+      fireEvent.error(screen.getByRole('img', { name: 'Solitaire Halo Ring photo 2' }));
+      expect(screen.queryByRole('button', { name: /^Zoom photo/ })).not.toBeInTheDocument();
+    });
+  });
 });

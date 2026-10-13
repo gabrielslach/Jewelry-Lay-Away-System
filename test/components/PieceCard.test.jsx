@@ -46,6 +46,20 @@ describe('PieceCard', () => {
     );
   });
 
+  it('uses the thumb url and lazy loading for the card image', () => {
+    renderCard(
+      <PieceCard
+        piece={{
+          ...piece,
+          images: [{ url: 'https://cdn.example/o.jpg', thumb_url: 'https://cdn.example/t.jpg' }],
+        }}
+      />,
+    );
+    const img = document.querySelector('.piece-media img');
+    expect(img).toHaveAttribute('src', 'https://cdn.example/t.jpg');
+    expect(img).toHaveAttribute('loading', 'lazy');
+  });
+
   it('replaces a broken photo with GemMark', () => {
     renderCard(
       <PieceCard

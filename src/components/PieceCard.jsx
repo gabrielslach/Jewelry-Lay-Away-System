@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import Button from './Button.jsx';
 import PieceImage from './PieceImage.jsx';
+import { pickImage } from '../lib/pickImage.js';
 import { formatPeso } from '../lib/money.js';
 import './Gallery.css';
 
@@ -19,7 +20,7 @@ export default function PieceCard({ piece, onViewDetails, to }) {
   return (
     <article className="piece-card">
       <div className="piece-media" onClick={openDetails}>
-        <PieceImage src={piece.images?.[0]?.url} title={piece.name} />
+        <PieceImage src={pickImage(piece.images?.[0], 'thumb')} title={piece.name} />
       </div>
       <div className="piece-body">
         <div className="piece-cat">{piece.category}</div>

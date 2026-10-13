@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import PieceImage from '../../src/components/PieceImage.jsx';
 
 describe('PieceImage', () => {
@@ -54,5 +54,20 @@ describe('PieceImage', () => {
       'src',
       'https://cdn.example/ok.jpg',
     );
+  });
+
+  it('lazy loads and decodes async by default, and honours loading="eager"', () => {
+    const { rerender } = render(<PieceImage src="https://cdn.example/a.jpg" alt="A" />);
+    expect(screen.getByRole('img', { name: 'A' })).toHaveAttribute('loading', 'lazy');
+    expect(screen.getByRole('img', { name: 'A' })).toHaveAttribute('decoding', 'async');
+    rerender(<PieceImage src="https://cdn.example/a.jpg" alt="A" loading="eager" />);
+    expect(screen.getByRole('img', { name: 'A' })).toHaveAttribute('loading', 'eager');
+  });
+
+  it('calls onError when the image fails', () => {
+    const onError = vi.fn();
+    render(<PieceImage src="https://cdn.example/b.jpg" alt="B" title="B" onError={onError} />);
+    fireEvent.error(screen.getByRole('img', { name: 'B' }));
+    expect(onError).toHaveBeenCalled();
   });
 });
