@@ -410,12 +410,15 @@ export default function PaymentReviewModal({
             </div>
           ) : (
             <div className="form-row">
-              <label htmlFor="review-reason">Reason</label>
+              <label htmlFor="review-reason">Reason for rejection</label>
               <textarea
                 id="review-reason"
                 ref={firstFieldRef}
+                rows={4}
+                placeholder="Tell the customer why this payment was rejected"
                 disabled={submitting}
                 value={reason}
+                aria-invalid={reasonError ? 'true' : undefined}
                 onChange={(event) => setReason(event.target.value)}
                 required
               />

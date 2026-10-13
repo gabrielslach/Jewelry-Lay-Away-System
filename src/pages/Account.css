@@ -9,7 +9,8 @@
 .text-link {
   background: none;
   border: none;
-  color: var(--accent);
+  color: var(--text);
+  text-decoration: underline;
   font: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -294,7 +295,7 @@
 }
 
 .plan-money .plan-money-total {
-  color: var(--accent);
+  color: var(--text);
 }
 
 .plan-as-of {

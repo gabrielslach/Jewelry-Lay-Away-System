@@ -116,4 +116,21 @@ describe('admin customers', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Delete sessions for Sample Shopper' }));
     expect(screen.queryByText('Unable to delete sessions.')).not.toBeInTheDocument();
   });
+
+  it('shows the Delete sessions column to admins', async () => {
+    renderCustomers();
+    await screen.findByText('Sample Shopper');
+    expect(screen.getAllByRole('columnheader')).toHaveLength(6);
+    expect(
+      screen.getByRole('button', { name: 'Delete sessions for Sample Shopper' }),
+    ).toBeInTheDocument();
+  });
+
+  it('hides every session control from accounting', async () => {
+    await signInAdmin('accounting');
+    renderCustomers();
+    await screen.findByText('Sample Shopper');
+    expect(screen.getAllByRole('columnheader')).toHaveLength(5);
+    expect(screen.queryByRole('button', { name: /delete sessions/i })).not.toBeInTheDocument();
+  });
 });

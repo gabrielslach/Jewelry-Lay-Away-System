@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import Button from '../../components/Button.jsx';
 import DataTable from '../../components/DataTable.jsx';
 import ErrorMessage from '../../components/ErrorMessage.jsx';
@@ -25,6 +26,7 @@ export default function PendingPayments() {
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(null);
   const reviewer = canReview();
+  const { refreshAlerts } = useOutletContext() ?? {};
 
   function refresh() {
     getAdminPendingPayments()
@@ -45,6 +47,7 @@ export default function PendingPayments() {
   function handleDone() {
     setSelected(null);
     refresh();
+    refreshAlerts?.();
   }
 
   const columns = useMemo(

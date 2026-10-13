@@ -1,8 +1,9 @@
 export class ServiceError extends Error {
-  constructor(message, status = null) {
+  constructor(message, status = null, fields = null) {
     super(message);
     this.name = 'ServiceError';
     this.status = status;
+    this.fields = fields;
   }
 }
 
@@ -13,6 +14,20 @@ function apiUrl(path) {
     return path;
   }
   return `${API_BASE}${path}`;
+}
+
+const STATUS_MESSAGES = {
+  401: 'Please sign in to continue.',
+  403: 'You do not have access to this record.',
+  404: 'We could not find that item.',
+};
+
+function failure(status, data) {
+  if (status === 429) {
+    return new ServiceError('Too many attempts. Please wait a few minutes.', status);
+  }
+  const fallback = STATUS_MESSAGES[status] ?? 'Something went wrong. Please try again.';
+  return new ServiceError(data?.error || fallback, status, data?.fields ?? null);
 }
 
 export async function request(path, { method = 'GET', token, body, headers } = {}) {
@@ -42,20 +57,7 @@ export async function request(path, { method = 'GET', token, body, headers } = {
   }
 
   if (!response.ok) {
-    const fallback =
-      response.status === 429
-        ? 'Too many attempts. Please wait a few minutes.'
-        : response.status === 401
-          ? 'Please sign in to continue.'
-          : response.status === 403
-            ? 'You do not have access to this record.'
-            : response.status === 404
-              ? 'We could not find that item.'
-              : 'Something went wrong. Please try again.';
-    throw new ServiceError(
-      response.status === 429 ? fallback : data?.error || fallback,
-      response.status,
-    );
+    throw failure(response.status, data);
   }
 
   return data;
@@ -86,20 +88,7 @@ export async function requestForm(path, { method = 'POST', token, formData } = {
   }
 
   if (!response.ok) {
-    const fallback =
-      response.status === 429
-        ? 'Too many attempts. Please wait a few minutes.'
-        : response.status === 401
-          ? 'Please sign in to continue.'
-          : response.status === 403
-            ? 'You do not have access to this record.'
-            : response.status === 404
-              ? 'We could not find that item.'
-              : 'Something went wrong. Please try again.';
-    throw new ServiceError(
-      response.status === 429 ? fallback : data?.error || fallback,
-      response.status,
-    );
+    throw failure(response.status, data);
   }
 
   return data;
@@ -129,20 +118,7 @@ export async function requestBlob(path, { method = 'GET', token, headers } = {})
         // Non-JSON error bodies still map to status fallbacks.
       }
     }
-    const fallback =
-      response.status === 429
-        ? 'Too many attempts. Please wait a few minutes.'
-        : response.status === 401
-          ? 'Please sign in to continue.'
-          : response.status === 403
-            ? 'You do not have access to this record.'
-            : response.status === 404
-              ? 'We could not find that item.'
-              : 'Something went wrong. Please try again.';
-    throw new ServiceError(
-      response.status === 429 ? fallback : data?.error || fallback,
-      response.status,
-    );
+    throw failure(response.status, data);
   }
 
   const headerType =

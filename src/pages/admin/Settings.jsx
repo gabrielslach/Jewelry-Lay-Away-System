@@ -84,20 +84,6 @@ export default function Settings() {
             }
           />
         </div>
-        <div className="form-row">
-          <label htmlFor="penalty">Late Payment Penalty (per day)</label>
-          <input
-            id="penalty"
-            value={`₱${form.late_penalty_per_day}`}
-            disabled={!isAdmin}
-            onChange={(event) =>
-              setForm({
-                ...form,
-                late_penalty_per_day: Number(String(event.target.value).replace(/[^\d]/g, '')),
-              })
-            }
-          />
-        </div>
         <SettingsSwitch
           id="setting-require-full"
           label="Require full payment before item release"

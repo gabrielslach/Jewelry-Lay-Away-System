@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Navigate,
   NavLink,
@@ -42,8 +42,9 @@ const links = [
     badgeKey: 'unread_notifications',
   },
   { to: '/admin/customers', label: 'Customers' },
+  { to: '/admin/reports', label: 'Reports' },
   { to: '/admin/staff', label: 'Staff', adminOnly: true },
-  { to: '/admin/bank-accounts', label: 'Bank accounts', adminOnly: true },
+  { to: '/admin/bank-accounts', label: 'Bank accounts' },
   { to: '/admin/settings', label: 'Settings' },
 ];
 
@@ -54,6 +55,7 @@ const titles = {
   '/admin/payments/due': 'Due & Overdue',
   '/admin/notifications': 'Notifications',
   '/admin/customers': 'Customers',
+  '/admin/reports': 'Reports',
   '/admin/staff': 'Staff',
   '/admin/bank-accounts': 'Bank accounts',
   '/admin/settings': 'Settings',
@@ -82,19 +84,22 @@ export default function AdminLayout() {
   const admin = getAdmin();
   const isAdmin = (admin?.role ?? 'admin') === 'admin';
 
+  const refreshAlerts = useCallback(
+    () =>
+      getAdminAlerts()
+        .then(setAlerts)
+        .catch(() => setAlerts(null)),
+    [],
+  );
+
   useEffect(() => {
     if (!token) {
       return undefined;
     }
-    function load() {
-      getAdminAlerts()
-        .then(setAlerts)
-        .catch(() => setAlerts(null));
-    }
-    load();
-    const timer = window.setInterval(load, 60_000);
+    refreshAlerts();
+    const timer = window.setInterval(refreshAlerts, 60_000);
     return () => window.clearInterval(timer);
-  }, [token]);
+  }, [token, refreshAlerts]);
 
   function signOut() {
     clearAdminSession();
@@ -162,7 +167,7 @@ export default function AdminLayout() {
           </Button>
         </header>
         <div className="admin-page">
-          <Outlet context={{ alerts }} />
+          <Outlet context={{ alerts, refreshAlerts }} />
         </div>
       </div>
     </div>

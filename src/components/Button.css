@@ -16,12 +16,12 @@
 
 .btn-primary,
 a.btn.btn-primary {
-  background: var(--accent);
+  background: var(--primary);
   color: var(--on-accent);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--accent-hover);
+  background: var(--primary-dark);
 }
 
 .btn-outline {
@@ -31,8 +31,17 @@ a.btn.btn-primary {
 }
 
 .btn-outline:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--surface-2);
 }
 
 .btn-danger {

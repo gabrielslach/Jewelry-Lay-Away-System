@@ -8,6 +8,7 @@ import { formatDisplayDate } from '../../lib/dates.js';
 import { ServiceError } from '../../services/http.js';
 import { deleteAdminCustomerSessions } from '../../services/deleteAdminCustomerSessions.js';
 import { getAdminCustomers } from '../../services/getAdminCustomers.js';
+import { isAdminRole } from '../../services/session.js';
 import '../Account.css';
 
 export default function Customers() {
@@ -18,6 +19,7 @@ export default function Customers() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
   const { showToast } = useToast();
+  const isAdmin = isAdminRole();
 
   useEffect(() => {
     getAdminCustomers()
@@ -81,7 +83,7 @@ export default function Customers() {
                 <th>Phone</th>
                 <th>Active Lay-Aways</th>
                 <th>Member Since</th>
-                <th> </th>
+                {isAdmin ? <th> </th> : null}
               </tr>
             </thead>
             <tbody>
@@ -94,16 +96,18 @@ export default function Customers() {
                   <td>{row.phone || '—'}</td>
                   <td>{row.active_layaway_count}</td>
                   <td>{formatDisplayDate(row.member_since) || '—'}</td>
-                  <td>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      aria-label={`Delete sessions for ${row.name}`}
-                      onClick={() => askDelete(row)}
-                    >
-                      Delete sessions
-                    </Button>
-                  </td>
+                  {isAdmin ? (
+                    <td>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        aria-label={`Delete sessions for ${row.name}`}
+                        onClick={() => askDelete(row)}
+                      >
+                        Delete sessions
+                      </Button>
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>

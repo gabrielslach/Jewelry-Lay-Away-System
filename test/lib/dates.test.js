@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addDaysIso,
   formatDisplayDate,
+  formatMonth,
   formatRelativeTime,
   todayIsoLocal,
 } from '../../src/lib/dates.js';
@@ -19,5 +20,15 @@ describe('dates', () => {
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
     expect(formatRelativeTime(yesterday.toISOString())).toBe('Yesterday');
+  });
+});
+
+describe('formatMonth', () => {
+  it('formats YYYY-MM as a short month and year', () => {
+    expect(formatMonth('2026-10')).toBe('Oct 2026');
+  });
+
+  it('returns unreadable input as is', () => {
+    expect(formatMonth('soon')).toBe('soon');
   });
 });

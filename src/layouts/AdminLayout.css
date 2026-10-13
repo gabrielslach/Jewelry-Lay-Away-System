@@ -238,8 +238,8 @@
 }
 
 .filter-btn.active {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .table-wrap {
@@ -286,7 +286,7 @@ th[aria-sort='ascending'] .th-sort,
 th[aria-sort='descending'] .th-sort,
 th[aria-sort='ascending'] .th-sort__icon,
 th[aria-sort='descending'] .th-sort__icon {
-  color: var(--accent);
+  color: var(--primary);
 }
 
 .th-sort:focus-visible,

@@ -45,7 +45,7 @@
 }
 
 .pv-links a:hover {
-  color: var(--accent);
+  color: var(--primary);
 }
 
 .pv-nav-right {
@@ -75,7 +75,7 @@
 }
 
 .hamburger.open {
-  background: var(--accent);
+  background: var(--primary);
   color: var(--on-accent);
 }
 
@@ -119,7 +119,7 @@
 .mobile-panel-links a:hover,
 .mobile-panel-links a:focus-visible,
 .mobile-panel-links a.active {
-  color: var(--accent);
+  color: var(--primary);
   text-decoration: none;
 }
 

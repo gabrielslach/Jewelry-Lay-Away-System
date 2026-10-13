@@ -88,3 +88,11 @@ export function formatRelativeTime(iso) {
   }
   return formatDisplayDate(iso);
 }
+
+export function formatMonth(value) {
+  const [year, month] = String(value ?? '').split('-').map(Number);
+  if (!year || !month) {
+    return String(value ?? '');
+  }
+  return new Date(year, month - 1, 1).toLocaleString('en-US', { month: 'short', year: 'numeric' });
+}

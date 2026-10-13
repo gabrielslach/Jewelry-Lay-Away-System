@@ -1,7 +1,7 @@
 import Button from './Button.jsx';
 import './Hero.css';
 
-const stats = ['3,000+ pieces', 'Up to 3 months', 'Dates you choose'];
+const stats = ['Curated pieces', 'Up to 3 months', 'Every 15 days'];
 
 export default function Hero() {
   return (
@@ -18,8 +18,8 @@ export default function Hero() {
             Pay on Your Terms.
           </h1>
           <p>
-            Secure any jewelry with a flexible lay-away — up to 3 months, on dates
-            you choose.
+            Choose a piece, pay a down payment, and settle the balance in fixed
+            installments every 15 days, for up to 3 months.
           </p>
           <Button variant="primary" to="/collections">
             Browse Collections

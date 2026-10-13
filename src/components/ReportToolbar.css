@@ -1,0 +1,62 @@
+.report-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.report-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.report-filters .form-row {
+  margin-bottom: 0;
+}
+
+.report-filters-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.report-export {
+  justify-content: center;
+  min-height: 44px;
+}
+
+.cell-right {
+  display: block;
+  text-align: right;
+}
+
+.report-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+@media (min-width: 640px) {
+  .report-toolbar {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .report-filters {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .report-export {
+    flex-shrink: 0;
+  }
+}
+
+.report-filters-actions .text-link {
+  min-height: 44px;
+}

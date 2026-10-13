@@ -49,8 +49,22 @@ describe('admin settings', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByDisplayValue('Mine Credit')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/late payment penalty/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/undefined/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
     expect(await screen.findByText('Settings saved.')).toBeInTheDocument();
+  });
+
+  it('keeps the accounting view read-only', async () => {
+    await signInAdmin('accounting');
+    render(
+      <MemoryRouter initialEntries={['/admin/settings']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByDisplayValue('Mine Credit')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Save Changes' })).toBeDisabled();
+    expect(screen.queryByLabelText(/late payment penalty/i)).not.toBeInTheDocument();
   });
 
   it('names each settings switch from its row label', async () => {

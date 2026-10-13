@@ -8,6 +8,7 @@ import {
   pushAdminNotification,
   rejectPayment,
 } from './epicRoutes.js';
+import { handleBankAccountRoutes, handleFinanceRoutes } from './financeRoutes.js';
 import { handleStaffRoutes } from './staffRoutes.js';
 import {
   createStore,
@@ -497,7 +498,7 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
   }
 
   if (verb === 'GET' && path === '/api/bank-accounts') {
-    return json(200, { results: store.bankAccounts });
+    return json(200, { results: store.bankAccounts.filter((account) => account.is_active) });
   }
 
   if (verb === 'POST' && path === '/api/dev/session/customer') {
@@ -539,12 +540,19 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     return json(200, { ok: true });
   }
 
-  if (verb === 'GET' && path === '/api/finance/ledger') {
-    const gate = requireAdmin(store, headers);
-    if (gate.error) {
-      return gate.error;
-    }
-    return json(200, { results: store.ledger });
+  const financeHelpers = {
+    json,
+    requireAdmin,
+    match,
+    findPlan,
+    refreshPlan,
+    customerById,
+  };
+  const finance =
+    handleFinanceRoutes(store, { verb, path, query, headers }, financeHelpers) ??
+    handleBankAccountRoutes(store, { verb, path, body, headers }, financeHelpers);
+  if (finance) {
+    return finance;
   }
 
   if (path === '/api/admin/staff' || match(path, '/api/admin/staff/:id')) {
@@ -600,22 +608,6 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     }
     store.penaltyRules.push(body ?? {});
     return json(201, body ?? {});
-  }
-
-  if (verb === 'POST' && path === '/api/bank-accounts') {
-    const gate = requireAdmin(store, headers);
-    if (gate.error) {
-      return gate.error;
-    }
-    const account = {
-      id: store.bankAccounts.length + 1,
-      bank_name: body?.bank_name,
-      account_name: body?.account_name,
-      account_number: body?.account_number,
-      qr_code_url: '/placeholders/1.svg',
-    };
-    store.bankAccounts.push(account);
-    return json(201, account);
   }
 
   if (verb === 'GET' && path === '/api/admin/payments/pending') {
@@ -728,6 +720,9 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     const gate = requireAdmin(store, headers);
     if (gate.error) {
       return gate.error;
+    }
+    if (gate.admin.role !== 'admin') {
+      return json(403, { error: 'Forbidden' });
     }
     const customer = customerById(store, params.id);
     if (!customer) {

@@ -178,9 +178,17 @@ describe('PaymentReviewModal', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Reject' }));
     fireEvent.click(screen.getByRole('button', { name: 'Reject payment' }));
     expect(screen.getByText('A reason is required.')).toBeInTheDocument();
-    expect(screen.getByLabelText('Reason')).toHaveFocus();
+    const reason = screen.getByLabelText('Reason for rejection');
+    expect(reason).toHaveFocus();
+    expect(reason.tagName).toBe('TEXTAREA');
+    expect(reason).toHaveAttribute('rows', '4');
+    expect(reason).toHaveAttribute('aria-invalid', 'true');
+    expect(reason).toHaveAttribute(
+      'placeholder',
+      'Tell the customer why this payment was rejected',
+    );
     expect(reject).not.toHaveBeenCalled();
-    fireEvent.change(screen.getByLabelText('Reason'), {
+    fireEvent.change(screen.getByLabelText('Reason for rejection'), {
       target: { value: 'blurry' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Reject payment' }));
@@ -196,7 +204,7 @@ describe('PaymentReviewModal', () => {
     expect(
       screen.queryByRole('button', { name: 'Back' }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Reason')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Reason for rejection')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reject' })).toHaveFocus();
   });
 
@@ -223,7 +231,7 @@ describe('PaymentReviewModal', () => {
     expect(
       screen.getByText('Give a reason, then press Reject payment.'),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('Reason')).toHaveFocus();
+    expect(screen.getByLabelText('Reason for rejection')).toHaveFocus();
   });
 
   it('disables the form while submitting', async () => {
@@ -235,13 +243,13 @@ describe('PaymentReviewModal', () => {
       }),
     );
     fireEvent.click(screen.getByRole('button', { name: 'Reject' }));
-    fireEvent.change(screen.getByLabelText('Reason'), {
+    fireEvent.change(screen.getByLabelText('Reason for rejection'), {
       target: { value: 'blurry' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Reject payment' }));
     expect(screen.getByRole('button', { name: 'Rejecting…' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled();
-    expect(screen.getByLabelText('Reason')).toBeDisabled();
+    expect(screen.getByLabelText('Reason for rejection')).toBeDisabled();
     expect(
       screen.getByRole('region', { name: 'Reject this payment' }),
     ).toHaveAttribute('aria-busy', 'true');
@@ -258,7 +266,7 @@ describe('PaymentReviewModal', () => {
       }),
     );
     fireEvent.click(screen.getByRole('button', { name: 'Reject' }));
-    fireEvent.change(screen.getByLabelText('Reason'), {
+    fireEvent.change(screen.getByLabelText('Reason for rejection'), {
       target: { value: 'blurry' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Reject payment' }));

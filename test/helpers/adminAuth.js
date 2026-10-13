@@ -1,4 +1,5 @@
 import { ensureAdminToken } from '../../src/services/ensureAdminToken.js';
+import { loginAdmin } from '../../src/services/loginAdmin.js';
 import {
   clearAdminSession,
   getAdmin,
@@ -9,6 +10,10 @@ import {
 
 export async function signInAdmin(role) {
   clearAdminSession();
+  if (role === 'accounting') {
+    await loginAdmin({ email: 'accounting@samplejewelry.example', password: 'password' });
+    return;
+  }
   await ensureAdminToken();
   if (role) {
     setAdminSession({
