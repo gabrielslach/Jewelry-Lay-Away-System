@@ -42,6 +42,8 @@ const links = [
     badgeKey: 'unread_notifications',
   },
   { to: '/admin/customers', label: 'Customers' },
+  { to: '/admin/staff', label: 'Staff', adminOnly: true },
+  { to: '/admin/bank-accounts', label: 'Bank accounts', adminOnly: true },
   { to: '/admin/settings', label: 'Settings' },
 ];
 
@@ -52,6 +54,8 @@ const titles = {
   '/admin/payments/due': 'Due & Overdue',
   '/admin/notifications': 'Notifications',
   '/admin/customers': 'Customers',
+  '/admin/staff': 'Staff',
+  '/admin/bank-accounts': 'Bank accounts',
   '/admin/settings': 'Settings',
 };
 
@@ -76,6 +80,7 @@ export default function AdminLayout() {
   const title = titles[location.pathname] || 'Admin';
   const token = getAdminToken();
   const admin = getAdmin();
+  const isAdmin = (admin?.role ?? 'admin') === 'admin';
 
   useEffect(() => {
     if (!token) {
@@ -111,23 +116,25 @@ export default function AdminLayout() {
       <aside className={open ? 'admin-sidebar open' : 'admin-sidebar'}>
         <Logo as="span" />
         <nav aria-label="Admin">
-          {links.map((link) => {
-            const count = badgeCount(alerts, link);
-            return (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                end={link.end}
-                className={({ isActive }) =>
-                  isActive ? 'sb-link active' : 'sb-link'
-                }
-                onClick={() => setOpen(false)}
-              >
-                <span>{link.label}</span>
-                {count > 0 ? <span className="sb-badge">{count}</span> : null}
-              </NavLink>
-            );
-          })}
+          {links
+            .filter((link) => isAdmin || !link.adminOnly)
+            .map((link) => {
+              const count = badgeCount(alerts, link);
+              return (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  end={link.end}
+                  className={({ isActive }) =>
+                    isActive ? 'sb-link active' : 'sb-link'
+                  }
+                  onClick={() => setOpen(false)}
+                >
+                  <span>{link.label}</span>
+                  {count > 0 ? <span className="sb-badge">{count}</span> : null}
+                </NavLink>
+              );
+            })}
         </nav>
       </aside>
       <div className="admin-main">

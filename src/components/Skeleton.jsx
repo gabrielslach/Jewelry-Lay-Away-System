@@ -240,3 +240,20 @@ export function SettingsSkeleton() {
     </>
   );
 }
+
+export function ListTableSkeleton({ headers }) {
+  return (
+    <table>
+      <thead>
+        <tr>
+          {headers.map((header) => (
+            <th key={header}>{header}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        <TableBodySkeletonRows columns={headers.length} rows={5} />
+      </tbody>
+    </table>
+  );
+}
