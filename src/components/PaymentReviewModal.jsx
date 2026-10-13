@@ -346,7 +346,7 @@ export default function PaymentReviewModal({
   return (
     <Modal
       title={`Order #${payment.plan_id}`}
-      onClose={onClose}
+      onClose={submitting ? () => {} : onClose}
       footer={footer}
     >
       <section
@@ -382,7 +382,7 @@ export default function PaymentReviewModal({
 
       {!reviewer ? (
         <p className="page-lead">
-          Only receivables and admins can confirm or reject.
+          Only admins and accounting can confirm or reject.
         </p>
       ) : null}
 

@@ -12,6 +12,8 @@ describe('getAdminDashboard', () => {
     await signIn();
     const data = await getAdminDashboard();
     expect(data.active_layaways).toBe(5);
+    expect(typeof data.overdue_payments).toBe('number');
+    expect(data.active_customers).toBe(5);
     expect(data.collections_last_6_weeks).toHaveLength(6);
   });
 
@@ -98,6 +100,20 @@ describe('getAdminDashboard', () => {
     expect(data.collected_this_month).toBe(37400);
     expect(data.overdue_payments).toBe(2);
     expect(data.active_customers).toBe(4);
+  });
+
+  it('passes flat KPI numbers through unchanged', async () => {
+    vi.spyOn(ensureAdminToken, 'adminRequest').mockResolvedValue({
+      active_layaways: 7,
+      overdue_payments: 2,
+      active_customers: 5,
+      collections_last_6_weeks: [],
+      recent_activity: [],
+    });
+
+    const data = await getAdminDashboard();
+
+    expect(data).toMatchObject({ active_layaways: 7, overdue_payments: 2, active_customers: 5 });
   });
 
   it('gives every week height 0 when all totals are zero', async () => {

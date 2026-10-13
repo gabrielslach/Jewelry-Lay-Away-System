@@ -8,8 +8,13 @@ describe('ReservationBadge', () => {
     expect(screen.getByText('Waiting for stock')).toHaveClass('badge-amber');
   });
 
-  it('renders nothing for unknown statuses', () => {
-    const { container } = render(<ReservationBadge status="none" />);
+  it('renders a muted None badge for none', () => {
+    render(<ReservationBadge status="none" />);
+    expect(screen.getByText('None')).toHaveClass('badge-mute');
+  });
+
+  it('renders nothing for unknown or missing statuses', () => {
+    const { container } = render(<ReservationBadge status="bogus" />);
     expect(container).toBeEmptyDOMElement();
   });
 });

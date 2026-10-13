@@ -249,6 +249,26 @@ describe('PaymentReviewModal', () => {
     await waitFor(() => expect(onDone).toHaveBeenCalled());
   });
 
+  it('ignores Escape and close controls while submitting', async () => {
+    const { onClose, onDone } = setup();
+    let finish;
+    vi.spyOn(adminPayments, 'rejectAdminPayment').mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Reject' }));
+    fireEvent.change(screen.getByLabelText('Reason'), {
+      target: { value: 'blurry' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Reject payment' }));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(onClose).not.toHaveBeenCalled();
+    finish({});
+    await waitFor(() => expect(onDone).toHaveBeenCalled());
+  });
+
   it('re-enables the form after an API error', async () => {
     setup();
     vi.spyOn(adminPayments, 'confirmAdminPayment').mockRejectedValue(
@@ -268,7 +288,7 @@ describe('PaymentReviewModal', () => {
     expect(screen.getByRole('button', { name: 'Confirm' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Reject' })).toBeDisabled();
     expect(
-      screen.getByText('Only receivables and admins can confirm or reject.'),
+      screen.getByText('Only admins and accounting can confirm or reject.'),
     ).toBeInTheDocument();
   });
 });

@@ -77,6 +77,46 @@ describe('admin orders', () => {
     ).toBeInTheDocument();
   });
 
+  it('hides Retry and Cancel reservation for accounting', async () => {
+    await signInAdmin('accounting');
+    const [plan] = await getAdminPlansModule.getAdminPlans();
+    vi.spyOn(getAdminPlansModule, 'getAdminPlans').mockResolvedValue([
+      { ...plan, reservation_status: 'waiting_for_stock' },
+    ]);
+    render(
+      <MemoryRouter initialEntries={['/admin/orders']}>
+        <App />
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'View' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getAllByRole('button', { name: 'Close' })).toHaveLength(2);
+    expect(within(dialog).queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole('button', { name: 'Cancel reservation' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows dashes for closed-plan next due and missing reservation, None badge otherwise', async () => {
+    vi.spyOn(getAdminPlansModule, 'getAdminPlans').mockResolvedValue([
+      { id: 'LA-1', customer_name: 'Ana', status: 'defaulted', next_due: 'Nov 1', reservation_status: 'none' },
+      { id: 'LA-2', customer_name: 'Ben', total_price: 100, status: 'active', next_due: '', reservation_status: undefined },
+      { id: 'LA-3', customer_name: 'Cy', status: 'active', next_due: 'Dec 5', reservation_status: 'reserved' },
+    ]);
+    render(
+      <MemoryRouter initialEntries={['/admin/orders']}>
+        <App />
+      </MemoryRouter>,
+    );
+    const rowOf = async (id) => (await screen.findByText(id)).closest('tr');
+    const closed = await rowOf('LA-1');
+    expect(within(closed).queryByText('Nov 1')).not.toBeInTheDocument();
+    expect(within(closed).getByText('None')).toHaveClass('badge-mute');
+    const noDue = await rowOf('LA-2');
+    expect(within(noDue).getAllByText('—')).toHaveLength(2);
+    expect(within(await rowOf('LA-3')).getByText('Dec 5')).toBeInTheDocument();
+  });
+
   it('lists active plans under All and On Track without an Active filter', async () => {
     vi.spyOn(getAdminPlansModule, 'getAdminPlans').mockResolvedValue([
       {

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import ManualPaymentForm from '../../src/components/ManualPaymentForm.jsx';
 import { ToastProvider } from '../../src/components/ToastProvider.jsx';
 import * as bankAccounts from '../../src/services/getBankAccounts.js';
+import { ServiceError } from '../../src/services/http.js';
 import * as submitManualPayment from '../../src/services/submitManualPayment.js';
 
 function renderForm(props = {}) {
@@ -157,6 +158,25 @@ describe('ManualPaymentForm', () => {
     expect(screen.getByRole('button', { name: 'Submit payment' })).toBeEnabled();
     expect(screen.getByLabelText('Reference number')).toHaveValue('BT-9');
   });
+
+  it.each(['Pay the earlier installment first', 'Plan is cancelled'])(
+    'shows the server 409 message "%s"',
+    async (message) => {
+      vi.spyOn(bankAccounts, 'getBankAccounts').mockResolvedValue([
+        { id: 1, bank_name: 'Sample Bank', account_name: 'A', account_number: '1' },
+      ]);
+      vi.spyOn(submitManualPayment, 'submitInstallmentManual').mockRejectedValue(
+        new ServiceError(message, 409),
+      );
+      renderForm({ kind: 'installment', installmentId: 'i-2' });
+      fireEvent.change(await screen.findByLabelText('Reference number'), {
+        target: { value: 'BT-9' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Submit payment' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(message);
+    },
+  );
 
   it('focuses the first invalid field and clears only the edited field error', async () => {
     vi.spyOn(bankAccounts, 'getBankAccounts').mockResolvedValue([

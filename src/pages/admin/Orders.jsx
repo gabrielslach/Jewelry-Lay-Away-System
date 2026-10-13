@@ -33,6 +33,9 @@ const FILTERS = [
     .map(([id, { label }]) => ({ id, label })),
 ];
 
+const CLOSED_STATUSES = ['completed', 'cancelled', 'defaulted'];
+const isClosed = (plan) => CLOSED_STATUSES.includes(plan.status);
+
 function peso(value) {
   const amount = Number(value);
   return value == null || value === '' || Number.isNaN(amount)
@@ -195,11 +198,12 @@ export default function Orders() {
       {
         id: 'next_due',
         header: 'Next Due',
-        accessorFn: (plan) => plan.next_due || undefined,
+        accessorFn: (plan) => (isClosed(plan) ? undefined : plan.next_due || undefined),
         filterFn: 'includesString',
         sortUndefined: 'last',
         sortingFn: sortByValue((plan) => plan.next_due_date),
-        cell: ({ row }) => row.original.next_due,
+        cell: ({ row }) =>
+          isClosed(row.original) ? '—' : row.original.next_due || '—',
       },
       {
         id: 'plan_status',
@@ -211,7 +215,12 @@ export default function Orders() {
         id: 'reservation_status',
         header: 'Reservation Status',
         accessorFn: (plan) => RESERVATION_LABELS[plan.reservation_status] ?? '',
-        cell: ({ row }) => <ReservationBadge status={row.original.reservation_status} />,
+        cell: ({ row }) =>
+          RESERVATION_LABELS[row.original.reservation_status] ? (
+            <ReservationBadge status={row.original.reservation_status} />
+          ) : (
+            '—'
+          ),
       },
       {
         id: 'actions',
@@ -325,23 +334,17 @@ export default function Orders() {
               <Button variant="outline" onClick={() => setActive(null)}>
                 Close
               </Button>
-              {active.reservation_error ||
-              active.reservation_status === 'waiting_for_stock' ? (
-                <Button
-                  variant="primary"
-                  onClick={handleRetry}
-                  disabled={!admin}
-                >
+              {admin &&
+              (active.reservation_error ||
+                active.reservation_status === 'waiting_for_stock') ? (
+                <Button variant="primary" onClick={handleRetry}>
                   Retry
                 </Button>
               ) : null}
-              {active.reservation_status === 'reserved' ||
-              active.reservation_status === 'waiting_for_stock' ? (
-                <Button
-                  variant="outline"
-                  onClick={() => setCancelOpen(true)}
-                  disabled={!admin}
-                >
+              {admin &&
+              (active.reservation_status === 'reserved' ||
+                active.reservation_status === 'waiting_for_stock') ? (
+                <Button variant="outline" onClick={() => setCancelOpen(true)}>
                   Cancel reservation
                 </Button>
               ) : null}
@@ -398,7 +401,7 @@ export default function Orders() {
               {active.reservation_error}
             </p>
           ) : null}
-          <InstallmentSchedule installments={active.installments} />
+          <InstallmentSchedule installments={active.installments} planStatus={active.status} />
         </Modal>
       ) : null}
 
