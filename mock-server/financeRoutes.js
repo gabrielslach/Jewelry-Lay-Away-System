@@ -17,14 +17,24 @@ function csv(filename, columns, rows) {
   };
 }
 
+const numericId = (id) => Number(String(id).replace(/\D/g, ''));
+
+// The API sends ISO UTC timestamps; plain dates are Manila calendar days.
+const toTimestamp = (value) =>
+  value.length === 10
+    ? new Date(`${value}T00:00:00+08:00`).toISOString()
+    : value;
+
 function installmentRows(store, { refreshPlan, customerById }) {
+  let nextInstallmentId = 1;
   return store.plans.flatMap((plan) => {
     refreshPlan(store, plan);
     const customer = customerById(store, plan.customer_id);
     return plan.installments.map((installment) => ({
       plan,
       installment,
-      customer_name: customer?.name ?? '',
+      installment_id: nextInstallmentId++,
+      customer,
     }));
   });
 }
@@ -39,11 +49,11 @@ function receivables(store, helpers) {
   );
   const items = open
     .filter(({ installment }) => installment.status === 'overdue')
-    .map(({ plan, installment, customer_name: name }) => ({
-      plan_id: plan.id,
-      customer_name: name,
-      item_name: plan.item_name,
-      due_date: installment.due_date,
+    .map(({ plan, installment, installment_id: id, customer }) => ({
+      installment_id: id,
+      plan_id: numericId(plan.id),
+      term_number: installment.term_number,
+      due_date: toTimestamp(installment.due_date),
       amount: Number(installment.amount),
       days_overdue: Math.max(
         1,
@@ -51,16 +61,21 @@ function receivables(store, helpers) {
           (Date.parse(today) - Date.parse(installment.due_date)) / 86_400_000,
         ),
       ),
+      customer_id: customer?.id ?? null,
+      customer_name: customer?.name ?? '',
+      customer_email: customer?.email ?? '',
+      customer_phone: customer?.phone ?? '',
     }));
-  const bucket = (test) => {
+  const bucket = (label, test) => {
     const hit = items.filter((item) => test(item.days_overdue));
     return {
+      label,
       count: hit.length,
       amount: round2(hit.reduce((sum, item) => sum + item.amount, 0)),
     };
   };
   return {
-    overdue: bucket(() => true),
+    overdue: bucket('Overdue', () => true),
     outstanding_receivable: {
       count: open.length,
       amount: round2(
@@ -70,47 +85,41 @@ function receivables(store, helpers) {
         ),
       ),
     },
-    aging: {
-      days_1_7: bucket((days) => days <= 7),
-      days_8_30: bucket((days) => days > 7 && days <= 30),
-      days_31_plus: bucket((days) => days > 30),
-    },
+    aging: [
+      bucket('1-7 days', (days) => days <= 7),
+      bucket('8-30 days', (days) => days > 7 && days <= 30),
+      bucket('31+ days', (days) => days > 30),
+    ],
     items,
   };
 }
 
 function ledger(store, query, helpers) {
   const planFilter = query.get('plan_id');
-  const entries = installmentRows(store, helpers)
+  return installmentRows(store, helpers)
     .filter(({ installment }) => installment.status !== 'superseded')
-    .map(({ plan, installment, customer_name: name }) => {
+    .map(({ plan, installment, installment_id: id, customer }) => {
       const paid = installment.status === 'paid';
       return {
-        date: paid ? installment.paid_at : installment.due_date,
+        id,
+        created_at: toTimestamp(paid ? installment.paid_at : installment.due_date),
         entry_type: paid ? 'payment' : 'receivable',
-        plan_id: plan.id,
-        customer_name: name,
-        description:
-          `${plan.item_name}, installment ${installment.term_number ?? ''}`.trim(),
-        amount: Number(installment.amount),
+        amount: Number(installment.amount).toFixed(2),
+        plan_id: numericId(plan.id),
+        installment_id: id,
+        finance_account_id: paid ? 1 : null,
+        customer_name: customer?.name ?? '',
       };
     })
-    .filter((entry) => !query.get('from') || entry.date >= query.get('from'))
-    .filter((entry) => !query.get('to') || entry.date <= query.get('to'))
+    .filter((entry) => !query.get('from') || entry.created_at >= query.get('from'))
+    .filter((entry) => !query.get('to') || entry.created_at <= query.get('to'))
     .filter(
       (entry) =>
         !query.get('entry_type') ||
         entry.entry_type === query.get('entry_type'),
     )
-    .filter((entry) => {
-      if (!planFilter) {
-        return true;
-      }
-      const plan = helpers.findPlan(store, planFilter);
-      return plan ? plan.id === entry.plan_id : false;
-    })
-    .sort((a, b) => b.date.localeCompare(a.date));
-  return entries;
+    .filter((entry) => !planFilter || entry.plan_id === Number(planFilter))
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
 
 function profit(store, query, helpers) {
@@ -119,6 +128,7 @@ function profit(store, query, helpers) {
   const months = new Map();
   let realizedInterest = 0;
   let scheduledInterest = 0;
+  let installmentsPaid = 0;
   installmentRows(store, helpers).forEach(({ installment }) => {
     const interest =
       Number(installment.amount) * (INTEREST_RATE / (1 + INTEREST_RATE));
@@ -131,15 +141,14 @@ function profit(store, query, helpers) {
       return;
     }
     realizedInterest += interest;
+    installmentsPaid += 1;
     const key = day.slice(0, 7);
     const row = months.get(key) ?? {
       month: key,
       interest_profit: 0,
       markup_profit: 0,
-      total: 0,
     };
     row.interest_profit = round2(row.interest_profit + interest);
-    row.total = round2(row.interest_profit + row.markup_profit);
     months.set(key, row);
   });
   const booked = store.plans.reduce(
@@ -153,13 +162,16 @@ function profit(store, query, helpers) {
     interest_profit: {
       realized: round2(realizedInterest),
       scheduled_remaining: round2(scheduledInterest),
+      installments_paid: installmentsPaid,
     },
     markup_profit: {
       booked_on_new_plans: round2(booked),
       realized_on_installments: 0,
+      plans_counted: store.plans.length,
     },
     total_realized: round2(realizedInterest),
     principal_collected: 0,
+    down_payments_collected: 0,
     by_month,
   };
 }
@@ -191,17 +203,19 @@ export function handleFinanceRoutes(
       return csv(
         'ledger.csv',
         [
-          'date',
+          'id',
+          'created_at',
           'entry_type',
-          'plan_id',
-          'customer_name',
-          'description',
           'amount',
+          'plan_id',
+          'installment_id',
+          'finance_account_id',
+          'customer_name',
         ],
         rows,
       );
     }
-    return json(200, { results: pageOf(rows, query), count: rows.length });
+    return json(200, pageOf(rows, query));
   }
 
   if (path === '/api/admin/reports/receivables') {
@@ -212,14 +226,18 @@ export function handleFinanceRoutes(
     const report = receivables(store, helpers);
     if (isCsv) {
       return csv(
-        'receivables.csv',
+        'receivables-overdue.csv',
         [
+          'installment_id',
           'plan_id',
-          'customer_name',
-          'item_name',
+          'term_number',
           'due_date',
           'amount',
           'days_overdue',
+          'customer_id',
+          'customer_name',
+          'customer_email',
+          'customer_phone',
         ],
         report.items,
       );
@@ -237,7 +255,10 @@ export function handleFinanceRoutes(
       return csv(
         'profit-by-month.csv',
         ['month', 'interest_profit', 'markup_profit', 'total'],
-        report.by_month,
+        report.by_month.map((row) => ({
+          ...row,
+          total: round2(row.interest_profit + row.markup_profit),
+        })),
       );
     }
     return json(200, report);

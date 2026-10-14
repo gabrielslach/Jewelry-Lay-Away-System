@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   addDaysIso,
   formatDisplayDate,
+  formatManilaDate,
+  formatManilaDateTime,
   formatMonth,
   formatRelativeTime,
   todayIsoLocal,
@@ -30,5 +32,14 @@ describe('formatMonth', () => {
 
   it('returns unreadable input as is', () => {
     expect(formatMonth('soon')).toBe('soon');
+  });
+
+  it('formats UTC timestamps in Asia/Manila', () => {
+    expect(formatManilaDate('2026-10-07T16:00:00.000Z')).toBe('Oct 8, 2026');
+    expect(formatManilaDate('2026-10-07T15:59:00.000Z')).toBe('Oct 7, 2026');
+    expect(
+      formatManilaDateTime('2026-10-07T16:30:00.000Z').replace(/\s/g, ' '),
+    ).toBe('Oct 8, 2026, 12:30 AM');
+    expect(formatManilaDate('nope')).toBe('');
   });
 });

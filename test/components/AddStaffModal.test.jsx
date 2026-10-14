@@ -57,7 +57,7 @@ describe('AddStaffModal', () => {
     fill('Ann', 'accounting@samplejewelry.example', 'longenough');
     fireEvent.click(screen.getByRole('button', { name: 'Add staff' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Email already exists',
+      'An account with that email already exists',
     );
     expect(screen.getByLabelText('Name')).toHaveValue('Ann');
     expect(onSaved).not.toHaveBeenCalled();

@@ -4,6 +4,30 @@ const DISPLAY = new Intl.DateTimeFormat('en-US', {
   year: 'numeric',
 });
 
+const MANILA = { timeZone: 'Asia/Manila' };
+const MANILA_DATE = new Intl.DateTimeFormat('en-US', {
+  ...MANILA,
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+});
+const MANILA_DATE_TIME = new Intl.DateTimeFormat('en-US', {
+  ...MANILA,
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+
+function formatManila(formatter, iso) {
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? '' : formatter.format(date);
+}
+
+export const formatManilaDate = (iso) => formatManila(MANILA_DATE, iso);
+export const formatManilaDateTime = (iso) => formatManila(MANILA_DATE_TIME, iso);
+
 export function todayIsoLocal() {
   const now = new Date();
   const offset = now.getTimezoneOffset();

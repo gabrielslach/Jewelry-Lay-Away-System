@@ -64,7 +64,7 @@ describe('mock staff', () => {
     expect(createStaff(store, auth, newStaff(2, 'accounting')).status).toBe(201);
     const full = createStaff(store, auth, newStaff(3, 'accounting'));
     expect(full.status).toBe(409);
-    expect(full.body.error).toMatch(/accounting role is full/);
+    expect(full.body.error).toMatch(/At most 3 active accounting accounts/);
   });
 
   it('enforces the admin cap of 2 and rejects the retired roles', () => {

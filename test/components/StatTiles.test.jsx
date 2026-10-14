@@ -26,4 +26,14 @@ describe('StatTiles', () => {
     expect(container.querySelector('.stat-value')).toBeNull();
     expect(container.firstChild).toHaveClass('stat-tile-emphasis');
   });
+
+  it('marks a small tile', () => {
+    const { container } = render(<StatTile label="Principal" value="₱1.00" small />);
+    expect(container.firstChild).toHaveClass('stat-tile-small');
+  });
+
+  it('shows a secondary note under the value', () => {
+    render(<StatTile label="1-7 days" value="₱1.00" note="3 installments" />);
+    expect(screen.getByText('3 installments')).toBeInTheDocument();
+  });
 });

@@ -93,8 +93,8 @@ describe('admin staff page', () => {
   });
 
   it.each([
-    ['the role is full', 'The accounting role is full (3 active accounts)', 409],
-    ['the email already exists', 'Email already exists', 409],
+    ['the role is full', 'At most 3 active accounting accounts are allowed', 409],
+    ['the email already exists', 'An account with that email already exists', 409],
   ])('shows the server message when adding fails because %s', async (_, message, status) => {
     vi.spyOn(createStaffModule, 'createAdminStaff').mockRejectedValue(
       new ServiceError(message, status),
@@ -122,20 +122,20 @@ describe('admin staff page', () => {
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'longenough' } });
     const dialog = screen.getByRole('dialog');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Add staff' }));
-    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Email already exists');
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('An account with that email already exists');
   });
 
   it.each([
     [
       'changing your own role',
       'Sample Admin',
-      'You cannot change your own role or deactivate yourself',
+      'You cannot change your own role or deactivate your own account',
       403,
     ],
     [
       'demoting the last admin',
       'Sample Accountant',
-      'The last active admin cannot be demoted or deactivated',
+      'Cannot demote or deactivate the last active admin',
       409,
     ],
   ])('shows the server message when editing fails by %s', async (_, name, message, status) => {
