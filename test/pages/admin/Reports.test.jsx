@@ -270,10 +270,21 @@ describe.each(['admin', 'accounting'])('admin reports page as %s', (role) => {
       '-',
       '₱100.50',
     ]);
-    expect(screen.getByText('Page total')).toBeInTheDocument();
-    expect(screen.getByText('₱2,512.50')).toBeInTheDocument();
+    expect(screen.queryByText('Page total')).not.toBeInTheDocument();
     expect(screen.queryByText('Total entries')).not.toBeInTheDocument();
     expect(screen.getAllByRole('row')).toHaveLength(26);
+  });
+
+  it('shows the page total only when one entry type is filtered', async () => {
+    renderReports();
+    fireEvent.click(screen.getByRole('tab', { name: 'Ledger' }));
+    expect(await screen.findByText('Customer 0')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Entry type'), {
+      target: { value: 'payment' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    expect(await screen.findByText('Page total')).toBeInTheDocument();
+    expect(screen.getByText('₱2,512.50')).toBeInTheDocument();
   });
 
   it('shows the ledger empty state', async () => {
