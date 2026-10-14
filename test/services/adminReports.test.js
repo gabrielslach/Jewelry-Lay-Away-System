@@ -22,11 +22,14 @@ describe.each(['admin', 'accounting'])(
       const receivables = await getReport('receivables');
       expect(receivables).toHaveProperty('outstanding_receivable');
       expect(receivables).toHaveProperty('overdue');
+      expect(receivables.aging).toHaveLength(3);
+      expect(receivables.aging[0]).toHaveProperty('label');
       expect(Array.isArray(receivables.items)).toBe(true);
 
       const ledger = await getReport('ledger', { limit: 2, offset: 0 });
-      expect(ledger.results).toHaveLength(2);
-      expect(ledger.count).toBeGreaterThan(2);
+      expect(ledger).toHaveLength(2);
+      expect(typeof ledger[0].amount).toBe('string');
+      expect(ledger[0]).toHaveProperty('finance_account_id');
 
       const profit = await getReport('profit');
       expect(profit.interest_profit).toHaveProperty('realized');
@@ -42,7 +45,7 @@ describe.each(['admin', 'accounting'])(
       );
       expect((await exportReportCsv('ledger')).filename).toBe('ledger.csv');
       expect((await exportReportCsv('receivables')).filename).toBe(
-        'receivables.csv',
+        'receivables-overdue.csv',
       );
     });
   },

@@ -7,37 +7,25 @@ import StatTiles, { StatTile } from './StatTiles.jsx';
 import { useReport } from './useReport.js';
 import { formatMonth } from '../lib/dates.js';
 import { formatPesoDecimals } from '../lib/money.js';
+import { rightColumn, textColumn } from '../lib/reportColumns.jsx';
 import { humanizeKey } from '../lib/reportLabels.js';
 
 const EMPTY_FILTERS = { from: '', to: '' };
 
-function money(value) {
-  return (
-    <span className="cell-right num-cell">{formatPesoDecimals(value)}</span>
-  );
-}
-
-function moneyColumn(id, header) {
-  return {
-    id,
-    header: () => <span className="cell-right">{header}</span>,
-    enableSorting: false,
-    accessorFn: (row) => row[id],
-    cell: ({ row }) => money(row.original[id]),
-  };
-}
-
 const MONTH_COLUMNS = [
-  {
-    id: 'month',
-    header: 'Month',
-    enableSorting: false,
-    accessorFn: (row) => formatMonth(row.month),
-  },
-  moneyColumn('interest_profit', 'Interest profit'),
-  moneyColumn('markup_profit', 'Markup profit'),
-  moneyColumn('total', 'Total'),
+  textColumn('month', 'Month', (row) => formatMonth(row.month)),
+  rightColumn('interest_profit', 'Interest profit', (row) =>
+    formatPesoDecimals(row.interest_profit),
+  ),
+  rightColumn('markup_profit', 'Markup profit', (row) =>
+    formatPesoDecimals(row.markup_profit),
+  ),
+  rightColumn('total', 'Total', (row) =>
+    formatPesoDecimals(row.interest_profit + row.markup_profit),
+  ),
 ];
+
+const COUNT_KEYS = ['installments_paid', 'plans_counted'];
 
 function SourceTile({ label, source }) {
   if (source !== null && typeof source === 'object') {
@@ -46,7 +34,9 @@ function SourceTile({ label, source }) {
         label={label}
         lines={Object.entries(source).map(([key, value]) => ({
           label: humanizeKey(key),
-          value: formatPesoDecimals(value),
+          value: COUNT_KEYS.includes(key)
+            ? String(value)
+            : formatPesoDecimals(value),
         }))}
       />
     );
@@ -89,6 +79,18 @@ export default function ProfitReport() {
             label="Total realized"
             value={formatPesoDecimals(data?.total_realized ?? 0)}
             emphasis
+          />
+        </StatTiles>
+        <StatTiles secondary>
+          <StatTile
+            small
+            label="Principal collected"
+            value={formatPesoDecimals(data?.principal_collected ?? 0)}
+          />
+          <StatTile
+            small
+            label="Down payments collected"
+            value={formatPesoDecimals(data?.down_payments_collected ?? 0)}
           />
         </StatTiles>
         <div className="table-wrap">

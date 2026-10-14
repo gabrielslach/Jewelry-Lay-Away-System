@@ -344,8 +344,6 @@ export function initialSettings() {
     business_name: 'Mine Credit',
     max_term_months: 3,
     require_full_payment_before_release: true,
-    sms_reminders: true,
-    customer_selected_due_dates: true,
     notify_accounting_roles: false,
     grace_period_days: 7,
   };

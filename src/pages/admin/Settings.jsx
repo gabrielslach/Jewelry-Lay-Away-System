@@ -92,20 +92,6 @@ export default function Settings() {
           onToggle={() => toggle('require_full_payment_before_release')}
         />
         <SettingsSwitch
-          id="setting-sms-reminders"
-          label="Send SMS payment reminders"
-          checked={form.sms_reminders}
-          disabled={!isAdmin}
-          onToggle={() => toggle('sms_reminders')}
-        />
-        <SettingsSwitch
-          id="setting-customer-dates"
-          label="Allow customer-selected due dates"
-          checked={form.customer_selected_due_dates}
-          disabled={!isAdmin}
-          onToggle={() => toggle('customer_selected_due_dates')}
-        />
-        <SettingsSwitch
           id="setting-notify-accounting"
           label="Also send alerts to accounting accounts"
           checked={Boolean(form.notify_accounting_roles)}

@@ -60,3 +60,9 @@
 .report-filters-actions .text-link {
   min-height: 44px;
 }
+
+.customer-contact {
+  display: block;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}

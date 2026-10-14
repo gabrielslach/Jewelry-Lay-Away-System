@@ -90,22 +90,62 @@ describe('mock reports', () => {
     (email) => {
       const store = createStore();
       const headers = login(store, email);
-      expect(
-        call(store, 'GET', '/api/admin/reports/receivables', { headers }).body
-          .items,
-      ).toBeDefined();
+      const receivables = call(store, 'GET', '/api/admin/reports/receivables', {
+        headers,
+      }).body;
+      expect(receivables.aging.map((bucket) => bucket.label)).toEqual([
+        '1-7 days',
+        '8-30 days',
+        '31+ days',
+      ]);
+      expect(receivables.items.length).toBeGreaterThan(0);
+      expect(Object.keys(receivables.items[0])).toEqual([
+        'installment_id',
+        'plan_id',
+        'term_number',
+        'due_date',
+        'amount',
+        'days_overdue',
+        'customer_id',
+        'customer_name',
+        'customer_email',
+        'customer_phone',
+      ]);
       const ledger = call(
         store,
         'GET',
         '/api/finance/ledger?limit=3&offset=3',
         { headers },
       );
-      expect(ledger.body.results).toHaveLength(3);
-      expect(ledger.body.count).toBeGreaterThan(6);
-      expect(
-        call(store, 'GET', '/api/admin/reports/profit', { headers }).body
-          .by_month.length,
-      ).toBeGreaterThan(0);
+      expect(Array.isArray(ledger.body)).toBe(true);
+      expect(ledger.body).toHaveLength(3);
+      expect(Object.keys(ledger.body[0])).toEqual([
+        'id',
+        'created_at',
+        'entry_type',
+        'amount',
+        'plan_id',
+        'installment_id',
+        'finance_account_id',
+        'customer_name',
+      ]);
+      expect(typeof ledger.body[0].amount).toBe('string');
+      const { by_month: months } = call(
+        store,
+        'GET',
+        '/api/admin/reports/profit',
+        { headers },
+      ).body;
+      const profit = call(store, 'GET', '/api/admin/reports/profit', {
+        headers,
+      }).body;
+      expect(profit.down_payments_collected).toBe(0);
+      expect(months.length).toBeGreaterThan(0);
+      expect(Object.keys(months[0])).toEqual([
+        'month',
+        'interest_profit',
+        'markup_profit',
+      ]);
     },
   );
 
@@ -118,13 +158,14 @@ describe('mock reports', () => {
       '/api/finance/ledger?entry_type=receivable',
       { headers },
     );
-    expect(
-      filtered.body.results.every((row) => row.entry_type === 'receivable'),
-    ).toBe(true);
+    expect(filtered.body.every((row) => row.entry_type === 'receivable')).toBe(
+      true,
+    );
     const csv = call(store, 'GET', '/api/finance/ledger?format=csv&limit=1', {
       headers,
     });
     expect(csv.headers['Content-Type']).toContain('text/csv');
+    expect(csv.headers['Content-Disposition']).toContain('ledger.csv');
     expect(csv.body.split('\n').length).toBeGreaterThan(5);
     const profit = call(store, 'GET', '/api/admin/reports/profit?format=csv', {
       headers,

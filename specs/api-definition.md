@@ -1,6 +1,6 @@
 # Mine Credit — Internal Storefront API v1 (draft contract)
 
-**Status:** draft contract for frontend build-against (Sep 23, 2026) — backend is being built to this spec in parallel — **v1.28**
+**Status:** draft contract for frontend build-against (Sep 23, 2026) — backend is being built to this spec in parallel — **v1.29**
 **Audience:** Frontend Dev 1
 **Scope:** everything the storefront and admin panel need from The Loft's own backend
 
@@ -372,7 +372,95 @@ Price/markup logic is still unresolved (WBS M1) — `price` above is the provide
 ---
 
 _This document is confidential and proprietary to The Loft IT Solutions._
-_Version 1.28 - Updated Oct 13, 2026 (latest): `GET /api/admin/reports/profit` accepts `?format=csv` and returns `profit-by-month.csv` (the `by_month` rows, honoring `from` and `to`). For the Reports screen: receivables and ledger already had `format=csv`; receivables has no date filter (current snapshot); ledger takes `from`, `to`, `entry_type`, `plan_id`, `limit`, `offset`._
+
+## Report response examples (Oct 14, 2026)
+
+Real responses from the sandbox, with customer details replaced. Formats to know: **dates are ISO timestamps in UTC** (a Manila date at midnight arrives as the previous day at 16:00Z, so display in Asia/Manila); **ledger `amount` is a string** (parse it), while receivables and profit amounts are numbers; **`aging` is an array** of three objects, not keyed.
+
+`GET /api/admin/reports/receivables` (admin and accounting; `?format=csv` returns the overdue items as `receivables-overdue.csv`)
+
+```json
+{
+  "as_of": "2026-10-14",
+  "currency": "PHP",
+  "overdue": { "count": 2, "amount": 11562.78 },
+  "outstanding_receivable": { "count": 59, "amount": 895376.6 },
+  "aging": [
+    { "label": "1-7 days (in grace)", "count": 2, "amount": 11562.78 },
+    { "label": "8-30 days", "count": 0, "amount": 0 },
+    { "label": "31+ days", "count": 0, "amount": 0 }
+  ],
+  "items": [
+    {
+      "installment_id": 251,
+      "plan_id": 63,
+      "term_number": 1,
+      "due_date": "2026-10-07T16:00:00.000Z",
+      "amount": 5781.39,
+      "days_overdue": 6,
+      "customer_id": 38,
+      "customer_name": "Sample Customer",
+      "customer_email": "customer@example.com",
+      "customer_phone": null
+    }
+  ]
+}
+```
+
+`GET /api/finance/ledger?from=&to=&entry_type=&plan_id=&limit=&offset=` returns a **bare array** (no total; fetch `limit + 1` rows to know if there is another page). JSON defaults to 200 rows (max 5000). `?format=csv` with no `limit` exports **every** row (from Oct 14); with a `limit` it exports that page. File: `ledger.csv`.
+
+```json
+[
+  {
+    "id": 102,
+    "finance_account_id": 2,
+    "plan_id": 72,
+    "installment_id": 306,
+    "entry_type": "payment",
+    "amount": "4631.30",
+    "created_at": "2026-10-12T20:21:22.000Z",
+    "customer_name": "Sample Customer"
+  }
+]
+```
+
+`GET /api/admin/reports/profit?from=YYYY-MM-DD&to=YYYY-MM-DD` (admin and accounting; `?format=csv` returns the `by_month` rows plus a `total` column as `profit-by-month.csv`). In the JSON, `by_month` rows have `month` (`YYYY-MM`), `interest_profit` and `markup_profit` only; add the two for a total.
+
+```json
+{
+  "period": { "from": null, "to": null },
+  "currency": "PHP",
+  "interest_profit": {
+    "realized": 15936.41,
+    "scheduled_remaining": 133434.06,
+    "installments_paid": 13
+  },
+  "markup_profit": {
+    "booked_on_new_plans": 281143.18,
+    "plans_counted": 14,
+    "realized_on_installments": 54520.66
+  },
+  "total_realized": 70457.07,
+  "principal_collected": 50986.79,
+  "down_payments_collected": 185269.42,
+  "by_month": [
+    {
+      "month": "2026-10",
+      "interest_profit": 15936.41,
+      "markup_profit": 54520.66
+    }
+  ],
+  "notes": [
+    "Interest and markup are reported separately; total_realized is their sum."
+  ]
+}
+```
+
+Failed requests return JSON `{ "error": "..." }` with 401, 403, 400 or 500, never a file. CSV responses send `Content-Disposition: attachment; filename="..."`.
+
+_Version 1.29 - Updated Oct 14, 2026 (latest): added the section "Report response examples" with real sample JSON for the receivables, ledger and profit endpoints, and the data formats to know (UTC ISO dates, ledger `amount` as a string, `aging` as an array, ledger as a bare array). The ledger CSV with no `limit` now exports every row._
+
+_Version 1.28 - Updated Oct 13, 2026 : `GET /api/admin/reports/profit` accepts `?format=csv` and returns `profit-by-month.csv` (the `by_month` rows, honoring `from` and `to`). For the Reports screen: receivables and ledger already had `format=csv`; receivables has no date filter (current snapshot); ledger takes `from`, `to`, `entry_type`, `plan_id`, `limit`, `offset`._
 
 _Version 1.27 - Updated Oct 13, 2026: `GET /api/admin/dashboard` `collections_last_6_weeks` fixed - weeks start on Monday, the last point is always the current week, and each point is matched on its exact `week_start` (before, the current week's payments could be missing from the chart while `collected_this_month` included them). `penalty_per_day` in `GET /api/admin/settings` is `null` by design until a rate is set: show a dash, not a currency value._
 

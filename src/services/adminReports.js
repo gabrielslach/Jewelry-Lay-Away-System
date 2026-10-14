@@ -4,7 +4,7 @@ import { requestBlob } from './http.js';
 const REPORTS = {
   receivables: {
     path: '/api/admin/reports/receivables',
-    file: 'receivables.csv',
+    file: 'receivables-overdue.csv',
   },
   ledger: { path: '/api/finance/ledger', file: 'ledger.csv' },
   profit: { path: '/api/admin/reports/profit', file: 'profit-by-month.csv' },

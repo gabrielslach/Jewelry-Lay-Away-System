@@ -6,58 +6,40 @@ import ReportFilters from './ReportFilters.jsx';
 import ReportToolbar from './ReportToolbar.jsx';
 import StatTiles, { StatTile } from './StatTiles.jsx';
 import { useReport } from './useReport.js';
+import { formatManilaDateTime } from '../lib/dates.js';
 import { formatPesoDecimals } from '../lib/money.js';
-import { definedColumns } from '../lib/reportColumns.jsx';
+import { rightColumn, textColumn } from '../lib/reportColumns.jsx';
+import { humanizeKey } from '../lib/reportLabels.js';
 
 const PAGE_SIZE = 25;
 const EMPTY_FILTERS = { from: '', to: '', entry_type: '', plan_id: '' };
 const ENTRY_TYPES = ['payment', 'penalty', 'receivable'];
 
-const LEDGER_COLUMNS = [
-  {
-    id: 'date',
-    header: 'Date',
-    keys: ['date', 'entry_date', 'created_at'],
-    kind: 'date',
-  },
-  {
-    id: 'type',
-    header: 'Entry type',
-    keys: ['entry_type', 'type'],
-    kind: 'label',
-  },
-  { id: 'plan', header: 'Plan', keys: ['plan_id', 'plan'] },
-  { id: 'customer', header: 'Customer', keys: ['customer_name'] },
-  {
-    id: 'description',
-    header: 'Description',
-    keys: ['description', 'reference', 'note'],
-  },
-  { id: 'amount', header: 'Amount', keys: ['amount'], kind: 'money' },
-  { id: 'balance', header: 'Balance', keys: ['balance'], kind: 'money' },
-];
+const idOrDash = (prefix, id) => (id == null ? '-' : `${prefix}${id}`);
 
-function splitResponse(data) {
-  if (Array.isArray(data)) {
-    return { rows: data, total: null, sum: null };
-  }
-  return {
-    rows: data?.results ?? data?.entries ?? [],
-    total: data?.count ?? data?.total_count ?? null,
-    sum: data?.total_amount ?? null,
-  };
-}
+const LEDGER_COLUMNS = [
+  textColumn('date', 'Date', (row) => formatManilaDateTime(row.created_at)),
+  textColumn('type', 'Type', (row) => humanizeKey(row.entry_type)),
+  textColumn('customer', 'Customer', (row) => row.customer_name || '-'),
+  textColumn('plan', 'Plan', (row) => idOrDash('#', row.plan_id)),
+  textColumn('installment', 'Installment', (row) =>
+    idOrDash('#', row.installment_id),
+  ),
+  rightColumn('amount', 'Amount', (row) => formatPesoDecimals(row.amount)),
+];
 
 export default function LedgerReport() {
   const [draft, setDraft] = useState(EMPTY_FILTERS);
   const [applied, setApplied] = useState(EMPTY_FILTERS);
   const [offset, setOffset] = useState(0);
   const query = useMemo(
-    () => ({ ...applied, limit: PAGE_SIZE, offset }),
+    () => ({ ...applied, limit: PAGE_SIZE + 1, offset }),
     [applied, offset],
   );
   const { data, loading, error, retry } = useReport('ledger', query);
-  const { rows, total, sum } = splitResponse(data);
+  const fetched = data ?? [];
+  const rows = fetched.slice(0, PAGE_SIZE);
+  const pageTotal = rows.reduce((sum, row) => sum + Number(row.amount), 0);
 
   function apply(filters) {
     setApplied(filters);
@@ -69,8 +51,7 @@ export default function LedgerReport() {
     apply(EMPTY_FILTERS);
   }
 
-  const hasNext =
-    total != null ? offset + PAGE_SIZE < total : rows.length === PAGE_SIZE;
+  const hasNext = fetched.length > PAGE_SIZE;
 
   return (
     <>
@@ -122,16 +103,11 @@ export default function LedgerReport() {
       >
         <StatTiles>
           <StatTile label="Entries shown" value={rows.length} />
-          {total != null ? (
-            <StatTile label="Total entries" value={total} />
-          ) : null}
-          {sum != null ? (
-            <StatTile label="Total amount" value={formatPesoDecimals(sum)} />
-          ) : null}
+          <StatTile label="Page total" value={formatPesoDecimals(pageTotal)} />
         </StatTiles>
         <div className="table-wrap">
           <DataTable
-            columns={definedColumns(LEDGER_COLUMNS, rows)}
+            columns={LEDGER_COLUMNS}
             data={rows}
             getRowId={(_, index) => String(index)}
             emptyMessage="No more entries."

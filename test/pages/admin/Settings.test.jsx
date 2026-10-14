@@ -77,12 +77,11 @@ describe('admin settings', () => {
     expect(
       screen.getByRole('switch', { name: 'Require full payment before item release' }),
     ).toBeInTheDocument();
+    expect(screen.getAllByRole('switch')).toHaveLength(2);
+    expect(screen.queryByText('Send SMS payment reminders')).not.toBeInTheDocument();
     expect(
-      screen.getByRole('switch', { name: 'Send SMS payment reminders' }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('switch', { name: 'Allow customer-selected due dates' }),
-    ).toBeInTheDocument();
+      screen.queryByText('Allow customer-selected due dates'),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole('switch', { name: 'Also send alerts to accounting accounts' }),
     ).toBeInTheDocument();

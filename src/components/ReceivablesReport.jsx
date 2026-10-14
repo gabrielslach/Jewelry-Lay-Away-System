@@ -3,23 +3,37 @@ import ReportBody from './ReportBody.jsx';
 import ReportToolbar from './ReportToolbar.jsx';
 import StatTiles, { StatTile } from './StatTiles.jsx';
 import { useReport } from './useReport.js';
-import { definedColumns } from '../lib/reportColumns.jsx';
+import { rightColumn, textColumn } from '../lib/reportColumns.jsx';
+import { formatManilaDate } from '../lib/dates.js';
 import { formatPesoDecimals } from '../lib/money.js';
-import { agingLabel, amountOf } from '../lib/reportLabels.js';
+import { amountOf } from '../lib/reportLabels.js';
 
 const ITEM_COLUMNS = [
-  { id: 'plan', header: 'Plan/Order', keys: ['plan_id', 'order_id', 'plan'] },
-  { id: 'customer', header: 'Customer', keys: ['customer_name'] },
-  { id: 'piece', header: 'Piece', keys: ['item_name', 'piece_name'] },
-  { id: 'due', header: 'Due date', keys: ['due_date'], kind: 'date' },
   {
-    id: 'amount',
-    header: 'Amount due',
-    keys: ['amount', 'amount_due'],
-    kind: 'money',
+    ...textColumn('customer', 'Customer', (row) => row.customer_name || '-'),
+    cell: ({ row }) => (
+      <>
+        <div>{row.original.customer_name || '-'}</div>
+        {row.original.customer_email ? (
+          <small className="muted customer-contact">
+            {row.original.customer_email}
+          </small>
+        ) : null}
+        {row.original.customer_phone ? (
+          <small className="muted customer-contact">
+            {row.original.customer_phone}
+          </small>
+        ) : null}
+      </>
+    ),
   },
-  { id: 'days', header: 'Days overdue', keys: ['days_overdue'] },
-  { id: 'status', header: 'Status', keys: ['status'], kind: 'label' },
+  textColumn('plan', 'Plan', (row) => `#${row.plan_id}`),
+  textColumn('installment', 'Installment', (row) => `#${row.term_number}`),
+  textColumn('due', 'Due date', (row) => formatManilaDate(row.due_date)),
+  rightColumn('amount', 'Amount due', (row) => formatPesoDecimals(row.amount)),
+  rightColumn('days', 'Days overdue', (row) =>
+    row.days_overdue > 0 ? row.days_overdue : '-',
+  ),
 ];
 
 const NO_FILTERS = {};
@@ -56,13 +70,18 @@ export default function ReceivablesReport() {
             value={data?.outstanding_receivable}
           />
           <MoneyTile label="Overdue" value={data?.overdue} />
-          {Object.entries(data?.aging ?? {}).map(([key, bucket]) => (
-            <MoneyTile key={key} label={agingLabel(key)} value={bucket} />
+          {(data?.aging ?? []).map(({ label, count, amount }) => (
+            <StatTile
+              key={label}
+              label={label}
+              value={formatPesoDecimals(amount)}
+              note={`${count} ${count === 1 ? 'installment' : 'installments'}`}
+            />
           ))}
         </StatTiles>
         <div className="table-wrap">
           <DataTable
-            columns={definedColumns(ITEM_COLUMNS, items)}
+            columns={ITEM_COLUMNS}
             data={items}
             getRowId={(_, index) => String(index)}
             emptyMessage="Nothing overdue."

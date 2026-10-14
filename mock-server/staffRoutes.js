@@ -8,7 +8,7 @@ function activeCount(store, role, exceptId) {
 
 function capError(store, role, exceptId) {
   return activeCount(store, role, exceptId) >= ROLE_CAPS[role]
-    ? `The ${role} role is full (${ROLE_CAPS[role]} active accounts)`
+    ? `At most ${ROLE_CAPS[role]} active ${role} accounts are allowed`
     : null;
 }
 
@@ -19,7 +19,7 @@ function createStaff(store, { body, admin }, { json }) {
     return json(400, { error: 'name, email, password (8+ chars) and a valid role are required' });
   }
   if (store.staff.some((m) => m.email === email)) {
-    return json(409, { error: 'Email already exists' });
+    return json(409, { error: 'An account with that email already exists' });
   }
   const error = capError(store, body.role);
   if (error) {
@@ -51,11 +51,11 @@ function updateStaff(store, { id, body, admin }, { json }) {
     return json(400, { error: 'Invalid role' });
   }
   if (member.id === admin.id && (role !== member.role || !isActive)) {
-    return json(403, { error: 'You cannot change your own role or deactivate yourself' });
+    return json(403, { error: 'You cannot change your own role or deactivate your own account' });
   }
   const demotesAdmin = member.role === 'admin' && member.is_active && (role !== 'admin' || !isActive);
   if (demotesAdmin && activeCount(store, 'admin', member.id) === 0) {
-    return json(409, { error: 'The last active admin cannot be demoted or deactivated' });
+    return json(409, { error: 'Cannot demote or deactivate the last active admin' });
   }
   const error = isActive && capError(store, role, member.id);
   if (error) {
