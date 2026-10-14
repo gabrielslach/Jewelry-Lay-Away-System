@@ -13,7 +13,7 @@ import { humanizeKey } from '../lib/reportLabels.js';
 
 const PAGE_SIZE = 25;
 const EMPTY_FILTERS = { from: '', to: '', entry_type: '', plan_id: '' };
-const ENTRY_TYPES = ['payment', 'penalty', 'receivable'];
+const ENTRY_TYPES = ['payment', 'receivable'];
 
 const idOrDash = (prefix, id) => (id == null ? '-' : `${prefix}${id}`);
 
@@ -76,7 +76,7 @@ export default function LedgerReport() {
               <option value="">All types</option>
               {ENTRY_TYPES.map((type) => (
                 <option key={type} value={type}>
-                  {type}
+                  {humanizeKey(type)}
                 </option>
               ))}
             </select>
