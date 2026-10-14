@@ -211,7 +211,7 @@ describe.each(['admin', 'accounting'])('admin reports page as %s', (role) => {
     expect(await screen.findByText('Showing 51-60')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
     fireEvent.change(screen.getByLabelText('Entry type'), {
-      target: { value: 'penalty' },
+      target: { value: 'receivable' },
     });
     fireEvent.change(screen.getByLabelText('Plan ID'), {
       target: { value: '7' },
@@ -224,7 +224,7 @@ describe.each(['admin', 'accounting'])('admin reports page as %s', (role) => {
       expect(reportsModule.getReport).toHaveBeenLastCalledWith('ledger', {
         from: '2026-10-01',
         to: '',
-        entry_type: 'penalty',
+        entry_type: 'receivable',
         plan_id: '7',
         limit: 26,
         offset: 0,
@@ -273,6 +273,16 @@ describe.each(['admin', 'accounting'])('admin reports page as %s', (role) => {
     expect(screen.queryByText('Page total')).not.toBeInTheDocument();
     expect(screen.queryByText('Total entries')).not.toBeInTheDocument();
     expect(screen.getAllByRole('row')).toHaveLength(26);
+  });
+
+  it('offers capitalized entry types without penalty', async () => {
+    renderReports();
+    fireEvent.click(screen.getByRole('tab', { name: 'Ledger' }));
+    expect(await screen.findByText('Customer 0')).toBeInTheDocument();
+    const options = within(screen.getByLabelText('Entry type'))
+      .getAllByRole('option')
+      .map((option) => option.textContent);
+    expect(options).toEqual(['All types', 'Payment', 'Receivable']);
   });
 
   it('shows the page total only when one entry type is filtered', async () => {
@@ -325,16 +335,27 @@ describe.each(['admin', 'accounting'])('admin reports page as %s', (role) => {
     expect(screen.getByRole('button', { name: 'Export CSV' })).toBeEnabled();
   });
 
-  it('shows an inline message when the export fails', async () => {
+  it.each([400, 401, 403])('shows the server error text when the export fails with %i', async (status) => {
     vi.spyOn(reportsModule, 'exportReportCsv').mockRejectedValue(
-      new Error('x'),
+      new ServiceError('Date range is too large.', status),
     );
     renderReports();
     await screen.findByText('Ana Cruz');
     fireEvent.click(screen.getByRole('button', { name: 'Export CSV' }));
-    expect(
-      await screen.findByText('Could not export. Try again.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Date range is too large.')).toBeInTheDocument();
+  });
+
+  it.each([
+    ['a server error', new ServiceError('Database exploded.', 500)],
+    ['a network failure', new ServiceError('Unable to reach the server.')],
+    ['an unknown error', new Error('x')],
+  ])('shows a generic message when the export fails with %s', async (_label, error) => {
+    vi.spyOn(reportsModule, 'exportReportCsv').mockRejectedValue(error);
+    renderReports();
+    await screen.findByText('Ana Cruz');
+    fireEvent.click(screen.getByRole('button', { name: 'Export CSV' }));
+    expect(await screen.findByText('Could not export. Try again.')).toBeInTheDocument();
+    expect(screen.queryByText('Database exploded.')).not.toBeInTheDocument();
   });
 
   it('keeps interest and markup profit apart, shows counts as integers and totals each month', async () => {
