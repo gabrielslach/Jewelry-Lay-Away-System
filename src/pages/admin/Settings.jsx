@@ -65,15 +65,6 @@ export default function Settings() {
           </p>
         ) : null}
         <div className="form-row">
-          <label htmlFor="biz-name">Business Name</label>
-          <input
-            id="biz-name"
-            value={form.business_name}
-            disabled={!isAdmin}
-            onChange={(event) => setForm({ ...form, business_name: event.target.value })}
-          />
-        </div>
-        <div className="form-row">
           <label htmlFor="max-term">Maximum Lay-Away Term (Months)</label>
           <input
             id="max-term"
@@ -84,13 +75,6 @@ export default function Settings() {
             }
           />
         </div>
-        <SettingsSwitch
-          id="setting-require-full"
-          label="Require full payment before item release"
-          checked={form.require_full_payment_before_release}
-          disabled={!isAdmin}
-          onToggle={() => toggle('require_full_payment_before_release')}
-        />
         <SettingsSwitch
           id="setting-notify-accounting"
           label="Also send alerts to accounting accounts"

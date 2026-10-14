@@ -30,13 +30,13 @@ describe('admin settings', () => {
     );
     expect(screen.getByRole('heading', { name: 'Business Settings' })).toBeInTheDocument();
     expect(document.querySelector('.skeleton[aria-busy="true"]')).toBeInTheDocument();
-    expect(document.querySelectorAll('.settings-form .form-row .skeleton-bone')).toHaveLength(6);
-    expect(document.querySelectorAll('.settings-form .toggle-row .skeleton-bone')).toHaveLength(8);
+    expect(document.querySelectorAll('.settings-form .form-row .skeleton-bone')).toHaveLength(2);
+    expect(document.querySelectorAll('.settings-form .toggle-row .skeleton-bone')).toHaveLength(2);
     expect(document.querySelector('.settings-form .skeleton-bone-btn')).toBeInTheDocument();
-    expect(screen.queryByDisplayValue('Mine Credit')).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue('3')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save Changes' })).not.toBeInTheDocument();
     resolve(await realGetAdminSettings());
-    expect(await screen.findByDisplayValue('Mine Credit')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('3')).toBeInTheDocument();
     await waitFor(() => {
       expect(document.querySelector('.skeleton[aria-busy="true"]')).not.toBeInTheDocument();
     });
@@ -48,7 +48,7 @@ describe('admin settings', () => {
         <App />
       </MemoryRouter>,
     );
-    expect(await screen.findByDisplayValue('Mine Credit')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('3')).toBeInTheDocument();
     expect(screen.queryByLabelText(/late payment penalty/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/undefined/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
@@ -62,7 +62,7 @@ describe('admin settings', () => {
         <App />
       </MemoryRouter>,
     );
-    expect(await screen.findByDisplayValue('Mine Credit')).toBeDisabled();
+    expect(await screen.findByDisplayValue('3')).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Save Changes' })).toBeDisabled();
     expect(screen.queryByLabelText(/late payment penalty/i)).not.toBeInTheDocument();
   });
@@ -73,11 +73,12 @@ describe('admin settings', () => {
         <App />
       </MemoryRouter>,
     );
-    expect(await screen.findByDisplayValue('Mine Credit')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('3')).toBeInTheDocument();
+    expect(screen.getAllByRole('switch')).toHaveLength(1);
+    expect(screen.queryByLabelText('Business Name')).not.toBeInTheDocument();
     expect(
-      screen.getByRole('switch', { name: 'Require full payment before item release' }),
-    ).toBeInTheDocument();
-    expect(screen.getAllByRole('switch')).toHaveLength(2);
+      screen.queryByRole('switch', { name: 'Require full payment before item release' }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText('Send SMS payment reminders')).not.toBeInTheDocument();
     expect(
       screen.queryByText('Allow customer-selected due dates'),
@@ -93,7 +94,7 @@ describe('admin settings', () => {
         <App />
       </MemoryRouter>,
     );
-    expect(await screen.findByDisplayValue('Mine Credit')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('3')).toBeInTheDocument();
     expect(screen.queryByLabelText('Current password')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
     const dialog = await screen.findByRole('dialog');

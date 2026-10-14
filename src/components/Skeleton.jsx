@@ -222,13 +222,13 @@ export function CustomersTableSkeleton() {
 export function SettingsSkeleton() {
   return (
     <>
-      {Array.from({ length: 3 }, (_, index) => (
+      {Array.from({ length: 1 }, (_, index) => (
         <div className="form-row" key={index}>
           <Bone className="skeleton-bone-form-label" />
           <Bone className="skeleton-bone-form-input" />
         </div>
       ))}
-      {Array.from({ length: 4 }, (_, index) => (
+      {Array.from({ length: 1 }, (_, index) => (
         <div className="toggle-row" key={index}>
           <Bone className="skeleton-bone-toggle-label" />
           <Bone className="skeleton-bone-switch" />

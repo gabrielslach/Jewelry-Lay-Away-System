@@ -11,8 +11,8 @@ describe('putAdminSettings', () => {
   it('writes settings', async () => {
     await ensureAdminToken();
     const current = await getAdminSettings();
-    const saved = await putAdminSettings({ ...current, business_name: 'Gem Co' });
-    expect(saved.business_name).toBe('Gem Co');
+    const saved = await putAdminSettings({ ...current, max_term_months: 6 });
+    expect(saved.max_term_months).toBe(6);
   });
 
   it('never sends retired settings keys', async () => {
@@ -24,11 +24,13 @@ describe('putAdminSettings', () => {
       return real(url, init);
     });
     await putAdminSettings({
+      max_term_months: 6,
       business_name: 'Gem Co',
+      require_full_payment_before_release: true,
       sms_reminders: true,
       customer_selected_due_dates: false,
       penalty_per_day: 5,
     });
-    expect(sent).toEqual({ business_name: 'Gem Co' });
+    expect(sent).toEqual({ max_term_months: 6 });
   });
 });

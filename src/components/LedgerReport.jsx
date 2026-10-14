@@ -39,7 +39,9 @@ export default function LedgerReport() {
   const { data, loading, error, retry } = useReport('ledger', query);
   const fetched = data ?? [];
   const rows = fetched.slice(0, PAGE_SIZE);
-  const pageTotal = rows.reduce((sum, row) => sum + Number(row.amount), 0);
+  const pageTotal = applied.entry_type
+    ? rows.reduce((sum, row) => sum + Number(row.amount), 0)
+    : null;
 
   function apply(filters) {
     setApplied(filters);
@@ -103,7 +105,9 @@ export default function LedgerReport() {
       >
         <StatTiles>
           <StatTile label="Entries shown" value={rows.length} />
-          <StatTile label="Page total" value={formatPesoDecimals(pageTotal)} />
+          {pageTotal === null ? null : (
+            <StatTile label="Page total" value={formatPesoDecimals(pageTotal)} />
+          )}
         </StatTiles>
         <div className="table-wrap">
           <DataTable
