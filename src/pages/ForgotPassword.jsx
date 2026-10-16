@@ -13,6 +13,7 @@ export default function ForgotPassword() {
   const [emailError, setEmailError] = useState(null);
   const [error, setError] = useState(null);
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -26,11 +27,18 @@ export default function ForgotPassword() {
       setEmailError('Enter a valid email address.');
       return;
     }
+    setSending(true);
     try {
       await forgotCustomerPassword(email.trim());
       setSent(true);
     } catch (err) {
-      setError(err instanceof ServiceError ? err.message : 'Unable to send reset link.');
+      setError(
+        err instanceof ServiceError
+          ? err.message
+          : 'Unable to send reset link.',
+      );
+    } finally {
+      setSending(false);
     }
   }
 
@@ -54,8 +62,13 @@ export default function ForgotPassword() {
             />
             {emailError ? <p className="field-error">{emailError}</p> : null}
           </div>
-          <Button variant="primary" type="submit">
-            Send reset link
+          <Button
+            variant="primary"
+            type="submit"
+            disabled={sending}
+            aria-busy={sending}
+          >
+            {sending ? 'Sending, please wait…' : 'Send reset link'}
           </Button>
         </form>
       )}
