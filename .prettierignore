@@ -1,5 +1,4 @@
 dist
 node_modules
 archive
-.cursor
 package-lock.json

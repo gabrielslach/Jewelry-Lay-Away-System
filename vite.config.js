@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { mockApiPlugin } from './mock-server/plugin.js';
 
-// Live backend from specs/api-definition.md Section 1 (sandbox — will move before go-live).
+// Live backend (sandbox — will move before go-live).
 const LIVE_API_BASE = 'https://honeydew-stork-999262.hostingersite.com';
 
 // `npm run dev:live` sets this to talk to the real backend instead of mock-server.
