@@ -1,0 +1,38 @@
+.logo {
+  display: inline-block;
+  flex-shrink: 0;
+  margin: 0;
+  height: 40px;
+}
+
+.logo img {
+  display: block;
+  object-fit: contain;
+  object-position: center;
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.logo--named {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
+  gap: 10px;
+}
+
+.logo-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--text);
+  font-size: 22px;
+  letter-spacing: 0.5px;
+}
+
+.gem-mark {
+  color: var(--primary);
+}

@@ -1,0 +1,104 @@
+import { MemoryRouter } from 'react-router-dom';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import App from '../../../src/App.jsx';
+import { signInAdmin, signOutAdmin } from '../../helpers/adminAuth.js';
+import * as getAdminSettingsModule from '../../../src/services/getAdminSettings.js';
+
+describe('admin settings', () => {
+  beforeEach(async () => {
+    await signInAdmin();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    signOutAdmin();
+  });
+
+  it('shows form, toggle, and save skeleton bones until settings load', async () => {
+    const realGetAdminSettings = getAdminSettingsModule.getAdminSettings;
+    let resolve;
+    vi.spyOn(getAdminSettingsModule, 'getAdminSettings').mockReturnValue(
+      new Promise((done) => {
+        resolve = done;
+      }),
+    );
+    render(
+      <MemoryRouter initialEntries={['/admin/settings']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('heading', { name: 'Business Settings' })).toBeInTheDocument();
+    expect(document.querySelector('.skeleton[aria-busy="true"]')).toBeInTheDocument();
+    expect(document.querySelectorAll('.settings-form .form-row .skeleton-bone')).toHaveLength(2);
+    expect(document.querySelectorAll('.settings-form .toggle-row .skeleton-bone')).toHaveLength(2);
+    expect(document.querySelector('.settings-form .skeleton-bone-btn')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('3')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save Changes' })).not.toBeInTheDocument();
+    resolve(await realGetAdminSettings());
+    expect(await screen.findByDisplayValue('3')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('.skeleton[aria-busy="true"]')).not.toBeInTheDocument();
+    });
+  });
+
+  it('saves business settings', async () => {
+    render(
+      <MemoryRouter initialEntries={['/admin/settings']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByDisplayValue('3')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/late payment penalty/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/undefined/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+    expect(await screen.findByText('Settings saved.')).toBeInTheDocument();
+  });
+
+  it('keeps the accounting view read-only', async () => {
+    await signInAdmin('accounting');
+    render(
+      <MemoryRouter initialEntries={['/admin/settings']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByDisplayValue('3')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Save Changes' })).toBeDisabled();
+    expect(screen.queryByLabelText(/late payment penalty/i)).not.toBeInTheDocument();
+  });
+
+  it('names each settings switch from its row label', async () => {
+    render(
+      <MemoryRouter initialEntries={['/admin/settings']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByDisplayValue('3')).toBeInTheDocument();
+    expect(screen.getAllByRole('switch')).toHaveLength(1);
+    expect(screen.queryByLabelText('Business Name')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('switch', { name: 'Require full payment before item release' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Send SMS payment reminders')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Allow customer-selected due dates'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('switch', { name: 'Also send alerts to accounting accounts' }),
+    ).toBeInTheDocument();
+  });
+
+  it('opens change password in a dialog on demand', async () => {
+    render(
+      <MemoryRouter initialEntries={['/admin/settings']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByDisplayValue('3')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Current password')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveAccessibleName('Change password');
+    expect(within(dialog).getByLabelText('Current password')).toBeInTheDocument();
+  });
+});

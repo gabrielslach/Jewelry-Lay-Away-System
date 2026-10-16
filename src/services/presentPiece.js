@@ -1,0 +1,25 @@
+import { formatPeso } from '../lib/money.js';
+
+function specOrDash(value) {
+  if (value == null || String(value).trim() === '') return '-';
+  return value;
+}
+
+export function presentPiece(item) {
+  const price = Number(item.price);
+  return {
+    id: item.id,
+    title: item.title,
+    name: item.name || item.title,
+    category: item.category || 'Jewelry',
+    material: specOrDash(item.material),
+    stone: specOrDash(item.stone),
+    size: specOrDash(item.size),
+    cert: specOrDash(item.cert),
+    price,
+    currency: item.currency,
+    inStock: item.in_stock,
+    images: item.images ?? [],
+    priceLabel: formatPeso(price),
+  };
+}

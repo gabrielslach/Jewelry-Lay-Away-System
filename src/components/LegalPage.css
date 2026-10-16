@@ -1,0 +1,56 @@
+@import '../pages/AuthPage.css';
+
+.legal-notice {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--amber) 14%, var(--surface));
+  color: var(--text);
+  border-left: 4px solid var(--amber);
+  font-size: 14px;
+}
+
+.legal-contents {
+  font-size: 14px;
+  color: var(--text-soft);
+}
+
+.legal-contents a {
+  display: block;
+  padding: 12px 0;
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.legal-page section p,
+.legal-page section li {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.legal-page section p {
+  margin-bottom: 14px;
+}
+
+.legal-page h2 {
+  font-size: 22px;
+  margin: 32px 0 10px;
+  scroll-margin-top: 88px;
+}
+
+.legal-page ul,
+.legal-page ol {
+  padding-left: 22px;
+  margin-bottom: 14px;
+}
+
+.legal-page li {
+  margin: 6px 0;
+}
+
+.legal-page section a {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration: underline;
+}

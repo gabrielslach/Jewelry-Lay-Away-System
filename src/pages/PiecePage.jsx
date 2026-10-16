@@ -1,0 +1,178 @@
+import { useEffect, useState } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
+import Button from '../components/Button.jsx';
+import Checkout from '../components/Checkout.jsx';
+import ErrorMessage from '../components/ErrorMessage.jsx';
+import PieceImage from '../components/PieceImage.jsx';
+import ZoomableImage from '../components/ZoomableImage.jsx';
+import Skeleton, { PiecePageSkeleton } from '../components/Skeleton.jsx';
+import { useSession } from '../components/useSession.js';
+import { formatPeso } from '../lib/money.js';
+import { pickImage } from '../lib/pickImage.js';
+import { ServiceError } from '../services/http.js';
+import { getGalleryPiece } from '../services/getGalleryPiece.js';
+import {
+  getLayawayPreview,
+  lowestLongestTermPayment,
+} from '../services/getLayawayPreview.js';
+import '../components/Gallery.css';
+import '../components/PieceDetail.css';
+import './PiecePage.css';
+
+export default function PiecePage() {
+  const { id } = useParams();
+  const { customer } = useSession();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [piece, setPiece] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [index, setIndex] = useState(0);
+  const [loadedId, setLoadedId] = useState(null);
+  const [perPaymentLabel, setPerPaymentLabel] = useState(null);
+
+  if (loadedId !== id) {
+    setLoadedId(id);
+    setPiece(null);
+    setLoading(true);
+    setError(null);
+    setIndex(0);
+    setPerPaymentLabel(null);
+  }
+  const [checkout, setCheckout] = useState(
+    () => Boolean(customer) && searchParams.get('reserve') === '1',
+  );
+
+  useEffect(() => {
+    if (searchParams.has('reserve')) {
+      setSearchParams(
+        (params) => {
+          params.delete('reserve');
+          return params;
+        },
+        { replace: true },
+      );
+    }
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getGalleryPiece(id)
+      .then((data) => {
+        if (!cancelled) {
+          setPiece(data);
+          setIndex(0);
+          setError(null);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setPiece(null);
+          setError(err instanceof ServiceError ? err.message : 'Unable to load this piece.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getLayawayPreview({ productId: id })
+      .then((preview) => {
+        if (cancelled) return;
+        const lowest = lowestLongestTermPayment(preview);
+        setPerPaymentLabel(lowest == null ? null : formatPeso(lowest));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPerPaymentLabel(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  const images = piece?.images?.length ? piece.images : [];
+
+  return (
+    <section className="piece-page">
+      <Link to="/collections" className="back-link">
+        Back to collections
+      </Link>
+      <ErrorMessage>{error}</ErrorMessage>
+      {loading ? (
+        <Skeleton>
+          <PiecePageSkeleton />
+        </Skeleton>
+      ) : null}
+      {!loading && piece ? (
+        <div className="piece-layout">
+          <div className="carousel">
+            <div className="carousel-main">
+              <ZoomableImage
+                webSrc={pickImage(images[index], 'web')}
+                originalSrc={images[index]?.url}
+                name={piece.name}
+                number={index + 1}
+              />
+            </div>
+            {images.length > 1 ? (
+              <div className="carousel-thumbs">
+                {images.map((image, thumbIndex) => (
+                  <button
+                    key={image.url + thumbIndex}
+                    type="button"
+                    className={thumbIndex === index ? 'thumb active' : 'thumb'}
+                    onClick={() => setIndex(thumbIndex)}
+                    aria-label={`Show photo ${thumbIndex + 1}`}
+                  >
+                    <PieceImage src={pickImage(image, 'thumb')} title={piece.name} size={36} />
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+          <div>
+            <div className="piece-cat">{piece.category}</div>
+            <h1>{piece.name}</h1>
+            <p className="piece-sku">{piece.title}</p>
+            <div className="piece-detail-price">{piece.priceLabel}</div>
+            {perPaymentLabel ? (
+              <p className="page-lead">as low as {perPaymentLabel}/payment</p>
+            ) : null}
+            <div className="spec-grid">
+              <div className="spec-item">
+                <span>Material</span>
+                <b>{piece.material}</b>
+              </div>
+              <div className="spec-item">
+                <span>Stone</span>
+                <b>{piece.stone}</b>
+              </div>
+              <div className="spec-item">
+                <span>Size</span>
+                <b>{piece.size}</b>
+              </div>
+              <div className="spec-item">
+                <span>Certification</span>
+                <b>{piece.cert}</b>
+              </div>
+            </div>
+            <Button variant="primary" onClick={() => setCheckout(true)}>
+              Reserve This Piece
+            </Button>
+          </div>
+        </div>
+      ) : null}
+      {checkout && piece ? (
+        <Checkout piece={piece} onClose={() => setCheckout(false)} />
+      ) : null}
+    </section>
+  );
+}

@@ -1,0 +1,26 @@
+:root {
+  --primary: #2c2c2c;
+  --primary-dark: #1a1a1a;
+  --accent: #a3804d;
+  --accent-hover: #8a6b3e;
+  --on-accent: #fff;
+  --bg: #ede6e0;
+  --surface: #f7f3f0;
+  --surface-2: #e3dad2;
+  --text: #2c2c2c;
+  --text-soft: #5e5750;
+  --border: #d4c9bf;
+  --ok: #2e7d4f;
+  --warn: #b23a3a;
+  --info: #2f5f8f;
+  --amber: #a86a12;
+  --radius: 10px;
+  --shadow: 0 4px 18px rgba(44, 44, 44, 0.08);
+  --font-display: 'Cormorant Garamond', serif;
+  --font-body: Inter, system-ui, sans-serif;
+  --nav-bg: color-mix(in srgb, var(--bg) 92%, transparent);
+  --footer-text: #ede6e0;
+  --footer-muted: #bdb4ab;
+  --footer-faint: #8f867d;
+  --footer-line: #444444;
+}
