@@ -11,10 +11,13 @@ info:
 
     **Rate limiting:** `register`/`login` (customer and admin) and customer refresh are
     limited to 10 attempts per 15 minutes per IP — `429 { error }` means too many attempts.
-  version: "1.16"
+
+    **Dates:** report and list dates are ISO timestamps in UTC (a Manila midnight arrives as
+    the previous day at 16:00Z) — display in Asia/Manila.
+  version: "1.29"
   contact:
     name: The Loft IT Solutions
-  x-status: draft contract for frontend build-against (Sep 23, 2026) — v1.16 (Oct 8, 2026)
+  x-status: draft contract for frontend build-against (Sep 23, 2026) — v1.29 (Oct 14, 2026)
 
 servers:
   - url: https://honeydew-stork-999262.hostingersite.com
@@ -429,9 +432,14 @@ paths:
       tags: [Layaway]
       summary: Lay-away plan detail
       description: |
+        Requires a Bearer token (owner customer or staff).
         Includes installments. Pending past due_date flip to `overdue` lazily on read.
         May silently reconstruct after grace period (`is_reconstructed: true`, fixed 6-term schedule).
+        Known gap: not yet limited to the plan's owner (to do before go-live).
       operationId: getLayawayPlan
+      security:
+        - CustomerBearer: []
+        - AdminBearer: []
       parameters:
         - $ref: "#/components/parameters/PlanId"
       responses:
@@ -441,6 +449,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/LayawayPlanDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -460,6 +470,11 @@ paths:
     post:
       tags: [Layaway]
       summary: Pay an installment by bank transfer
+      description: |
+        Installments must be paid in order: 409 `Pay the earlier installment first` if an earlier
+        installment is neither paid nor awaiting confirmation (a rejected one must be paid again first).
+        `bank_account_id` must be an existing active account (400 `Invalid bank account`,
+        409 `Bank account is not active`). 409 `Plan is <status>` when the plan is not active.
       operationId: createManualInstallmentPayment
       security:
         - CustomerBearer: []
@@ -483,7 +498,9 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "409":
-          description: Already awaiting confirmation, or reference already used
+          description: |
+            Already awaiting confirmation, reference already used, earlier installment unpaid,
+            plan not active (`Plan is <status>`), or bank account not active
           content:
             application/json:
               schema:
@@ -493,6 +510,10 @@ paths:
     post:
       tags: [Layaway]
       summary: Down payment by bank transfer
+      description: |
+        Accounting confirms it in the admin queue and the piece is held at that moment
+        (or put on backorder if none is in stock). `bank_account_id` must be an existing
+        active account (400 `Invalid bank account`, 409 `Bank account is not active`).
       operationId: createManualDownPayment
       security:
         - CustomerBearer: []
@@ -516,7 +537,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "409":
-          description: Plan not active, already confirmed/awaiting, or reference reused
+          description: Plan not active, already confirmed/awaiting, reference reused, or bank account not active
           content:
             application/json:
               schema:
@@ -573,6 +594,142 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+
+  /api/admin/bank-accounts:
+    get:
+      tags: [Bank Accounts]
+      summary: List all bank accounts, including inactive
+      description: Roles `admin`, `accounting`. The public `GET /api/bank-accounts` returns active accounts only.
+      operationId: listAdminBankAccounts
+      security:
+        - AdminBearer: []
+      responses:
+        "200":
+          description: Bank accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminBankAccount"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [Bank Accounts]
+      summary: Create bank account
+      description: Admin only.
+      operationId: createAdminBankAccount
+      security:
+        - AdminBearer: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [bank_name, account_name, account_number]
+              properties:
+                bank_name:
+                  type: string
+                  maxLength: 100
+                account_name:
+                  type: string
+                  maxLength: 100
+                account_number:
+                  type: string
+                  maxLength: 50
+                  description: Stays a string
+                qr_code:
+                  type: string
+                  format: binary
+                  description: JPEG, PNG or WebP, max 5 MB
+                is_active:
+                  type: boolean
+                  default: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBankAccount"
+        "400":
+          $ref: "#/components/responses/BankAccountInvalid"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: Duplicate bank_name + account_number
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/admin/bank-accounts/{id}:
+    patch:
+      tags: [Bank Accounts]
+      summary: Edit bank account or toggle active
+      description: |
+        Admin only. Only sent fields change. Omit `qr_code` to keep the image, send
+        `remove_qr_code=true` to clear it. No DELETE: deactivate instead.
+        Every change is audit-logged with old and new values.
+      operationId: updateAdminBankAccount
+      security:
+        - AdminBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                bank_name:
+                  type: string
+                  maxLength: 100
+                account_name:
+                  type: string
+                  maxLength: 100
+                account_number:
+                  type: string
+                  maxLength: 50
+                qr_code:
+                  type: string
+                  format: binary
+                  description: JPEG, PNG or WebP, max 5 MB
+                remove_qr_code:
+                  type: boolean
+                is_active:
+                  type: boolean
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBankAccount"
+        "400":
+          $ref: "#/components/responses/BankAccountInvalid"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Duplicate, or deactivating the last active account (`At least one bank account must stay active`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /api/admin/register:
     post:
@@ -682,6 +839,24 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /api/admin/me:
+    get:
+      tags: [Admin Auth]
+      summary: Current staff member
+      description: Any staff role. Fresh from the database — call after load so a role change shows without re-login.
+      operationId: getAdminMe
+      security:
+        - AdminBearer: []
+      responses:
+        "200":
+          description: Signed-in staff member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMe"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
   /api/admin/staff:
     get:
       tags: [Admin Staff]
@@ -706,7 +881,7 @@ paths:
     post:
       tags: [Admin Staff]
       summary: Create staff account
-      description: Admin only. Role caps enforced.
+      description: Admin only. Max 2 active `admin`, max 3 active `accounting`.
       operationId: createStaff
       security:
         - AdminBearer: []
@@ -740,7 +915,8 @@ paths:
       summary: Update staff
       description: |
         Admin only. Send only fields that change. Cannot change own role or deactivate self;
-        last active admin cannot be demoted/deactivated. Caps enforced.
+        last active admin cannot be demoted/deactivated. Caps enforced (`403`/`409`).
+        Deactivating, changing the role or resetting the password ends that person's sessions.
       operationId: updateStaff
       security:
         - AdminBearer: []
@@ -814,7 +990,10 @@ paths:
     get:
       tags: [Admin Plans]
       summary: All lay-away plans
-      description: Any staff role. Data source for admin orders/dashboard.
+      description: |
+        Any staff role. Data source for admin orders/dashboard. Closed plans return
+        `next_due_date: null` and `overdue_count: 0`. `status` is the raw plan status;
+        show overdue by `overdue_count > 0`, not by `status`.
       operationId: listAdminPlans
       security:
         - AdminBearer: []
@@ -942,7 +1121,9 @@ paths:
     get:
       tags: [Admin Dashboard]
       summary: Admin dashboard summary
-      description: Any staff role.
+      description: |
+        Any staff role. `collections_last_6_weeks` weeks start on Monday, oldest first, and the
+        last point is always the current week.
       operationId: getAdminDashboard
       security:
         - AdminBearer: []
@@ -962,7 +1143,7 @@ paths:
     get:
       tags: [Admin Settings]
       summary: Business settings
-      description: Any staff role. Single row.
+      description: Any staff role. Single row. `penalty_per_day` is `null` until a rate is set — show a dash.
       operationId: getAdminSettings
       security:
         - AdminBearer: []
@@ -1193,8 +1374,10 @@ paths:
       tags: [Admin Payments]
       summary: Confirm a payment
       description: |
-        Roles `receivables` or `admin`. JSON or multipart. Optional note and confirmer_proof.
-        Down payment confirmation holds the piece or puts on backorder.
+        Roles `accounting` or `admin`. JSON or multipart. Optional note and confirmer_proof (staff-only).
+        Down payment confirmation holds the piece or puts on backorder. The last installment
+        completes the plan and the sale. A failed provider step never undoes the payment:
+        it comes back as `reservation: { ok: false, error }`.
       operationId: confirmPayment
       security:
         - AdminBearer: []
@@ -1233,7 +1416,7 @@ paths:
     post:
       tags: [Admin Payments]
       summary: Reject a payment
-      description: Roles `receivables` or `admin`. `reason` required.
+      description: Roles `accounting` or `admin`. `reason` required (the customer is notified with it). The term stays unpaid.
       operationId: rejectPayment
       security:
         - AdminBearer: []
@@ -1406,7 +1589,9 @@ paths:
     get:
       tags: [Admin Reports]
       summary: Overdue and receivables report
-      description: Any staff role. Optional CSV export.
+      description: |
+        Any staff role. Current snapshot (no date filter). `?format=csv` returns the overdue
+        items as `receivables-overdue.csv`. Failed requests return JSON `{ error }`, never a file.
       operationId: getReceivablesReport
       security:
         - AdminBearer: []
@@ -1435,7 +1620,11 @@ paths:
     get:
       tags: [Admin Reports]
       summary: Profit report
-      description: Roles `ledger`, `reporting`, or `admin`.
+      description: |
+        Roles `accounting` or `admin`. Interest and markup profit are kept separate. Down payments
+        are not tracked as payments yet, so their markup share only appears under `booked_on_new_plans`.
+        Gateway fees are not counted as profit. `?format=csv` returns `by_month` rows plus a `total`
+        column as `profit-by-month.csv`, honoring `from` and `to`.
       operationId: getProfitReport
       security:
         - AdminBearer: []
@@ -1450,13 +1639,21 @@ paths:
           schema:
             type: string
             format: date
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [csv]
       responses:
         "200":
-          description: Profit report
+          description: Profit report or CSV
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProfitReport"
+            text/csv:
+              schema:
+                type: string
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1466,7 +1663,10 @@ paths:
     get:
       tags: [Finance]
       summary: Finance ledger
-      description: Any staff role. Optional CSV via `format=csv`.
+      description: |
+        Any staff role. Returns a bare array (no total; fetch `limit + 1` rows to know if there is
+        another page). JSON defaults to 200 rows (max 5000). `format=csv` with no `limit` exports
+        every row; with a `limit` it exports that page. File: `ledger.csv`.
       operationId: getFinanceLedger
       security:
         - AdminBearer: []
@@ -1494,6 +1694,8 @@ paths:
           in: query
           schema:
             type: integer
+            maximum: 5000
+            default: 200
         - name: offset
           in: query
           schema:
@@ -1579,6 +1781,19 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+    BankAccountInvalid:
+      description: Invalid bank account
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Invalid bank account
+              fields:
+                type: object
+                additionalProperties: true
     Forbidden:
       description: Outside caller's role
       content:
@@ -1687,10 +1902,12 @@ components:
 
     AdminRole:
       type: string
-      enum: [admin, receivables, ledger, reporting]
+      enum: [admin, accounting]
       description: |
         `admin` — full access (max 2 active).
-        Accounting roles `receivables`, `ledger`, `reporting` (max 3 active each).
+        `accounting` — view plans, customers, dashboard, settings, payments queue, receivables,
+        ledger and profit report; confirm/reject payments (max 3 active).
+        Settings changes, rules, bank accounts, staff and audit log are admin-only.
 
     Admin:
       type: object
@@ -1704,6 +1921,14 @@ components:
           format: email
         role:
           $ref: "#/components/schemas/AdminRole"
+
+    AdminMe:
+      allOf:
+        - $ref: "#/components/schemas/Admin"
+        - type: object
+          properties:
+            is_active:
+              type: boolean
 
     AdminRegisterRequest:
       type: object
@@ -1910,6 +2135,18 @@ components:
       enum: [pending, overdue, paid, superseded]
       description: superseded is internal; not returned on plan detail
 
+    PaymentSubmissionStatus:
+      type: string
+      enum: [paid, awaiting_confirmation, rejected, unpaid]
+
+    DownPaymentStatus:
+      type: string
+      enum: [paid, awaiting_confirmation, rejected, pending]
+      description: |
+        `awaiting_confirmation` — proof submitted, accounting has not confirmed.
+        `rejected` — last submission rejected, customer can resubmit.
+        `pending` — nothing submitted.
+
     CustomerOrderInstallment:
       type: object
       properties:
@@ -1922,6 +2159,18 @@ components:
           type: string
         status:
           $ref: "#/components/schemas/InstallmentStatus"
+        payment_status:
+          $ref: "#/components/schemas/PaymentSubmissionStatus"
+        rejection_reason:
+          type: string
+          nullable: true
+          description: Staff note on the latest rejected submission; null if not rejected
+        payable:
+          type: boolean
+        blocked_by:
+          type: integer
+          nullable: true
+          description: Id of the earlier installment that must be paid first (down payment not part of this rule)
         paid_at:
           type: string
           format: date-time
@@ -1929,6 +2178,7 @@ components:
 
     CustomerOrder:
       type: object
+      description: An order and a lay-away plan are the same record — `id` is the plan id used elsewhere.
       properties:
         id:
           type: integer
@@ -1939,6 +2189,13 @@ components:
         plan_label:
           type: string
           example: 3 Mo. / 6 Payments
+        down_payment_amount:
+          type: string
+        down_payment_status:
+          $ref: "#/components/schemas/DownPaymentStatus"
+        down_payment_rejection_reason:
+          type: string
+          nullable: true
         installment_count:
           type: integer
         next_due_date:
@@ -1951,10 +2208,13 @@ components:
           type: string
         status:
           type: string
-          enum: [on_track, overdue, completed]
+          enum: [on_track, overdue, completed, cancelled, defaulted]
+          description: |
+            For `completed`, `cancelled` and `defaulted` the UI is read-only: no pay buttons
+            (payments return 409 `Plan is <status>`) and `next_due_date` is null.
         plan_status:
           type: string
-          example: active
+          enum: [active, completed, cancelled, defaulted]
         completed_on:
           type: string
           format: date-time
@@ -2082,6 +2342,11 @@ components:
           type: number
         status:
           $ref: "#/components/schemas/InstallmentStatus"
+        payment_status:
+          $ref: "#/components/schemas/PaymentSubmissionStatus"
+        rejection_reason:
+          type: string
+          nullable: true
         paid_at:
           type: string
           format: date-time
@@ -2096,6 +2361,11 @@ components:
           type: number
         down_payment_amount:
           type: number
+        down_payment_status:
+          $ref: "#/components/schemas/DownPaymentStatus"
+        down_payment_rejection_reason:
+          type: string
+          nullable: true
         financed_principal:
           type: number
         currency:
@@ -2183,6 +2453,17 @@ components:
           format: uri
           nullable: true
 
+    AdminBankAccount:
+      allOf:
+        - $ref: "#/components/schemas/BankAccount"
+        - type: object
+          properties:
+            is_active:
+              type: boolean
+            created_at:
+              type: string
+              format: date-time
+
     CustomerNotificationKind:
       type: string
       enum:
@@ -2263,6 +2544,9 @@ components:
           type: string
         item_name:
           type: string
+        status:
+          type: string
+          enum: [active, completed, cancelled, defaulted]
         next_due_date:
           type: string
           format: date-time
@@ -2312,6 +2596,26 @@ components:
               type: number
             currency:
               type: string
+        active_layaways:
+          type: object
+          properties:
+            count:
+              type: integer
+        overdue_payments:
+          type: object
+          description: Overdue installments on active plans (same rule as the Due & Overdue list)
+          properties:
+            count:
+              type: integer
+            amount:
+              type: number
+            currency:
+              type: string
+        active_customers:
+          type: object
+          properties:
+            count:
+              type: integer
         collections_last_6_weeks:
           type: array
           minItems: 6
@@ -2512,6 +2816,16 @@ components:
               customer_phone:
                 type: string
                 nullable: true
+              grace_days:
+                type: integer
+                description: Grace period that applied (plan's own, then business setting, then 7)
+              grace_ends_on:
+                type: string
+                format: date
+                description: Due date plus grace days — last day the customer can still pay
+              grace_expired:
+                type: boolean
+                description: True once grace_ends_on has passed; plan is rebuilt on the next daily run
 
     ConfirmPaymentResponse:
       type: object
@@ -2552,6 +2866,11 @@ components:
     ReceivablesReport:
       type: object
       properties:
+        as_of:
+          type: string
+          format: date
+        currency:
+          type: string
         overdue:
           type: object
           properties:
@@ -2567,14 +2886,33 @@ components:
             amount:
               type: number
         aging:
-          type: object
-          description: Buckets 1-7 (grace), 8-30, 31+
-          additionalProperties: true
+          type: array
+          description: Three buckets — 1-7 days (in grace), 8-30 days, 31+ days
+          items:
+            type: object
+            properties:
+              label:
+                type: string
+              count:
+                type: integer
+              amount:
+                type: number
         items:
           type: array
           items:
             type: object
             properties:
+              installment_id:
+                type: integer
+              plan_id:
+                type: integer
+              term_number:
+                type: integer
+              due_date:
+                type: string
+                format: date-time
+              customer_id:
+                type: integer
               customer_name:
                 type: string
               customer_email:
@@ -2590,6 +2928,19 @@ components:
     ProfitReport:
       type: object
       properties:
+        period:
+          type: object
+          properties:
+            from:
+              type: string
+              format: date
+              nullable: true
+            to:
+              type: string
+              format: date
+              nullable: true
+        currency:
+          type: string
         interest_profit:
           type: object
           properties:
@@ -2597,37 +2948,62 @@ components:
               type: number
             scheduled_remaining:
               type: number
+            installments_paid:
+              type: integer
         markup_profit:
           type: object
           properties:
             booked_on_new_plans:
               type: number
+            plans_counted:
+              type: integer
             realized_on_installments:
               type: number
         total_realized:
           type: number
+          description: Sum of interest and markup profit realized
         principal_collected:
+          type: number
+        down_payments_collected:
           type: number
         by_month:
           type: array
+          description: Add interest_profit and markup_profit for a monthly total
           items:
             type: object
-            additionalProperties: true
+            properties:
+              month:
+                type: string
+                example: 2026-10
+              interest_profit:
+                type: number
+              markup_profit:
+                type: number
+        notes:
+          type: array
+          items:
+            type: string
 
     LedgerEntry:
       type: object
       properties:
         id:
           type: integer
+        finance_account_id:
+          type: integer
         entry_type:
           type: string
           enum: [payment, penalty, receivable]
         plan_id:
           type: integer
+        installment_id:
+          type: integer
+          nullable: true
         customer_name:
           type: string
         amount:
-          type: number
+          type: string
+          description: Decimal string — parse it
         created_at:
           type: string
           format: date-time
