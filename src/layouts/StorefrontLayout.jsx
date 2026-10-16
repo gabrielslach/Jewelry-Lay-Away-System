@@ -90,7 +90,10 @@ export default function StorefrontLayout() {
           <div className="pv-links">
             {sectionLinks.map((link) =>
               link.href.startsWith('/#') ? (
-                <Link key={link.href} to={{ pathname: '/', hash: link.href.slice(1) }}>
+                <Link
+                  key={link.href}
+                  to={{ pathname: '/', hash: link.href.slice(1) }}
+                >
                   {link.label}
                 </Link>
               ) : (
@@ -110,7 +113,12 @@ export default function StorefrontLayout() {
             >
               {account.label}
             </Button>
-            <Button variant="primary" size="sm" to="/collections" onClick={closeMenu}>
+            <Button
+              variant="primary"
+              size="sm"
+              to="/collections"
+              onClick={closeMenu}
+            >
               Start a Lay-Away
             </Button>
             <button
@@ -178,13 +186,17 @@ export default function StorefrontLayout() {
       <main className="storefront-main" inert={menuOpen ? '' : undefined}>
         <Outlet />
       </main>
-      <footer className="site-footer" id="contact" inert={menuOpen ? '' : undefined}>
+      <footer
+        className="site-footer"
+        id="contact"
+        inert={menuOpen ? '' : undefined}
+      >
         <div className="footer-inner">
           <div>
             <Logo as="span" />
             <p className="footer-blurb">
-              Fine jewelry with flexible lay-away plans. Sample storefront for demo
-              purposes.
+              Fine jewelry with flexible lay-away plans. Sample storefront for
+              demo purposes.
             </p>
           </div>
           <div className="footer-cols">
@@ -210,8 +222,7 @@ export default function StorefrontLayout() {
             <Link to="/terms">Terms and Conditions</Link>
             <Link to="/privacy">Privacy Policy</Link>
           </nav>
-          Sample data shown for demonstration purposes only. © 2026 Mine Credit
-          (fictional).
+          © 2026 Mine Credit. All rights reserved.
         </div>
       </footer>
     </div>
