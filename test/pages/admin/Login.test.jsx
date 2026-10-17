@@ -5,7 +5,7 @@ import { SessionProvider } from '../../../src/components/SessionProvider.jsx';
 import AdminLayout from '../../../src/layouts/AdminLayout.jsx';
 import AdminLogin from '../../../src/pages/admin/Login.jsx';
 import { getAdminToken } from '../../../src/services/session.js';
-import { signOutAdmin } from '../../helpers/adminAuth.js';
+import { signInAdmin, signOutAdmin } from '../../helpers/adminAuth.js';
 
 function LocationDisplay() {
   const location = useLocation();
@@ -44,5 +44,20 @@ describe('AdminLogin', () => {
     expect(screen.getByTestId('location')).toHaveTextContent('/admin/orders');
     expect(screen.getByRole('navigation', { name: 'Admin' })).toBeInTheDocument();
     expect(getAdminToken()).toBeTruthy();
+  });
+
+  it('redirects to the from path when only a refresh token is stored', async () => {
+    await signInAdmin();
+    sessionStorage.clear();
+    render(
+      <MemoryRouter initialEntries={['/admin/login?from=%2Fadmin%2Forders']}>
+        <Routes>
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/orders" element={<p>Orders content</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('Orders content')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Admin sign in' })).not.toBeInTheDocument();
   });
 });

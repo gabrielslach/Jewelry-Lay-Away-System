@@ -8,6 +8,7 @@ const piece = {
   name: 'Solitaire Halo Ring',
   category: 'Rings',
   price: 48500,
+  lowestPaymentAmount: 8083,
 };
 
 function LocationDisplay() {
@@ -29,6 +30,12 @@ describe('PieceCard', () => {
     expect(screen.getByText(/₱48,500/)).toBeInTheDocument();
     expect(screen.getByText(/or as low as ₱8,083\/payment/)).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Solitaire Halo Ring' })).toBeInTheDocument();
+  });
+
+  it('shows price only when the piece has no lowest payment amount', () => {
+    renderCard(<PieceCard piece={{ ...piece, lowestPaymentAmount: null }} />);
+    expect(screen.getByText(/₱48,500/)).toBeInTheDocument();
+    expect(screen.queryByText(/or as low as/)).not.toBeInTheDocument();
   });
 
   it('shows an img when the piece has a photo URL', () => {

@@ -107,4 +107,18 @@ describe('AdminLayout', () => {
     expect(screen.getByRole('link', { name: 'Reports' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Customers' })).toBeInTheDocument();
   });
+
+  it('stays signed in on reload while a refresh token is stored', () => {
+    sessionStorage.clear();
+    render(
+      <MemoryRouter initialEntries={['/admin']}>
+        <Routes>
+          <Route path="/admin/login" element={<h1>Admin sign in</h1>} />
+          <Route path="/admin" element={<AdminLayout />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(screen.queryByRole('heading', { name: 'Admin sign in' })).not.toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Admin' })).toBeInTheDocument();
+  });
 });

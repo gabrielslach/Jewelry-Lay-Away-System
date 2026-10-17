@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import Button from '../../components/Button.jsx';
 import DataTable from '../../components/DataTable.jsx';
 import ErrorMessage from '../../components/ErrorMessage.jsx';
+import PaymentHistoryModal from '../../components/PaymentHistoryModal.jsx';
 import PaymentReviewModal from '../../components/PaymentReviewModal.jsx';
 import { formatDisplayDate } from '../../lib/dates.js';
 import { formatPesoDecimals } from '../../lib/money.js';
@@ -15,6 +16,7 @@ import { getAdminPendingPayments } from '../../services/adminPayments.js';
 import { ServiceError } from '../../services/http.js';
 import { getAdminSession } from '../../services/session.js';
 import '../../components/Checkout.css';
+import './AdminList.css';
 
 function canReview() {
   const role = getAdminSession()?.admin?.role ?? 'admin';
@@ -25,6 +27,7 @@ export default function PendingPayments() {
   const [rows, setRows] = useState([]);
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const reviewer = canReview();
   const { refreshAlerts } = useOutletContext() ?? {};
 
@@ -124,6 +127,11 @@ export default function PendingPayments() {
 
   return (
     <div className="panel">
+      <div className="list-toolbar list-toolbar-end">
+        <Button variant="outline" size="sm" onClick={() => setHistoryOpen(true)}>
+          History
+        </Button>
+      </div>
       <ErrorMessage>{error}</ErrorMessage>
       {!reviewer ? (
         <p className="page-lead">
@@ -136,6 +144,7 @@ export default function PendingPayments() {
       {!rows.length ? (
         <p className="empty-copy">No payments waiting for confirmation.</p>
       ) : null}
+      {historyOpen ? <PaymentHistoryModal onClose={() => setHistoryOpen(false)} /> : null}
       {selected ? (
         <PaymentReviewModal
           payment={selected}

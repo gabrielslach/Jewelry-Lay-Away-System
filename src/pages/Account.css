@@ -360,3 +360,23 @@
 .plan-row > .plan-row-meta {
   grid-column: 1 / -1;
 }
+
+.plan-notice-info {
+  margin: 0;
+  padding: 10px 14px;
+  border: none;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--info) 10%, var(--surface));
+  color: var(--info);
+  font-size: 13px;
+}
+
+.plan-cancel {
+  margin-top: 16px;
+  color: var(--warn);
+}
+
+.notification:not(:has(.notification-icon)) {
+  grid-template-columns: 1fr auto;
+}

@@ -1,8 +1,9 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import LayawayPlanCard from '../../src/components/LayawayPlanCard.jsx';
 import { ToastProvider } from '../../src/components/ToastProvider.jsx';
 import { addDaysIso, formatDisplayDate, todayIsoLocal } from '../../src/lib/dates.js';
+import * as cancelService from '../../src/services/cancelLayawayPlan.js';
 import * as bankAccounts from '../../src/services/getBankAccounts.js';
 
 function daysFromToday(days) {
@@ -347,5 +348,50 @@ describe('LayawayPlanCard', () => {
     expect(screen.queryByText(/Pay Payment 1 first/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Pay ahead' })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /^Pay/ })).toHaveLength(1);
+  });
+
+  it.each(['pending', 'rejected'])('offers Cancel plan while the down payment is %s', (status) => {
+    renderCard({ ...basePlan, down_payment_status: status });
+    expand();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel plan' }));
+    expect(screen.getByRole('dialog', { name: 'Cancel this plan?' })).toBeInTheDocument();
+  });
+
+  it.each(['paid', 'submitted'])('hides Cancel plan when the down payment is %s', (status) => {
+    renderCard({ ...basePlan, down_payment_status: status });
+    expand();
+    expect(screen.queryByRole('button', { name: 'Cancel plan' })).not.toBeInTheDocument();
+  });
+
+  it('hides Cancel plan on closed plans', () => {
+    renderCard({ ...basePlan, down_payment_status: 'pending' }, { readOnly: true });
+    expand();
+    expect(screen.queryByRole('button', { name: 'Cancel plan' })).not.toBeInTheDocument();
+  });
+
+  it('calls onUpdated after the plan is cancelled', async () => {
+    vi.spyOn(cancelService, 'cancelLayawayPlan').mockResolvedValue({});
+    const onUpdated = vi.fn();
+    renderCard({ ...basePlan, down_payment_status: 'pending' }, { onUpdated });
+    expand();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel plan' }));
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel plan' }));
+    await waitFor(() => expect(onUpdated).toHaveBeenCalled());
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('explains a reconstructed plan', () => {
+    renderCard({ ...basePlan, is_reconstructed: true });
+    expect(
+      screen.getByText(
+        'This plan was rebuilt after a payment change. Figures reflect your updated schedule.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('shows no notice for a regular plan', () => {
+    renderCard();
+    expect(screen.queryByText(/rebuilt after a payment change/)).not.toBeInTheDocument();
   });
 });

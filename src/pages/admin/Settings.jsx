@@ -69,6 +69,7 @@ export default function Settings() {
           <input
             id="max-term"
             value={form.max_term_months}
+            required
             disabled={!isAdmin}
             onChange={(event) =>
               setForm({ ...form, max_term_months: Number(event.target.value) })

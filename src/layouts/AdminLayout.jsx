@@ -14,7 +14,7 @@ import { getAdminAlerts } from '../services/adminAlerts.js';
 import {
   clearAdminSession,
   getAdmin,
-  getAdminToken,
+  getAdminRefreshToken,
 } from '../services/session.js';
 import './AdminLayout.css';
 
@@ -80,7 +80,7 @@ export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const title = titles[location.pathname] || 'Admin';
-  const token = getAdminToken();
+  const signedIn = Boolean(getAdminRefreshToken());
   const admin = getAdmin();
   const isAdmin = (admin?.role ?? 'admin') === 'admin';
 
@@ -93,20 +93,20 @@ export default function AdminLayout() {
   );
 
   useEffect(() => {
-    if (!token) {
+    if (!signedIn) {
       return undefined;
     }
     refreshAlerts();
     const timer = window.setInterval(refreshAlerts, 60_000);
     return () => window.clearInterval(timer);
-  }, [token, refreshAlerts]);
+  }, [signedIn, refreshAlerts]);
 
   function signOut() {
     clearAdminSession();
     navigate('/admin/login');
   }
 
-  if (!token) {
+  if (!signedIn) {
     const from = encodeURIComponent(`${location.pathname}${location.search}`);
     return <Navigate to={`/admin/login?from=${from}`} replace />;
   }

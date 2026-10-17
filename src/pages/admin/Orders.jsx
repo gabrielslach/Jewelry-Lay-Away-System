@@ -439,6 +439,7 @@ export default function Orders() {
             <textarea
               id="cancel-reason"
               value={cancelReason}
+              required
               onChange={(event) => setCancelReason(event.target.value)}
             />
             {cancelErrors.reason ? (

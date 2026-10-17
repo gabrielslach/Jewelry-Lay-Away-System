@@ -22,14 +22,6 @@ function signInRequired() {
   return new ServiceError('Please sign in to continue.', 401);
 }
 
-function requireAdminToken() {
-  const token = getAdminToken();
-  if (!token) {
-    throw signInRequired();
-  }
-  return token;
-}
-
 let pendingRefresh = null;
 
 async function refreshAccessToken() {
@@ -48,7 +40,7 @@ async function refreshAccessToken() {
 }
 
 export async function withAdminAuth(run) {
-  const token = requireAdminToken();
+  const token = getAdminToken() ?? (await refreshAccessToken());
   try {
     return await run(token);
   } catch (err) {

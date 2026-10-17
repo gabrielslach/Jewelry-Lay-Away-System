@@ -6,6 +6,7 @@ import {
   initialCompletedPlan,
   initialCustomers,
   initialPlans,
+  initialReviewedPayments,
   initialSettings,
   initialStaff,
 } from './seed.js';
@@ -31,7 +32,7 @@ export function createStore() {
     ledger: [],
     markupRules: [],
     penaltyRules: [],
-    pendingPayments: [],
+    pendingPayments: initialReviewedPayments(),
     usedReferences: new Set(),
     customerNotifications: [],
     adminNotifications: [],

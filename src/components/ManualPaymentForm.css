@@ -109,3 +109,19 @@
   flex: 1;
   justify-content: center;
 }
+
+.manual-payment-form .amount-due {
+  display: grid;
+  gap: 2px;
+}
+
+.amount-due-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.amount-due-value {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 600;
+}

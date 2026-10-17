@@ -99,4 +99,9 @@ describe('DataTable', () => {
     expect(screen.queryByLabelText('Filter View')).not.toBeInTheDocument();
     expect(header).not.toHaveAttribute('aria-sort');
   });
+
+  it('labels cells with their column header for stacked layouts', () => {
+    render(<DataTable columns={columns} data={data} getRowId={(row) => row.id} />);
+    expect(screen.getByText('Ring').closest('td')).toHaveAttribute('data-label', 'Name');
+  });
 });

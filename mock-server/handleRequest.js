@@ -1,6 +1,7 @@
 import {
   confirmPayment,
   createPlanFromProduct,
+  amountMismatch,
   handleEpicRoutes,
   paymentFieldErrors,
   pendingRow,
@@ -8,6 +9,7 @@ import {
   pushAdminNotification,
   rejectPayment,
 } from './epicRoutes.js';
+import { lowestPaymentAmount, markedUpTotal } from './finance.js';
 import { handleBankAccountRoutes, handleFinanceRoutes } from './financeRoutes.js';
 import { handleStaffRoutes } from './staffRoutes.js';
 import {
@@ -116,11 +118,13 @@ function requireAdmin(store, headers) {
   return { admin };
 }
 
-function galleryItem(piece) {
+function galleryItem(piece, store) {
+  const price = markedUpTotal(piece.price);
   return {
     id: piece.id,
     title: piece.title,
-    price: piece.price,
+    price,
+    lowest_payment_amount: lowestPaymentAmount(price, store.settings.max_term_months || 3),
     currency: piece.currency,
     in_stock: piece.in_stock,
     images: piece.images,
@@ -190,7 +194,8 @@ function orderView(store, plan) {
     item_name: plan.item_name,
     term_months: plan.term_months,
     plan_label: plan.plan_label,
-    installment_count: plan.installments.length,
+    installment_count: plan.installments.filter((row) => row.status !== 'superseded').length,
+    is_reconstructed: Boolean(plan.is_reconstructed),
     next_due_date: asIso(plan.next_due),
     next_due: plan.next_due,
     total_price: plan.total_price,
@@ -275,7 +280,7 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     const page = Math.max(1, Number(query.get('page') || 1));
     const pageSize = Math.max(1, Number(query.get('page_size') || 12));
     const start = (page - 1) * pageSize;
-    const results = store.catalog.slice(start, start + pageSize).map(galleryItem);
+    const results = store.catalog.slice(start, start + pageSize).map((piece) => galleryItem(piece, store));
     const count = store.catalog.length;
     const next =
       start + pageSize < count
@@ -292,7 +297,7 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     if (!piece) {
       return json(404, { error: 'Not found' });
     }
-    return json(200, galleryItem(piece));
+    return json(200, galleryItem(piece, store));
   }
 
   if (verb === 'POST' && path === '/api/customers/register') {
@@ -399,6 +404,10 @@ export function handleRequest(store, { method, url, headers = {}, body, ip = '12
     );
     if (!inst) {
       return json(400, { error: 'installment_id required' });
+    }
+    const mismatch = amountMismatch(json, body, inst.amount);
+    if (mismatch) {
+      return mismatch;
     }
     if (inst.status === 'submitted') {
       return json(409, { error: 'Payment already awaiting confirmation' });

@@ -7,7 +7,6 @@ import './Gallery.css';
 
 export default function PieceCard({ piece, onViewDetails, to }) {
   const navigate = useNavigate();
-  const perPayment = Math.round(piece.price / 6);
 
   function openDetails() {
     if (to) {
@@ -27,7 +26,9 @@ export default function PieceCard({ piece, onViewDetails, to }) {
         <h3 onClick={openDetails}>{piece.name}</h3>
         <div className="piece-price">
           {formatPeso(piece.price)}{' '}
-          <small>or as low as {formatPeso(perPayment)}/payment</small>
+          {piece.lowestPaymentAmount != null ? (
+            <small>or as low as {formatPeso(piece.lowestPaymentAmount)}/payment</small>
+          ) : null}
         </div>
         <div className="piece-actions">
           {to ? (
