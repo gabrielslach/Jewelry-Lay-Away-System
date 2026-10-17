@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import ErrorMessage from '../../components/ErrorMessage.jsx';
-import { formatRelativeTime } from '../../lib/dates.js';
+import NotificationItem from '../../components/NotificationItem.jsx';
 import {
   getAdminNotifications,
   markAdminNotificationsRead,
@@ -29,6 +29,11 @@ export default function AdminNotifications() {
     load();
   }
 
+  async function markOne(id) {
+    await markAdminNotificationsRead([id]);
+    load();
+  }
+
   return (
     <div className="panel">
       <div className="account-head">
@@ -47,13 +52,7 @@ export default function AdminNotifications() {
       {items.length ? (
         <ul className="notification-list">
           {items.map((item) => (
-            <li key={item.id} className="notification">
-              <div className="notification-body">
-                <b>{item.title}</b>
-                <p>{item.body}</p>
-                <span className="notification-time">{formatRelativeTime(item.created_at)}</span>
-              </div>
-            </li>
+            <NotificationItem key={item.id} item={item} onMarkRead={markOne} />
           ))}
         </ul>
       ) : (

@@ -2,6 +2,7 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import Button from '../components/Button.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
+import RequiredNote from '../components/RequiredNote.jsx';
 import { useSession } from '../components/useSession.js';
 import { returnPath } from '../lib/returnPath.js';
 import { ServiceError } from '../services/http.js';
@@ -52,6 +53,7 @@ export default function Register() {
       <p className="page-lead">Register to reserve pieces and track your lay-away plans.</p>
       <ErrorMessage>{error}</ErrorMessage>
       <form className="auth-form" onSubmit={handleSubmit}>
+        <RequiredNote />
         <div className="form-row">
           <label htmlFor="reg-name">Name</label>
           <input

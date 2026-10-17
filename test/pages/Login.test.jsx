@@ -9,6 +9,7 @@ import {
 import { describe, expect, it } from 'vitest';
 import galleryPage from '../../mock-server/gallery-items.json';
 import App from '../../src/App.jsx';
+import { loginCustomer } from '../../src/services/loginCustomer.js';
 
 function renderLogin(path) {
   render(
@@ -81,5 +82,11 @@ describe('Login', () => {
     expect(
       within(agreement).getByRole('link', { name: 'Privacy Policy' }),
     ).toHaveAttribute('href', '/privacy');
+  });
+
+  it('redirects to the from path when already signed in', async () => {
+    await loginCustomer({ email: 'client@sampleemail.com', password: 'password' });
+    renderLogin('/login');
+    expect(await screen.findByRole('heading', { name: 'My Account' })).toBeInTheDocument();
   });
 });

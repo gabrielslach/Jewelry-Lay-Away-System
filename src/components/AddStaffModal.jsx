@@ -4,6 +4,7 @@ import { createAdminStaff } from '../services/createAdminStaff.js';
 import { MIN_PASSWORD_LENGTH, STAFF_ROLES } from '../lib/staffRoles.js';
 import Button from './Button.jsx';
 import ErrorMessage from './ErrorMessage.jsx';
+import RequiredNote from './RequiredNote.jsx';
 import Modal from './Modal.jsx';
 import StaffRoleSelect from './StaffRoleSelect.jsx';
 import './Checkout.css';
@@ -84,14 +85,21 @@ export default function AddStaffModal({ full, onClose, onSaved }) {
         </>
       }
     >
+      <RequiredNote />
       <div className="form-row">
         <label htmlFor="staff-name">Name</label>
-        <input id="staff-name" value={form.name} onChange={setField('name')} />
+        <input id="staff-name" value={form.name} onChange={setField('name')} required />
         {errors.name ? <p className="field-error">{errors.name}</p> : null}
       </div>
       <div className="form-row">
         <label htmlFor="staff-email">Email</label>
-        <input id="staff-email" type="email" value={form.email} onChange={setField('email')} />
+        <input
+          id="staff-email"
+          type="email"
+          value={form.email}
+          onChange={setField('email')}
+          required
+        />
         {errors.email ? <p className="field-error">{errors.email}</p> : null}
       </div>
       <div className="form-row">
@@ -102,6 +110,7 @@ export default function AddStaffModal({ full, onClose, onSaved }) {
           autoComplete="new-password"
           value={form.password}
           onChange={setField('password')}
+          required
         />
         <p className="field-hint">At least 8 characters.</p>
         {errors.password ? <p className="field-error">{errors.password}</p> : null}

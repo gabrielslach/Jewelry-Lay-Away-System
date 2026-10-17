@@ -20,11 +20,25 @@ function badgeStatus(status) {
   return status;
 }
 
+function planLabel(row) {
+  const count = row.installment_count;
+  if (count == null) {
+    return row.plan_label;
+  }
+  return count === 1 ? '1 Payment' : `${row.term_months} Mo. / ${count} Payments`;
+}
+
 function presentOrder(row) {
   return {
     id: row.id,
     item_name: row.item_name,
-    plan_label: row.plan_label,
+    plan_label: planLabel(row),
+    term_months: row.term_months,
+    installment_count: row.installment_count,
+    financed_principal: row.financed_principal,
+    total_payable: row.total_payable,
+    amount_paid: row.amount_paid,
+    is_reconstructed: Boolean(row.is_reconstructed),
     installments: row.installments ?? [],
     status: badgeStatus(row.status),
     next_due: formatDate(row.next_due_date ?? row.next_due, NEXT_DUE),

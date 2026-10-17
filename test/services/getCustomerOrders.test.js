@@ -25,7 +25,9 @@ describe('getCustomerOrders', () => {
       next_due: 'Oct 25',
     });
     expect(active.installments.length).toBeGreaterThan(0);
-    expect(active).not.toHaveProperty('total_payable');
+    expect(active).toMatchObject({ term_months: 3, installment_count: 6, is_reconstructed: false });
+    expect(active.financed_principal).toBeGreaterThan(0);
+    expect(active.total_payable).toBeGreaterThan(active.amount_paid);
     expect(active).not.toHaveProperty('image_url');
 
     const completed = orders.completed.find((row) => row.id === 987);
@@ -34,6 +36,14 @@ describe('getCustomerOrders', () => {
       status: 'completed',
       completed_on: 'Jul 2026',
     });
+  });
+
+  it('labels plans from the real installment count and passes is_reconstructed through', async () => {
+    await loginCustomer({ email: 'buyer@sampleemail.com', password: 'password' });
+    const orders = await getCustomerOrders();
+    const rebuilt = orders.active.find((row) => row.id === 1002);
+    expect(rebuilt.is_reconstructed).toBe(true);
+    expect(rebuilt.plan_label).toBe('2 Mo. / 4 Payments');
   });
 
   it('groups cancelled and defaulted plans as closed, keeping their status', async () => {

@@ -199,6 +199,7 @@ export function initialPlans(catalog) {
       payments: 4,
       due: '2026-09-15',
       status: 'warn',
+      is_reconstructed: true,
     },
     {
       id: 'LA-1003',
@@ -252,6 +253,7 @@ export function initialPlans(catalog) {
       plan_label: planLabel(spec.term_months, spec.payments),
       next_due: spec.due,
       list_status: spec.status,
+      is_reconstructed: Boolean(spec.is_reconstructed),
       term_months: spec.term_months,
       total_price: product.price,
       currency: 'PHP',
@@ -344,6 +346,60 @@ export function initialClosedPlans(catalog) {
       })),
     };
   });
+}
+
+export function initialReviewedPayments() {
+  const base = {
+    kind: 'installment',
+    status: 'confirmed',
+    reviewed_by: 'Sample Admin',
+    confirmer_note: null,
+    proof_of_payment_url: null,
+  };
+  return [
+    {
+      ...base,
+      id: 9001,
+      plan_id: 'LA-1001',
+      term_number: 1,
+      installment_id: 'LA-1001-i1',
+      expected_amount: '9000',
+      amount_submitted: '9000',
+      reference_number: 'BT-20260801-01',
+      paid_on: '2026-08-01',
+      created_at: '2026-08-01T02:00:00.000Z',
+      reviewed_at: '2026-08-01T05:00:00.000Z',
+    },
+    {
+      ...base,
+      id: 9002,
+      kind: 'down_payment',
+      plan_id: 'LA-1003',
+      term_number: null,
+      installment_id: null,
+      expected_amount: '25000',
+      amount_submitted: '25000',
+      reference_number: 'BT-20260805-02',
+      paid_on: '2026-08-05',
+      created_at: '2026-08-05T02:00:00.000Z',
+      reviewed_at: '2026-08-05T06:00:00.000Z',
+    },
+    {
+      ...base,
+      id: 9003,
+      status: 'rejected',
+      plan_id: 'LA-1002',
+      term_number: 1,
+      installment_id: 'LA-1002-i1',
+      expected_amount: '6000',
+      amount_submitted: '6000',
+      reference_number: 'BT-20260810-03',
+      paid_on: '2026-08-10',
+      reason: 'Reference number not found in the bank statement.',
+      created_at: '2026-08-10T02:00:00.000Z',
+      reviewed_at: '2026-08-10T07:00:00.000Z',
+    },
+  ];
 }
 
 export function initialBankAccounts() {

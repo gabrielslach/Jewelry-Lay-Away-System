@@ -117,4 +117,9 @@ describe('presentPiece', () => {
   it('keeps the explicit name and falls back to the title', () => {
     expect(presentPiece({ ...base, name: 'Halo Ring' }).name).toBe('Halo Ring');
   });
+
+  it('maps lowest_payment_amount, or null when the API omits it', () => {
+    expect(presentPiece({ ...base, lowest_payment_amount: 4150 }).lowestPaymentAmount).toBe(4150);
+    expect(presentPiece(base).lowestPaymentAmount).toBeNull();
+  });
 });

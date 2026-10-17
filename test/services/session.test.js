@@ -95,4 +95,19 @@ describe('session', () => {
     expect(isAdminRole()).toBe(true);
     clearAdminSession();
   });
+
+  it('keeps one session at a time: customer sign-in clears admin and the reverse', () => {
+    setAdminSession(adminEnvelope);
+    setCustomerSession(envelope);
+    expect(getAdmin()).toBeNull();
+    expect(getAdminToken()).toBeNull();
+    expect(getAdminRefreshToken()).toBeNull();
+    expect(getCustomer()).toEqual({ id: 1 });
+
+    setAdminSession(adminEnvelope);
+    expect(getCustomer()).toBeNull();
+    expect(getCustomerToken()).toBeNull();
+    expect(getCustomerRefreshToken()).toBeNull();
+    expect(getAdminToken()).toBe('aa1');
+  });
 });

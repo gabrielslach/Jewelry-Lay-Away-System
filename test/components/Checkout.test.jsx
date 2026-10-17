@@ -123,6 +123,12 @@ describe('Checkout', () => {
     ).toBeInTheDocument();
   });
 
+  it('shows principal and interest under each schedule row', async () => {
+    renderCheckout(<Checkout piece={piece} onClose={() => {}} />);
+    await waitForPreview();
+    expect(screen.getAllByText(/Principal ₱[\d,.]+ · Interest ₱[\d,.]+/)).toHaveLength(6);
+  });
+
   it('asks guests to sign in instead of showing the schedule', () => {
     clearCustomerSession();
     renderCheckout(<Checkout piece={piece} onClose={() => {}} />);

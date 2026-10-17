@@ -27,3 +27,14 @@ h4 {
 h1 {
   font-size: 2rem;
 }
+
+.form-row:has(:required) label::after {
+  content: ' *' / '';
+  color: var(--warn);
+}
+
+.form-note {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--text-soft);
+}
