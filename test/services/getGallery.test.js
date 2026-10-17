@@ -10,7 +10,7 @@ describe('gallery services', () => {
       title: 'PJ17414',
       price: '48500',
       name: 'Solitaire Halo Ring',
-      category: 'Rings',
+      details: { category: 'Rings' },
     });
     expect(piece.name).toBe('Solitaire Halo Ring');
     expect(piece.category).toBe('Rings');

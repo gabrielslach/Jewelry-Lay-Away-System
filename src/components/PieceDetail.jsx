@@ -1,6 +1,7 @@
 import { formatPeso } from '../lib/money.js';
 import Button from './Button.jsx';
 import Modal from './Modal.jsx';
+import PieceSpecs from './PieceSpecs.jsx';
 import PieceImage from './PieceImage.jsx';
 import { pickImage } from '../lib/pickImage.js';
 import './Gallery.css';
@@ -32,24 +33,7 @@ export default function PieceDetail({ piece, onClose, onReserve }) {
       </div>
       <div className="piece-cat">{piece.category}</div>
       <div className="piece-detail-price">{formatPeso(piece.price)}</div>
-      <div className="spec-grid">
-        <div className="spec-item">
-          <span>Material</span>
-          <b>{piece.material}</b>
-        </div>
-        <div className="spec-item">
-          <span>Stone</span>
-          <b>{piece.stone}</b>
-        </div>
-        <div className="spec-item">
-          <span>Size</span>
-          <b>{piece.size}</b>
-        </div>
-        <div className="spec-item">
-          <span>Certification</span>
-          <b>{piece.cert}</b>
-        </div>
-      </div>
+      <PieceSpecs piece={piece} />
       <div className="plan-box">
         <h4>Lay-Away Available</h4>
         <p>
