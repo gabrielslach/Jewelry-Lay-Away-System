@@ -50,7 +50,7 @@ describe('StorefrontLayout', () => {
       'btn-primary',
     );
     expect(screen.getByRole('contentinfo')).toHaveTextContent(
-      /sample storefront for demo purposes/i,
+      /fine jewelry with flexible lay-away plans\./i,
     );
     const nav = screen.getByRole('navigation', { name: 'Storefront' });
     const home = within(nav).getByRole('link', { name: 'Mine Credit' });
