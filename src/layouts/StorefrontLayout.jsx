@@ -195,8 +195,7 @@ export default function StorefrontLayout() {
           <div>
             <Logo as="span" />
             <p className="footer-blurb">
-              Fine jewelry with flexible lay-away plans. Sample storefront for
-              demo purposes.
+              Fine jewelry with flexible lay-away plans.
             </p>
           </div>
           <div className="footer-cols">
