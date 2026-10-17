@@ -31,3 +31,8 @@ export function buildSchedule({ totalPrice, termMonths, startDate }) {
 
   return { down_payment_amount: downPayment, financed_principal: financed, schedule };
 }
+
+export function lowestPaymentAmount(totalPrice, maxTermMonths) {
+  const { schedule } = buildSchedule({ totalPrice, termMonths: maxTermMonths });
+  return Math.min(...schedule.map((row) => row.amount));
+}

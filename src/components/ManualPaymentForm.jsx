@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Button from './Button.jsx';
 import ErrorMessage from './ErrorMessage.jsx';
+import RequiredNote from './RequiredNote.jsx';
 import { todayIsoLocal } from '../lib/dates.js';
 import { formatPesoDecimals } from '../lib/money.js';
 import {
@@ -31,7 +32,6 @@ export default function ManualPaymentForm({
   const [loadingAccounts, setLoadingAccounts] = useState(true);
   const [bankAccountId, setBankAccountId] = useState('');
   const [referenceNumber, setReferenceNumber] = useState('');
-  const [amount, setAmount] = useState(String(expectedAmount ?? ''));
   const [paidOn, setPaidOn] = useState(todayIsoLocal());
   const [proofFile, setProofFile] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -79,7 +79,6 @@ export default function ManualPaymentForm({
     const clientErrors = validatePaymentForm({
       bankAccountId,
       referenceNumber,
-      amount,
       paidOn,
       today,
     });
@@ -92,7 +91,7 @@ export default function ManualPaymentForm({
     const payload = {
       bank_account_id: bankAccountId,
       reference_number: referenceNumber.trim(),
-      amount,
+      amount: expectedAmount,
       paid_on: paidOn,
       ...(proofFile ? { proof_of_payment: proofFile } : {}),
       ...(installmentId ? { installment_id: installmentId } : {}),
@@ -105,7 +104,7 @@ export default function ManualPaymentForm({
       onSuccess?.(result);
     } catch (err) {
       if (err instanceof ServiceError) {
-        showErrors(mapPaymentError(err.status, err.message || SUBMIT_FAILED));
+        showErrors(mapPaymentError(err.status, err.message || SUBMIT_FAILED, err.expectedAmount));
       } else {
         showErrors({ form: SUBMIT_FAILED });
       }
@@ -126,6 +125,7 @@ export default function ManualPaymentForm({
         us the details below so we can confirm it.
       </p>
       <ErrorMessage tabIndex={-1}>{fieldErrors.form}</ErrorMessage>
+      <RequiredNote />
       <fieldset className="form-fields" disabled={submitting}>
       {loadingAccounts ? <p>Loading bank accounts…</p> : null}
       {!loadingAccounts ? (
@@ -134,6 +134,7 @@ export default function ManualPaymentForm({
           <select
             id={bankSelectId}
             value={bankAccountId}
+            required
             disabled={accounts.length === 0}
             aria-invalid={Boolean(fieldErrors.bank_account_id)}
             onChange={editField(setBankAccountId, 'bank_account_id')}
@@ -174,6 +175,7 @@ export default function ManualPaymentForm({
         <input
           id={`ref-${planId}-${installmentId ?? 'dp'}`}
           value={referenceNumber}
+          required
           maxLength={100}
           placeholder="BT-20261105-77"
           aria-invalid={Boolean(fieldErrors.reference_number)}
@@ -183,16 +185,10 @@ export default function ManualPaymentForm({
           <p className="field-error">{fieldErrors.reference_number}</p>
         ) : null}
       </div>
-      <div className="form-row">
-        <label htmlFor={`amount-${planId}-${installmentId ?? 'dp'}`}>Amount sent</label>
-        <input
-          id={`amount-${planId}-${installmentId ?? 'dp'}`}
-          inputMode="decimal"
-          value={amount}
-          aria-invalid={Boolean(fieldErrors.amount)}
-          onChange={editField(setAmount, 'amount')}
-        />
-        {fieldErrors.amount ? <p className="field-error">{fieldErrors.amount}</p> : null}
+      <div className="form-row amount-due">
+        <span className="amount-due-label">Amount due</span>
+        <b className="amount-due-value">{formatPesoDecimals(expectedAmount)}</b>
+        <span className="field-hint">Set by your plan.</span>
       </div>
       <div className="form-row">
         <label htmlFor={`paid-${planId}-${installmentId ?? 'dp'}`}>Date paid</label>
@@ -201,6 +197,7 @@ export default function ManualPaymentForm({
           type="date"
           max={todayIsoLocal()}
           value={paidOn}
+          required
           aria-invalid={Boolean(fieldErrors.paid_on)}
           onChange={editField(setPaidOn, 'paid_on')}
         />
@@ -226,6 +223,7 @@ export default function ManualPaymentForm({
           Submitting your payment…
         </p>
       ) : null}
+      <ErrorMessage tabIndex={-1}>{fieldErrors.amount}</ErrorMessage>
       <div className="form-actions">
         {onCancel ? (
           <Button variant="outline" type="button" disabled={submitting} onClick={onCancel}>

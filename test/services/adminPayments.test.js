@@ -4,6 +4,7 @@ import {
   fetchPaymentProof,
   getAdminDuePayments,
   getAdminPendingPayments,
+  getPaymentHistory,
   rejectAdminPayment,
 } from '../../src/services/adminPayments.js';
 import { createLayawayPlan } from '../../src/services/createLayawayPlan.js';
@@ -25,7 +26,6 @@ describe('adminPayments', () => {
   });
 
   it('confirms a down payment and rejects an installment', async () => {
-    await ensureAdminToken();
     await loginCustomer({ email: 'client@sampleemail.com', password: 'password' });
     const { results } = await getGallery({ pageSize: 1 });
     const plan = await createLayawayPlan({ productId: results[0].id, termMonths: 1 });
@@ -36,9 +36,6 @@ describe('adminPayments', () => {
       amount: plan.down_payment_amount,
       paid_on: paidOn,
     });
-    const confirmed = await confirmAdminPayment(down.id, { note: 'ok' });
-    expect(confirmed.status).toBe('confirmed');
-
     const installment = await submitInstallmentManual(plan.id, {
       installment_id: `${plan.id}-i1`,
       bank_account_id: 1,
@@ -46,12 +43,14 @@ describe('adminPayments', () => {
       amount: plan.schedule[0].amount,
       paid_on: paidOn,
     });
+    await ensureAdminToken();
+    const confirmed = await confirmAdminPayment(down.id, { note: 'ok' });
+    expect(confirmed.status).toBe('confirmed');
     const rejected = await rejectAdminPayment(installment.id, { reason: 'Unclear proof' });
     expect(rejected.status).toBe('rejected');
   });
 
   it('fetches payment proof as a blob object URL', async () => {
-    await ensureAdminToken();
     await loginCustomer({ email: 'client@sampleemail.com', password: 'password' });
     const { results } = await getGallery({ pageSize: 1 });
     const plan = await createLayawayPlan({ productId: results[0].id, termMonths: 1 });
@@ -63,6 +62,7 @@ describe('adminPayments', () => {
       paid_on: paidOn,
       proof_of_payment: new File(['proof'], 'proof.png', { type: 'image/png' }),
     });
+    await ensureAdminToken();
     const proof = await fetchPaymentProof(down.id);
     expect(proof.url).toMatch(/^blob:/);
     expect(proof.content_type).toMatch(/^image\//);
@@ -70,7 +70,6 @@ describe('adminPayments', () => {
   });
 
   it('surfaces missing proof as a not-found ServiceError', async () => {
-    await ensureAdminToken();
     await loginCustomer({ email: 'client@sampleemail.com', password: 'password' });
     const { results } = await getGallery({ pageSize: 1 });
     const plan = await createLayawayPlan({ productId: results[0].id, termMonths: 1 });
@@ -81,9 +80,22 @@ describe('adminPayments', () => {
       amount: plan.down_payment_amount,
       paid_on: paidOn,
     });
+    await ensureAdminToken();
     await expect(fetchPaymentProof(down.id)).rejects.toMatchObject({
       name: 'ServiceError',
       status: 404,
     });
+  });
+});
+
+describe('getPaymentHistory', () => {
+  it('lists reviewed payments filtered by outcome', async () => {
+    await ensureAdminToken();
+    const confirmed = await getPaymentHistory({ status: 'confirmed' });
+    const rejected = await getPaymentHistory({ status: 'rejected', limit: 10, offset: 0 });
+    expect(confirmed.length).toBeGreaterThan(0);
+    expect(confirmed.every((row) => row.outcome === 'confirmed')).toBe(true);
+    expect(rejected.every((row) => row.outcome === 'rejected')).toBe(true);
+    expect(rejected[0]).toHaveProperty('review_note');
   });
 });

@@ -182,4 +182,17 @@ describe('PendingPayments', () => {
     const note = screen.queryByText('Only admins and accounting can confirm or reject.');
     expect(Boolean(note)).toBe(shown);
   });
+
+  it('opens the payment history modal from the History button', async () => {
+    vi.spyOn(adminPayments, 'getAdminPendingPayments').mockResolvedValue([]);
+    vi.spyOn(adminPayments, 'getPaymentHistory').mockResolvedValue([]);
+    render(
+      <MemoryRouter initialEntries={['/admin/payments']}>
+        <App />
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'History' }));
+    expect(await screen.findByRole('dialog', { name: 'Payment history' })).toBeInTheDocument();
+    expect(await screen.findByText('No confirmed payments.')).toBeInTheDocument();
+  });
 });

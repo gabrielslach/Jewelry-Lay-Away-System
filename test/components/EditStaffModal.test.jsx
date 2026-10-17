@@ -72,13 +72,10 @@ describe('EditStaffModal', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it('locks role and active for your own account but keeps name editable', () => {
+  it('locks the role and hides the active switch for your own account', () => {
     renderModal({ isSelf: true });
     expect(screen.getByLabelText('Role')).toBeDisabled();
-    expect(screen.getByRole('switch', { name: 'Active' })).toHaveAttribute(
-      'aria-disabled',
-      'true',
-    );
+    expect(screen.queryByRole('switch', { name: 'Active' })).not.toBeInTheDocument();
     expect(screen.getByText(/can't change your own role/)).toBeInTheDocument();
     expect(screen.getByLabelText('Name')).toBeEnabled();
   });

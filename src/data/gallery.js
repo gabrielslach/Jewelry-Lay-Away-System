@@ -98,6 +98,7 @@ export function presentPiece(item) {
   return {
     ...item,
     price: Number(item.price),
+    lowestPaymentAmount: item.lowest_payment_amount ?? null,
     ...extras,
   };
 }

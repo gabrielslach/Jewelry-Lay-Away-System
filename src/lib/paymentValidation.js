@@ -1,12 +1,17 @@
+import { formatPesoDecimals } from './money.js';
+
 export const PAYMENT_FIELD_MESSAGES = {
   bank_account_id: 'Please choose a bank account.',
   reference_number: 'Reference number is required.',
-  amount: 'Enter a valid amount.',
   paid_on: 'Date cannot be in the future.',
   reference_reused: 'This reference number was already submitted. Please check it.',
 };
 
-export function mapPaymentError(status, message) {
+export function mapPaymentError(status, message, expectedAmount) {
+  if (status === 400 && (expectedAmount != null || message?.toLowerCase().includes('amount'))) {
+    const expected = expectedAmount != null ? ` Expected ${formatPesoDecimals(expectedAmount)}` : '';
+    return { amount: `${message}${expected}` };
+  }
   if (status === 409 && message?.toLowerCase().includes('reference')) {
     return { reference_number: PAYMENT_FIELD_MESSAGES.reference_reused };
   }
@@ -17,16 +22,13 @@ export function mapPaymentError(status, message) {
   if (lower.includes('reference')) {
     return { reference_number: PAYMENT_FIELD_MESSAGES.reference_number };
   }
-  if (lower.includes('amount')) {
-    return { amount: PAYMENT_FIELD_MESSAGES.amount };
-  }
   if (lower.includes('date') || lower.includes('paid_on') || lower.includes('future')) {
     return { paid_on: PAYMENT_FIELD_MESSAGES.paid_on };
   }
   return { form: message || 'Unable to submit payment.' };
 }
 
-export function validatePaymentForm({ bankAccountId, referenceNumber, amount, paidOn, today }) {
+export function validatePaymentForm({ bankAccountId, referenceNumber, paidOn, today }) {
   const errors = {};
   if (!bankAccountId) {
     errors.bank_account_id = PAYMENT_FIELD_MESSAGES.bank_account_id;
@@ -35,10 +37,6 @@ export function validatePaymentForm({ bankAccountId, referenceNumber, amount, pa
     errors.reference_number = PAYMENT_FIELD_MESSAGES.reference_number;
   } else if (referenceNumber.length > 100) {
     errors.reference_number = PAYMENT_FIELD_MESSAGES.reference_number;
-  }
-  const numericAmount = Number(amount);
-  if (!amount || Number.isNaN(numericAmount) || numericAmount <= 0) {
-    errors.amount = PAYMENT_FIELD_MESSAGES.amount;
   }
   if (!paidOn) {
     errors.paid_on = PAYMENT_FIELD_MESSAGES.paid_on;

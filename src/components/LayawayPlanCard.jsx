@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import CancelPlanModal from './CancelPlanModal.jsx';
 import ManualPaymentForm from './ManualPaymentForm.jsx';
 import Modal from './Modal.jsx';
 import PlanMoneySummary from './PlanMoneySummary.jsx';
@@ -16,6 +17,7 @@ import { ChevronDownIcon } from '../theme/assets.js';
 import Button from './Button.jsx';
 
 const HIGHLIGHT_MS = 6000;
+const CANCELLABLE = ['pending', 'rejected'];
 const SETTLED = ['paid', 'submitted', 'awaiting_confirmation'];
 
 function planBadge(plan, waitingForStock) {
@@ -35,6 +37,7 @@ export default function LayawayPlanCard({
   readOnly = false,
 }) {
   const [openPay, setOpenPay] = useState(null);
+  const [cancelOpen, setCancelOpen] = useState(false);
   const [expanded, setExpanded] = useState(focused);
   const [highlighted, setHighlighted] = useState(focused);
   const cardRef = useRef(null);
@@ -42,6 +45,7 @@ export default function LayawayPlanCard({
   const payTriggerRef = useRef(null);
   const waitingForStock = plan.reservation_status === 'waiting_for_stock';
   const graceDays = plan.grace_period_days;
+  const canCancel = !readOnly && CANCELLABLE.includes(plan.down_payment_status);
 
   useEffect(() => {
     if (!focused) return undefined;
@@ -180,6 +184,11 @@ export default function LayawayPlanCard({
           </span>
         </span>
       </button>
+      {plan.is_reconstructed ? (
+        <p className="plan-notice plan-notice-info">
+          This plan was rebuilt after a payment change. Figures reflect your updated schedule.
+        </p>
+      ) : null}
       <div className="plan-progress">
         <ProgressBar
           value={paidCount}
@@ -260,8 +269,23 @@ export default function LayawayPlanCard({
             );
           })}
         </div>
+        {canCancel ? (
+          <button type="button" className="text-link plan-cancel" onClick={() => setCancelOpen(true)}>
+            Cancel plan
+          </button>
+        ) : null}
       </div>
       {payModal}
+      {cancelOpen ? (
+        <CancelPlanModal
+          planId={plan.id}
+          onClose={() => setCancelOpen(false)}
+          onCancelled={() => {
+            setCancelOpen(false);
+            onUpdated?.();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

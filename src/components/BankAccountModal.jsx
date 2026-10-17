@@ -6,6 +6,7 @@ import {
 import { ServiceError } from '../services/http.js';
 import Button from './Button.jsx';
 import ErrorMessage from './ErrorMessage.jsx';
+import RequiredNote from './RequiredNote.jsx';
 import Modal from './Modal.jsx';
 import './BankAccountModal.css';
 import './Checkout.css';
@@ -129,12 +130,14 @@ export default function BankAccountModal({ account, onClose, onSaved }) {
       }
     >
       <ErrorMessage>{formError}</ErrorMessage>
+      <RequiredNote />
       {TEXT_FIELDS.map(({ key, label }) => (
         <div className="form-row" key={key}>
           <label htmlFor={`bank-${key}`}>{label}</label>
           <input
             id={`bank-${key}`}
             value={form[key]}
+            required
             aria-invalid={errors[key] ? 'true' : undefined}
             onChange={(event) => setField(key, event.target.value)}
           />

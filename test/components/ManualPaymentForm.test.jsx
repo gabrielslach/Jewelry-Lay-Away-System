@@ -184,12 +184,56 @@ describe('ManualPaymentForm', () => {
     ]);
     renderForm();
     const reference = await screen.findByLabelText('Reference number');
-    fireEvent.change(screen.getByLabelText('Amount sent'), { target: { value: '' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Submit payment' }));
+    fireEvent.submit(reference.closest('form'));
     expect(await screen.findByText('Reference number is required.')).toBeInTheDocument();
     expect(reference).toHaveFocus();
     fireEvent.change(reference, { target: { value: 'BT-1' } });
     expect(screen.queryByText('Reference number is required.')).not.toBeInTheDocument();
-    expect(screen.getByText('Enter a valid amount.')).toBeInTheDocument();
+  });
+
+  it('shows the amount due read-only and submits it', async () => {
+    vi.spyOn(bankAccounts, 'getBankAccounts').mockResolvedValue([
+      { id: 1, bank_name: 'Sample Bank', account_name: 'A', account_number: '1' },
+    ]);
+    const submit = vi
+      .spyOn(submitManualPayment, 'submitDownPaymentManual')
+      .mockResolvedValue({ id: 9, status: 'submitted' });
+    renderForm();
+    fireEvent.change(await screen.findByLabelText('Reference number'), {
+      target: { value: 'BT-1' },
+    });
+    expect(screen.getByText('Amount due')).toBeInTheDocument();
+    expect(screen.getByText('Set by your plan.')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /amount/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Submit payment' }));
+    await waitFor(() => expect(submit).toHaveBeenCalled());
+    expect(submit.mock.calls[0][1]).toMatchObject({ amount: 12000 });
+  });
+
+  it('shows the server amount error with the expected amount above submit', async () => {
+    vi.spyOn(bankAccounts, 'getBankAccounts').mockResolvedValue([
+      { id: 1, bank_name: 'Sample Bank', account_name: 'A', account_number: '1' },
+    ]);
+    vi.spyOn(submitManualPayment, 'submitDownPaymentManual').mockRejectedValue(
+      new ServiceError('The amount must match the amount due.', 400, null, 12000),
+    );
+    renderForm();
+    fireEvent.change(await screen.findByLabelText('Reference number'), {
+      target: { value: 'BT-1' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit payment' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The amount must match the amount due. Expected ₱12,000.00',
+    );
+  });
+
+  it('marks required fields with a required attribute and notes it once', async () => {
+    vi.spyOn(bankAccounts, 'getBankAccounts').mockResolvedValue([
+      { id: 1, bank_name: 'Sample Bank', account_name: 'A', account_number: '1' },
+    ]);
+    renderForm();
+    expect(await screen.findByLabelText('Reference number')).toBeRequired();
+    expect(screen.getByLabelText('Date paid')).toBeRequired();
+    expect(screen.getByText('* Required')).toBeInTheDocument();
   });
 });

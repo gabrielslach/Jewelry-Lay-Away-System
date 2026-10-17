@@ -28,6 +28,7 @@ export function getCustomer() {
 }
 
 export function setCustomerSession({ access_token, refresh_token, customer }) {
+  clearAdminSession();
   localStorage.setItem(REFRESH_KEY, refresh_token);
   localStorage.setItem(CUSTOMER_KEY, JSON.stringify(customer));
   sessionStorage.setItem(ACCESS_KEY, access_token);
@@ -81,6 +82,7 @@ export function getAdminSession() {
 }
 
 export function setAdminSession({ access_token, refresh_token, admin }) {
+  clearCustomerSession();
   localStorage.setItem(ADMIN_REFRESH_KEY, refresh_token);
   localStorage.setItem(ADMIN_KEY, JSON.stringify(admin));
   sessionStorage.setItem(ADMIN_ACCESS_KEY, access_token);

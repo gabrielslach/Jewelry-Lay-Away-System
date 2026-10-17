@@ -180,6 +180,7 @@ export default function Checkout({ piece, onClose, onScheduled }) {
             <select
               id="plan-term"
               value={termMonths ?? ''}
+              required
               disabled={Boolean(plan)}
               onChange={(event) => setTermMonths(Number(event.target.value))}
             >
@@ -204,6 +205,10 @@ export default function Checkout({ piece, onClose, onScheduled }) {
                     Payment {row.term_number} · {formatDisplayDate(row.due_date)}
                   </span>
                   <b>{formatPesoDecimals(row.amount)}</b>
+                  <span className="schedule-note">
+                    Principal {formatPesoDecimals(row.principal_amount)} · Interest{' '}
+                    {formatPesoDecimals(row.interest_amount)}
+                  </span>
                 </div>
               ))}
             </div>

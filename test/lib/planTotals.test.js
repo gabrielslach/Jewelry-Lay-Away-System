@@ -32,4 +32,14 @@ describe('planTotals', () => {
   it('stamps today as the as-of date', () => {
     expect(planTotals(plan).asOf).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
+
+  it('prefers the totals the backend sends', () => {
+    const totals = planTotals({
+      ...plan,
+      financed_principal: 7000,
+      total_payable: 9000,
+      amount_paid: 1200,
+    });
+    expect(totals).toMatchObject({ financedPrincipal: 7000, totalPayable: 9000, amountPaid: 1200 });
+  });
 });

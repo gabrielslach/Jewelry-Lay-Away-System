@@ -10,7 +10,7 @@ import StaffRoleSelect from './StaffRoleSelect.jsx';
 import './Checkout.css';
 import '../pages/AuthPage.css';
 
-const SELF_HINT = "You can't change your own role or deactivate your own account.";
+const SELF_HINT = "You can't change your own role.";
 const LAST_ADMIN_HINT =
   "This is the last active admin, so they can't be demoted or deactivated.";
 
@@ -106,6 +106,7 @@ export default function EditStaffModal({ member, isSelf, isLastAdmin, full, onCl
         <input
           id="staff-name"
           value={form.name}
+          required
           onChange={(event) => setForm({ ...form, name: event.target.value })}
         />
         {errors.name ? <p className="field-error">{errors.name}</p> : null}
@@ -118,16 +119,20 @@ export default function EditStaffModal({ member, isSelf, isLastAdmin, full, onCl
         lockedHint={locked ? lockedHint : null}
         onChange={(role) => setForm({ ...form, role })}
       />
-      <SettingsSwitch
-        id="staff-active"
-        label="Active"
-        checked={form.is_active}
-        disabled={locked || reactivationBlocked}
-        onToggle={() => setForm({ ...form, is_active: !form.is_active })}
-      />
-      {reactivationBlocked && !locked ? (
-        <p className="field-hint">{reactivationHint(form.role)}</p>
-      ) : null}
+      {isSelf ? null : (
+        <>
+          <SettingsSwitch
+            id="staff-active"
+            label="Active"
+            checked={form.is_active}
+            disabled={locked || reactivationBlocked}
+            onToggle={() => setForm({ ...form, is_active: !form.is_active })}
+          />
+          {reactivationBlocked && !locked ? (
+            <p className="field-hint">{reactivationHint(form.role)}</p>
+          ) : null}
+        </>
+      )}
       <hr />
       <h4>Reset password</h4>
       <div className="form-row">

@@ -2,9 +2,9 @@ import { Navigate } from 'react-router-dom';
 import { useCallback, useEffect, useState } from 'react';
 import Button from '../components/Button.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
+import NotificationItem from '../components/NotificationItem.jsx';
 import { CheckIcon } from '../theme/icons.jsx';
 import { WarnIcon } from '../theme/icons.jsx';
-import { formatRelativeTime } from '../lib/dates.js';
 import {
   getCustomerNotifications,
   markCustomerNotificationsRead,
@@ -92,21 +92,12 @@ export default function AccountNotifications() {
       {items.length ? (
         <ul className="notification-list">
           {items.map((item) => (
-            <li key={item.id} className={item.read_at ? 'notification read' : 'notification'}>
-              <div className="notification-icon">
-                <NotificationIcon kind={item.kind} />
-              </div>
-              <div className="notification-body">
-                <b>{item.title}</b>
-                <p>{item.body}</p>
-                <span className="notification-time">{formatRelativeTime(item.created_at)}</span>
-              </div>
-              {!item.read_at ? (
-                <button type="button" className="text-link" onClick={() => markOne(item.id)}>
-                  Mark read
-                </button>
-              ) : null}
-            </li>
+            <NotificationItem
+              key={item.id}
+              item={item}
+              icon={<NotificationIcon kind={item.kind} />}
+              onMarkRead={markOne}
+            />
           ))}
         </ul>
       ) : (

@@ -17,13 +17,14 @@ describe('mock manual payments', () => {
     const active = orders.body.find((row) => row.id === 1001);
     expect(active).toBeTruthy();
     const paidOn = store.now().toISOString().slice(0, 10);
+    const due = active.installments.find((row) => row.status !== 'paid');
     const result = call(store, 'POST', `/api/layaway/plans/${active.id}/payments/manual`, {
       headers: auth,
       body: {
-        installment_id: active.installments.find((row) => row.status !== 'paid').id,
+        installment_id: due.id,
         bank_account_id: 1,
         reference_number: 'BT-ORDER-ID',
-        amount: '1000',
+        amount: due.amount,
         paid_on: paidOn,
       },
     });
@@ -171,7 +172,7 @@ describe('mock manual payments', () => {
         installment_id: plan.installments[4].id,
         bank_account_id: 1,
         reference_number: 'BT-SKIPPED',
-        amount: '1000',
+        amount: plan.installments[4].amount,
         paid_on: store.now().toISOString().slice(0, 10),
       },
     });

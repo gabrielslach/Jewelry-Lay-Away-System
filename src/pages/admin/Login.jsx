@@ -5,7 +5,7 @@ import ErrorMessage from '../../components/ErrorMessage.jsx';
 import { adminReturnPath } from '../../lib/returnPath.js';
 import { ServiceError } from '../../services/http.js';
 import { loginAdmin } from '../../services/loginAdmin.js';
-import { getAdminToken } from '../../services/session.js';
+import { getAdminRefreshToken } from '../../services/session.js';
 import '../AuthPage.css';
 
 export default function AdminLogin() {
@@ -21,7 +21,7 @@ export default function AdminLogin() {
     window.scrollTo(0, 0);
   }, []);
 
-  if (getAdminToken()) {
+  if (getAdminRefreshToken()) {
     return <Navigate to={from} replace />;
   }
 

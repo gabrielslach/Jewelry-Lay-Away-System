@@ -8,9 +8,11 @@ export function planTotals(plan) {
     .filter((row) => row.status === 'paid')
     .reduce((sum, row) => sum + Number(row.amount), 0);
   return {
-    financedPrincipal,
-    totalPayable: downPayment + financedPrincipal,
-    amountPaid: (plan.down_payment_status === 'paid' ? downPayment : 0) + paidInstallments,
+    financedPrincipal: plan.financed_principal ?? financedPrincipal,
+    totalPayable: plan.total_payable ?? downPayment + financedPrincipal,
+    amountPaid:
+      plan.amount_paid ??
+      (plan.down_payment_status === 'paid' ? downPayment : 0) + paidInstallments,
     asOf: todayIsoLocal(),
   };
 }

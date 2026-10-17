@@ -5,6 +5,19 @@ export function getAdminPendingPayments() {
   return adminRequest('/api/admin/payments/pending').then((data) => data.results ?? data);
 }
 
+export function getPaymentHistory({ status, limit, offset } = {}) {
+  const params = new URLSearchParams();
+  Object.entries({ status, limit, offset }).forEach(([key, value]) => {
+    if (value != null) {
+      params.set(key, String(value));
+    }
+  });
+  const query = params.toString();
+  return adminRequest(`/api/admin/payments/history${query ? `?${query}` : ''}`).then(
+    (data) => data.results ?? [],
+  );
+}
+
 export function getAdminDuePayments() {
   return adminRequest('/api/admin/payments/due');
 }

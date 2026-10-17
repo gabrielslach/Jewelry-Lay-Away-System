@@ -82,13 +82,12 @@ describe('adminRequest', () => {
     expect(getAdminToken()).not.toBe('expired');
   });
 
-  it('does not mint a session when only a refresh token is present', async () => {
+  it('refreshes the access token from the stored refresh token when it is missing', async () => {
     await signIn();
     sessionStorage.clear();
-    await expect(adminRequest(DASHBOARD)).rejects.toMatchObject({
-      status: 401,
-      message: 'Please sign in to continue.',
-    });
-    expect(fetchSpy).not.toHaveBeenCalled();
+    const data = await adminRequest(DASHBOARD);
+    expect(data).toHaveProperty('active_layaways');
+    expect(callsTo('/api/admin/refresh')).toHaveLength(1);
+    expect(getAdminToken()).toBeTruthy();
   });
 });

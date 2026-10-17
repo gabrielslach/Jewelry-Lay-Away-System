@@ -1,9 +1,10 @@
 export class ServiceError extends Error {
-  constructor(message, status = null, fields = null) {
+  constructor(message, status = null, fields = null, expectedAmount = null) {
     super(message);
     this.name = 'ServiceError';
     this.status = status;
     this.fields = fields;
+    this.expectedAmount = expectedAmount;
   }
 }
 
@@ -27,7 +28,7 @@ function failure(status, data) {
     return new ServiceError('Too many attempts. Please wait a few minutes.', status);
   }
   const fallback = STATUS_MESSAGES[status] ?? 'Something went wrong. Please try again.';
-  return new ServiceError(data?.error || fallback, status, data?.fields ?? null);
+  return new ServiceError(data?.error || fallback, status, data?.fields ?? null, data?.expected_amount ?? null);
 }
 
 export async function request(path, { method = 'GET', token, body, headers } = {}) {

@@ -14,10 +14,10 @@ info:
 
     **Dates:** report and list dates are ISO timestamps in UTC (a Manila midnight arrives as
     the previous day at 16:00Z) — display in Asia/Manila.
-  version: "1.29"
+  version: "1.32"
   contact:
     name: The Loft IT Solutions
-  x-status: draft contract for frontend build-against (Sep 23, 2026) — v1.29 (Oct 14, 2026)
+  x-status: draft contract for frontend build-against (Sep 23, 2026) — v1.32 (Oct 17, 2026)
 
 servers:
   - url: https://honeydew-stork-999262.hostingersite.com
@@ -49,8 +49,9 @@ paths:
       tags: [Gallery]
       summary: List browsable pieces
       description: |
-        Paginated catalog via the backend adapter. `price` is always the peso price;
-        `currency` is always `"PHP"`. Use `thumb_url` in grids, `web_url` on product pages,
+        Paginated catalog via the backend adapter. `price` is always the peso price
+        with the global markup (x1.30) already applied, so it equals the lay-away total for the
+        piece; show it as-is and never add a markup. `currency` is always `"PHP"`. Use `thumb_url` in grids, `web_url` on product pages,
         `url` only for zoom.
       operationId: listGallery
       parameters:
@@ -475,6 +476,7 @@ paths:
         installment is neither paid nor awaiting confirmation (a rejected one must be paid again first).
         `bank_account_id` must be an existing active account (400 `Invalid bank account`,
         409 `Bank account is not active`). 409 `Plan is <status>` when the plan is not active.
+        `amount` must equal the installment amount exactly; otherwise `400` with `expected_amount`.
       operationId: createManualInstallmentPayment
       security:
         - CustomerBearer: []
@@ -494,7 +496,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ManualPaymentSubmitted"
         "400":
-          $ref: "#/components/responses/Error"
+          $ref: "#/components/responses/AmountMismatch"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "409":
@@ -514,6 +516,7 @@ paths:
         Accounting confirms it in the admin queue and the piece is held at that moment
         (or put on backorder if none is in stock). `bank_account_id` must be an existing
         active account (400 `Invalid bank account`, 409 `Bank account is not active`).
+        `amount` must equal the down payment exactly; otherwise `400` with `expected_amount`.
       operationId: createManualDownPayment
       security:
         - CustomerBearer: []
@@ -533,7 +536,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ManualPaymentSubmitted"
         "400":
-          $ref: "#/components/responses/Error"
+          $ref: "#/components/responses/AmountMismatch"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "409":
@@ -542,6 +545,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+
+  /api/layaway/plans/{id}/cancel:
+    post:
+      tags: [Layaway]
+      summary: Cancel a plan before its down payment is confirmed
+      description: |
+        Customer's own plan only. No body. Show the button only while `down_payment_status`
+        is `pending` or `rejected`, and ask the customer to confirm first. A cancelled plan
+        shows `status: "cancelled"` and is not billed. `409` if the down payment is already
+        confirmed (the customer must contact Mine Credit), a down payment is awaiting
+        confirmation (wait for the review), or the plan is no longer active.
+      operationId: cancelLayawayPlan
+      security:
+        - CustomerBearer: []
+      parameters:
+        - $ref: "#/components/parameters/PlanId"
+      responses:
+        "200":
+          description: Plan cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelledPlan"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Error"
 
   /api/bank-accounts:
     get:
@@ -1043,7 +1077,10 @@ paths:
     post:
       tags: [Admin Reservations]
       summary: Cancel reservation / release hold
-      description: Admin only. Manual only — never automatic.
+      description: |
+        Admin only. Manual only — never automatic. Checks only the reservation, not the plan
+        status, so it also works on a plan that is still Active; the plan then stays Active
+        with no piece held.
       operationId: cancelReservation
       security:
         - AdminBearer: []
@@ -1072,6 +1109,12 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "409":
+          description: Reservation already completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /api/admin/customers:
     get:
@@ -1143,7 +1186,11 @@ paths:
     get:
       tags: [Admin Settings]
       summary: Business settings
-      description: Any staff role. Single row. `penalty_per_day` is `null` until a rate is set — show a dash.
+      description: |
+        Any staff role. Single row. `penalty_per_day` is always `null` (no per-day penalty), so
+        show a dash. Only `max_term_months` and `notify_accounting_roles` have an effect; the
+        other flags are stored and returned but nothing reads them, so the settings screen
+        does not show them.
       operationId: getAdminSettings
       security:
         - AdminBearer: []
@@ -1162,8 +1209,11 @@ paths:
       tags: [Admin Settings]
       summary: Update business settings
       description: |
-        Admin only. Send only changed fields. Rate/grace changes apply to new plans only.
-        Also accepts `notify_accounting_roles`.
+        Admin only. Partial update: only the keys sent are written, omitted keys are left as
+        they are. Rate/grace changes apply to new plans only. Only `max_term_months` and
+        `notify_accounting_roles` have an effect; `business_name`,
+        `require_full_payment_before_release`, `send_sms_reminders` and
+        `allow_customer_selected_due_dates` are stored but unused.
       operationId: updateAdminSettings
       security:
         - AdminBearer: []
@@ -1294,6 +1344,44 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/PendingPayment"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/payments/history:
+    get:
+      tags: [Admin Payments]
+      summary: Confirmed and rejected payments
+      description: |
+        Any staff role. Newest first. For a History button/modal on the pending-payments screen.
+        Open images with `GET /api/admin/payments/{id}/proof` and `.../confirmer-proof`.
+      operationId: listPaymentHistory
+      security:
+        - AdminBearer: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [confirmed, rejected]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            maximum: 200
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Payment history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentHistoryResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1794,6 +1882,18 @@ components:
               fields:
                 type: object
                 additionalProperties: true
+    AmountMismatch:
+      description: Invalid field, or `amount` differs from the amount due
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              expected_amount:
+                type: number
+                description: Present when `amount` does not equal the amount due
     Forbidden:
       description: Outside caller's role
       content:
@@ -2100,7 +2200,7 @@ components:
           description: Barcode / PJ number
         price:
           type: string
-          description: Peso price as string — show as-is
+          description: Peso price as string, markup already applied — show as-is
         currency:
           type: string
           example: PHP
@@ -2394,7 +2494,7 @@ components:
           description: Bank reference; required; cannot be reused
         amount:
           type: number
-          description: What the customer paid
+          description: Must equal the installment amount due exactly
         paid_on:
           type: string
           format: date
@@ -2415,6 +2515,7 @@ components:
           maxLength: 100
         amount:
           type: number
+          description: Must equal the down payment due exactly
         paid_on:
           type: string
           format: date
@@ -2654,14 +2755,16 @@ components:
         penalty_per_day:
           type: number
           nullable: true
+          description: Always null; there is no per-day penalty
         require_full_payment_before_release:
           type: integer
-          description: 0 or 1
+          description: 0 or 1; stored but unused
         send_sms_reminders:
           type: integer
+          description: Stored but unused
         allow_customer_selected_due_dates:
           type: integer
-          description: Kept for compatibility; no longer used
+          description: Stored but unused
         down_payment_percent:
           type: string
         regular_interest_rate_percent:
@@ -2764,6 +2867,73 @@ components:
         proof_of_payment_url:
           type: string
           nullable: true
+
+    PaymentHistoryEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        kind:
+          type: string
+          enum: [installment, down_payment]
+        plan_id:
+          type: integer
+        term_number:
+          type: integer
+          nullable: true
+          description: Null for a down payment
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        customer_name:
+          type: string
+        amount:
+          type: number
+          description: Expected amount
+        amount_submitted:
+          type: number
+        reference_number:
+          type: string
+        paid_on:
+          type: string
+          format: date
+        outcome:
+          type: string
+          enum: [confirmed, rejected]
+        reviewed_at:
+          type: string
+          format: date-time
+        reviewed_by:
+          type: string
+        review_note:
+          type: string
+          nullable: true
+        has_proof:
+          type: boolean
+        has_reviewer_proof:
+          type: boolean
+
+    PaymentHistoryResponse:
+      type: object
+      properties:
+        limit:
+          type: integer
+        offset:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaymentHistoryEntry"
+
+    CancelledPlan:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+          enum: [cancelled]
 
     DuePaymentsResponse:
       type: object

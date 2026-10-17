@@ -70,6 +70,7 @@ export function presentPiece(item) {
     currency: item.currency,
     inStock: item.in_stock,
     images: item.images ?? [],
+    lowestPaymentAmount: item.lowest_payment_amount ?? null,
     priceLabel: formatPeso(price),
   };
 }

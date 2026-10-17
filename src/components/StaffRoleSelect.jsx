@@ -10,6 +10,7 @@ export default function StaffRoleSelect({ value, onChange, disabled, full, keepR
       <select
         id="staff-role"
         value={value}
+        required
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
       >

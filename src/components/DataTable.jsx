@@ -76,7 +76,14 @@ export default function DataTable({ columns, data, getRowId, emptyMessage }) {
         {rows.map((row) => (
           <tr key={row.id}>
             {row.getVisibleCells().map((cell) => (
-              <td key={cell.id}>
+              <td
+                key={cell.id}
+                data-label={
+                  typeof cell.column.columnDef.header === 'string'
+                    ? cell.column.columnDef.header
+                    : undefined
+                }
+              >
                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
               </td>
             ))}

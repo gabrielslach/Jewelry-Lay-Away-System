@@ -10,15 +10,19 @@ describe('paymentValidation', () => {
       validatePaymentForm({
         bankAccountId: '',
         referenceNumber: '',
-        amount: '',
         paidOn: '2026-10-11',
         today: '2026-10-10',
       }),
     ).toMatchObject({
       bank_account_id: 'Please choose a bank account.',
       reference_number: 'Reference number is required.',
-      amount: 'Enter a valid amount.',
       paid_on: 'Date cannot be in the future.',
+    });
+  });
+
+  it('shows the server amount error with the expected amount', () => {
+    expect(mapPaymentError(400, 'The amount must match the amount due.', 2500)).toEqual({
+      amount: 'The amount must match the amount due. Expected ₱2,500.00',
     });
   });
 

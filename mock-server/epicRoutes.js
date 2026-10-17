@@ -18,9 +18,6 @@ function paymentFieldErrors(body, store) {
   if (!body?.reference_number?.trim()) {
     errors.push('reference_number required');
   }
-  if (!body?.amount || Number(body.amount) <= 0) {
-    errors.push('amount invalid');
-  }
   const paidOn = body?.paid_on;
   if (!paidOn) {
     errors.push('paid_on required');
@@ -76,6 +73,38 @@ function pendingRow(store, payment) {
     paid_on: payment.paid_on,
     proof_of_payment_url: payment.proof_of_payment_url ?? null,
     created_at: payment.created_at,
+  };
+}
+
+function amountMismatch(json, body, expectedAmount) {
+  if (Number(body?.amount) === Number(expectedAmount)) {
+    return null;
+  }
+  return json(400, {
+    error: 'The amount must match the amount due.',
+    expected_amount: Number(expectedAmount),
+  });
+}
+
+function historyRow(store, payment, admin) {
+  const row = pendingRow(store, payment);
+  return {
+    id: row.id,
+    kind: row.kind,
+    plan_id: row.plan_id,
+    term_number: row.term_number,
+    due_date: row.due_date,
+    customer_name: row.customer_name,
+    amount: row.amount,
+    amount_submitted: row.amount_submitted,
+    reference_number: row.reference_number,
+    paid_on: row.paid_on,
+    outcome: payment.status,
+    reviewed_at: payment.reviewed_at,
+    reviewed_by: payment.reviewed_by ?? admin?.name ?? null,
+    review_note: payment.reason ?? payment.confirmer_note ?? null,
+    has_proof: Boolean(row.proof_of_payment_url),
+    has_reviewer_proof: false,
   };
 }
 
@@ -351,6 +380,10 @@ export function handleEpicRoutes(ctx) {
       const status = fieldError.includes('reference') ? 409 : 400;
       return json(status, { error: fieldError });
     }
+    const mismatch = amountMismatch(json, body, plan.down_payment_amount);
+    if (mismatch) {
+      return mismatch;
+    }
     if (plan.down_payment_status === 'paid') {
       return json(409, { error: 'Down payment already confirmed' });
     }
@@ -386,6 +419,51 @@ export function handleEpicRoutes(ctx) {
       amount_matches_expected: Number(body.amount) === Number(plan.down_payment_amount),
       note: 'Awaiting admin confirmation',
     });
+  }
+
+  routeParams = match(path, '/api/layaway/plans/:id/cancel');
+  if (verb === 'POST' && routeParams) {
+    const gate = requireCustomer(store, headers);
+    if (gate.error) {
+      return gate.error;
+    }
+    const plan = findPlan(store, routeParams.id);
+    if (!plan || plan.customer_id !== gate.customer.id) {
+      return json(404, { error: 'Not found' });
+    }
+    if (plan.completed || plan.closed_status) {
+      return json(409, { error: 'This plan is no longer active.' });
+    }
+    if (plan.down_payment_status === 'paid') {
+      return json(409, {
+        error: 'Your down payment is already confirmed. Please contact Mine Credit to cancel.',
+      });
+    }
+    if (plan.down_payment_status === 'submitted') {
+      return json(409, {
+        error: 'Your down payment is awaiting confirmation. Please wait for the review.',
+      });
+    }
+    plan.closed_status = 'cancelled';
+    plan.reservation_status = 'cancelled';
+    plan.next_due = null;
+    return json(200, { id: plan.id, status: 'cancelled' });
+  }
+
+  if (verb === 'GET' && path === '/api/admin/payments/history') {
+    const gate = requireAdmin(store, headers);
+    if (gate.error) {
+      return gate.error;
+    }
+    const status = ctx.query.get('status');
+    const limit = Math.min(Number(ctx.query.get('limit')) || 50, 200);
+    const offset = Number(ctx.query.get('offset')) || 0;
+    const results = store.pendingPayments
+      .filter((p) => (status ? p.status === status : p.status !== 'submitted'))
+      .sort((a, b) => String(b.reviewed_at).localeCompare(String(a.reviewed_at)))
+      .slice(offset, offset + limit)
+      .map((payment) => historyRow(store, payment, gate.admin));
+    return json(200, { limit, offset, results });
   }
 
   routeParams = match(path, '/api/admin/plans/:id/reservation/retry');
@@ -594,6 +672,8 @@ export function confirmPayment(store, payment, body, helpers) {
     return json(403, { error: 'Forbidden' });
   }
   payment.status = 'confirmed';
+  payment.reviewed_at = store.now().toISOString();
+  payment.reviewed_by = admin.name;
   payment.confirmer_note = body?.note ?? null;
   const plan = store.plans.find((p) => p.id === payment.plan_id);
   if (!plan) {
@@ -653,6 +733,8 @@ export function rejectPayment(store, payment, body, helpers) {
     return json(400, { error: 'A reason is required.' });
   }
   payment.status = 'rejected';
+  payment.reviewed_at = store.now().toISOString();
+  payment.reviewed_by = admin.name;
   payment.reason = body.reason.trim();
   const plan = store.plans.find((p) => p.id === payment.plan_id);
   if (plan && payment.kind === 'down_payment') {
@@ -678,4 +760,4 @@ export function rejectPayment(store, payment, body, helpers) {
   return json(200, { status: 'rejected', reason: payment.reason });
 }
 
-export { pendingRow, paymentFieldErrors, pushAdminNotification, pushCustomerNotification };
+export { amountMismatch, pendingRow, paymentFieldErrors, pushAdminNotification, pushCustomerNotification };
