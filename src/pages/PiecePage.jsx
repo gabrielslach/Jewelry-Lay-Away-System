@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import Button from '../components/Button.jsx';
 import Checkout from '../components/Checkout.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
+import PieceSpecs from '../components/PieceSpecs.jsx';
 import PieceImage from '../components/PieceImage.jsx';
 import ZoomableImage from '../components/ZoomableImage.jsx';
 import Skeleton, { PiecePageSkeleton } from '../components/Skeleton.jsx';
@@ -146,24 +147,7 @@ export default function PiecePage() {
             {perPaymentLabel ? (
               <p className="page-lead">as low as {perPaymentLabel}/payment</p>
             ) : null}
-            <div className="spec-grid">
-              <div className="spec-item">
-                <span>Material</span>
-                <b>{piece.material}</b>
-              </div>
-              <div className="spec-item">
-                <span>Stone</span>
-                <b>{piece.stone}</b>
-              </div>
-              <div className="spec-item">
-                <span>Size</span>
-                <b>{piece.size}</b>
-              </div>
-              <div className="spec-item">
-                <span>Certification</span>
-                <b>{piece.cert}</b>
-              </div>
-            </div>
+            <PieceSpecs piece={piece} />
             <Button variant="primary" onClick={() => setCheckout(true)}>
               Reserve This Piece
             </Button>

@@ -49,19 +49,19 @@ describe('Home', () => {
       screen.getByRole('dialog', { name: 'Solitaire Halo Ring' }),
     ).toBeInTheDocument();
     expect(document.querySelector('.modal-body .skeleton[aria-busy="true"]')).toBeInTheDocument();
-    expect(screen.queryByText('GIA Certified')).not.toBeInTheDocument();
+    expect(screen.queryByText('Yellow gold 18K')).not.toBeInTheDocument();
     resolve({
       id: 1,
       name: 'Solitaire Halo Ring',
       category: 'Rings',
       price: 1000,
-      material: 'Gold',
-      stone: 'Diamond',
-      size: '6',
-      cert: 'GIA Certified',
+      material: 'Yellow gold 18K',
+      stone: '1 diamond',
+      weight: '9.85 g',
+      type: 'Rings (RG)',
       images: [],
     });
-    expect(await screen.findByText('GIA Certified')).toBeInTheDocument();
+    expect(await screen.findByText('Yellow gold 18K')).toBeInTheDocument();
     await waitFor(() => {
       expect(document.querySelector('.modal-body .skeleton[aria-busy="true"]')).not.toBeInTheDocument();
     });
@@ -71,7 +71,7 @@ describe('Home', () => {
     renderHome();
     const buttons = await screen.findAllByRole('button', { name: 'View Details' });
     fireEvent.click(buttons[0]);
-    expect(await screen.findByText('GIA Certified')).toBeInTheDocument();
+    expect(await screen.findByText('White gold 18K')).toBeInTheDocument();
     expect(screen.getByRole('dialog', { name: 'Solitaire Halo Ring' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Reserve This Piece' }));
     expect(

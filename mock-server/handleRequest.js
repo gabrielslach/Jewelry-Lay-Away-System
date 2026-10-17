@@ -125,11 +125,7 @@ function galleryItem(piece) {
     in_stock: piece.in_stock,
     images: piece.images,
     name: piece.name,
-    category: piece.category,
-    material: piece.material,
-    stone: piece.stone,
-    size: piece.size,
-    cert: piece.cert,
+    details: piece.details,
   };
 }
 

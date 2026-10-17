@@ -41,10 +41,10 @@ describe('PiecePage', () => {
       title: piece.title,
       category: 'Rings',
       priceLabel: '₱1',
-      material: '-',
-      stone: '-',
-      size: '-',
-      cert: 'GIA Certified',
+      material: null,
+      stone: null,
+      weight: null,
+      type: 'Rings (RG)',
       images: piece.images,
     });
     expect(await screen.findByRole('heading', { name: 'Solitaire Halo Ring' })).toBeInTheDocument();
@@ -78,7 +78,7 @@ describe('PiecePage', () => {
     expect(
       await screen.findByRole('heading', { name: 'Solitaire Halo Ring' }),
     ).toBeInTheDocument();
-    expect(screen.getByText('GIA Certified')).toBeInTheDocument();
+    expect(screen.getByText('White gold 18K')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /solitaire halo ring photo/i })).toHaveAttribute(
       'src',
       piece.images[0].url,
@@ -143,10 +143,10 @@ describe('PiecePage', () => {
       title: 'PJ1',
       category: 'Rings',
       priceLabel: '₱1',
-      material: '-',
-      stone: '-',
-      size: '-',
-      cert: '-',
+      material: null,
+      stone: null,
+      weight: null,
+      type: null,
       images: [
         { url: 'https://cdn.example/o1.jpg', web_url: 'https://cdn.example/w1.jpg', thumb_url: 'https://cdn.example/t1.jpg' },
         { url: 'https://cdn.example/o2.jpg', web_url: 'https://cdn.example/w2.jpg', thumb_url: 'https://cdn.example/t2.jpg' },
