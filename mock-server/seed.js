@@ -359,7 +359,7 @@ export function initialBankAccounts() {
     },
     {
       id: 2,
-      bank_name: 'Omar Bank',
+      bank_name: 'Bank AZ',
       account_name: 'AlMar Corp',
       account_number: '1293-2233-3456',
       qr_code_url: '/placeholders/1.svg',
