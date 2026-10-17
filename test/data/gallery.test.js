@@ -10,6 +10,13 @@ describe('gallery (legacy in-memory)', () => {
       price: '48500',
     });
     expect(piece.name).toBe('Solitaire Halo Ring');
+    expect(piece.details.metal).toBe('White gold 18K');
+  });
+
+  it('has no details for unknown pieces', () => {
+    const piece = presentPiece({ id: 99, title: 'PJ99', price: '1' });
+    expect(piece.name).toBe('PJ99');
+    expect(piece.details).toBeNull();
   });
 
   it('returns a demo-sized first page', async () => {

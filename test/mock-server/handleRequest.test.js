@@ -18,6 +18,14 @@ describe('mock API', () => {
     expect(page1.body.next).toContain('page=2');
     expect(page1.body.results[0].name).toBe('Solitaire Halo Ring');
     expect(page1.body.results[0].title).toBe(firstPiece.title);
+    expect(page1.body.results[0].details).toMatchObject({
+      item_form: 'Rings (RG)',
+      metal: 'White gold 18K',
+      gold_weight_g: '4.20',
+    });
+    const piece = page1.body.results[0];
+    expect(piece).not.toHaveProperty('material');
+    expect(piece).not.toHaveProperty('cert');
     expect(page1.body.results[0].images[0].url).toBe(firstPiece.images[0].url);
     expect(page1.body.results[0].images[0].url).toContain('digitaloceanspaces.com');
   });
