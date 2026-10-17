@@ -47,7 +47,7 @@ describe.each(['admin', 'accounting'])(
         account(),
         account({
           id: 2,
-          bank_name: 'Omar Bank',
+          bank_name: 'Bank AZ',
           account_number: '9-9',
           qr_code_url: null,
           is_active: false,
@@ -289,14 +289,14 @@ describe('admin bank accounts page as admin', () => {
     renderPage();
     await screen.findByText('Sample Bank');
     fireEvent.click(
-      screen.getByRole('button', { name: 'Deactivate Omar Bank' }),
+      screen.getByRole('button', { name: 'Deactivate Bank AZ' }),
     );
     fireEvent.click(
       within(await screen.findByRole('dialog')).getByRole('button', {
         name: 'Deactivate',
       }),
     );
-    await screen.findByRole('button', { name: 'Activate Omar Bank' });
+    await screen.findByRole('button', { name: 'Activate Bank AZ' });
     fireEvent.click(
       screen.getByRole('button', { name: 'Deactivate Sample Bank' }),
     );
