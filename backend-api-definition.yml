@@ -458,7 +458,7 @@ paths:
     post:
       tags: [Layaway]
       summary: Gateway payment (not available)
-      description: Gateway path only — blocked pending gateway confirmation (WBS M1).
+      description: Gateway path only — blocked pending gateway confirmation.
       operationId: createGatewayPayment
       parameters:
         - $ref: "#/components/parameters/PlanId"
