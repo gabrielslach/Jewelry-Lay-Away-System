@@ -51,6 +51,9 @@ Run `npm test` and `npm run lint` before handing off changes.
 - **Roles:** `admin` has full access; `accounting` can view data and confirm/reject payments. Settings, rules, bank accounts, staff and the audit log are admin-only.
 - **Dates:** ISO timestamps in UTC (Manila midnight arrives as 16:00Z the previous day); display in Asia/Manila.
 - **Lay-away:** installments every 15 days, term of 1 up to the admin-set max (default 3). Payments are manual bank transfers with proof upload (multipart), confirmed by staff. Items without a peso price return 409.
+- **Prices and payments:** the gallery `price` already includes the markup; show it as-is. The card's "per payment" comes from the backend's `lowest_payment_amount` and is never computed in the SPA. Manual payment amounts are fixed by the plan: a mismatch returns `400 { error, expected_amount }`.
+- **Plan cancel and history:** customers can cancel a plan while `down_payment_status` is `pending` or `rejected` (`POST /api/layaway/plans/:id/cancel`, otherwise `409`). Staff see confirmed and rejected payments in `GET /api/admin/payments/history` (`outcome`, `review_note`).
+- **Expired sessions:** a 401 on a signed-in session (customer or admin) opens a blocking "Sign in to continue" modal that returns the user to the same page after login. Only one of the customer or admin sessions is kept per browser.
 - **Errors:** failures return JSON `{ error }`, including CSV export endpoints (reports and ledger).
 - **Sandbox:** the `servers` URL is a sandbox and will move before go-live.
 

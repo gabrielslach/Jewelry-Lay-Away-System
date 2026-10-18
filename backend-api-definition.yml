@@ -14,10 +14,10 @@ info:
 
     **Dates:** report and list dates are ISO timestamps in UTC (a Manila midnight arrives as
     the previous day at 16:00Z) — display in Asia/Manila.
-  version: "1.32"
+  version: "1.33"
   contact:
     name: The Loft IT Solutions
-  x-status: draft contract for frontend build-against (Sep 23, 2026) — v1.32 (Oct 17, 2026)
+  x-status: draft contract for frontend build-against (Sep 23, 2026) — v1.33 (Oct 18, 2026)
 
 servers:
   - url: https://honeydew-stork-999262.hostingersite.com
@@ -2201,6 +2201,14 @@ components:
         price:
           type: string
           description: Peso price as string, markup already applied — show as-is
+        lowest_payment_amount:
+          type: string
+          nullable: true
+          description: |
+            Smallest single payment on the longest allowed term (the last installment), the same
+            figure the preview gives. A "from" figure for the card; never compute it on the
+            frontend. Null when the piece has no peso price.
+          example: "34082.69"
         currency:
           type: string
           example: PHP
@@ -2257,6 +2265,10 @@ components:
           format: date-time
         amount:
           type: string
+        principal_amount:
+          type: string
+        interest_amount:
+          type: string
         status:
           $ref: "#/components/schemas/InstallmentStatus"
         payment_status:
@@ -2298,6 +2310,23 @@ components:
           nullable: true
         installment_count:
           type: integer
+          description: Live schedule only; superseded installments of a rebuilt plan are not counted
+        financed_principal:
+          type: string
+          description: Amount financed, without interest
+        total_payable:
+          type: string
+          description: Down payment plus every live installment
+        amount_paid:
+          type: string
+          description: Confirmed down payment plus paid installments
+        is_reconstructed:
+          type: boolean
+          description: True once the plan was rebuilt after a missed payment
+        reconstructed_at:
+          type: string
+          format: date-time
+          nullable: true
         next_due_date:
           type: string
           format: date-time
@@ -2932,6 +2961,9 @@ components:
         id:
           type: integer
         status:
+          type: string
+          enum: [cancelled]
+        plan_status:
           type: string
           enum: [cancelled]
 

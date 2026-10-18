@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import Button from '../components/Button.jsx';
 import NotificationBell from '../components/NotificationBell.jsx';
+import SessionExpiredModal from '../components/SessionExpiredModal.jsx';
 import { useSession } from '../components/useSession.js';
 import { CloseIcon, HamburgerIcon, Logo } from '../theme/assets.js';
 import './StorefrontLayout.css';
@@ -224,6 +225,7 @@ export default function StorefrontLayout() {
           © 2026 Mine Credit. All rights reserved.
         </div>
       </footer>
+      <SessionExpiredModal scope="customer" />
     </div>
   );
 }

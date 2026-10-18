@@ -1,8 +1,14 @@
 import { request, ServiceError } from './http.js';
 import { refreshCustomerToken } from './refreshCustomerToken.js';
 import { getCustomerRefreshToken, getCustomerToken } from './session.js';
+import { emitSessionExpired } from './sessionExpired.js';
 
 let pendingRefresh = null;
+
+function sessionExpired() {
+  emitSessionExpired('customer');
+  return signInRequired();
+}
 
 function signInRequired() {
   return new ServiceError('Please sign in to continue.', 401);
@@ -35,6 +41,6 @@ export async function customerRequest(path, options = {}) {
   try {
     return await request(path, { ...options, token: freshToken });
   } catch (err) {
-    throw err.status === 401 ? signInRequired() : err;
+    throw err.status === 401 ? sessionExpired() : err;
   }
 }

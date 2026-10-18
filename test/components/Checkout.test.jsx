@@ -112,15 +112,13 @@ describe('Checkout', () => {
     expect(screen.getByTestId('location')).toHaveTextContent('/collections/1');
   });
 
-  it('asks the shopper to sign in when the refresh token is revoked', async () => {
+  it('shows the error and keeps the plan when the refresh token is revoked', async () => {
     setCustomerToken('expired');
     localStorage.setItem('customerRefreshToken', 'revoked');
     renderCheckout(<Checkout piece={piece} onClose={() => {}} />);
     await waitForPreview();
     fireEvent.click(screen.getByRole('button', { name: 'Confirm lay-away' }));
-    expect(
-      await screen.findByRole('heading', { name: 'Sign in to reserve' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Please sign in to continue.')).toBeInTheDocument();
   });
 
   it('shows principal and interest under each schedule row', async () => {

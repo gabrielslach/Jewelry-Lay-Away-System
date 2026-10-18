@@ -1,6 +1,6 @@
 # Mine Credit — Internal Storefront API v1 (draft contract)
 
-**Status:** draft contract for frontend build-against (Sep 23, 2026) — backend is being built to this spec in parallel — **v1.32**
+**Status:** draft contract for frontend build-against (Sep 23, 2026) — backend is being built to this spec in parallel — **v1.33**
 **Audience:** Frontend Dev 1
 **Scope:** everything the storefront and admin panel need from The Loft's own backend
 
@@ -174,7 +174,7 @@ All admin endpoints below now require an admin token — `POST /api/admin/login`
 
 **Updated Oct 7, 2026 — what the gallery returns now:**
 
-- **`price` is always the peso price** and `currency` is always `"PHP"`. Show `price` as-is; never convert anything on the frontend. (The provider prices some items in USD or JPY; our backend already converts to pesos.)
+- **`price` is always the peso price** and `currency` is always `"PHP"`. Show `price` as-is; never convert anything on the frontend. (The provider prices some items in USD or JPY; our backend already converts to pesos.) **`lowest_payment_amount`** (Oct 18, v1.33) is the smallest installment on the longest allowed term, the same figure the preview gives for that piece; show it as "as low as" and never compute it on the frontend. It is `null` when the piece has no peso price.
 - **Images — pick the size for the place:** `thumb_url` (480 px, about 30 KB) in grids and lists, `web_url` (1200 px WebP, about 40 KB) on the product page, and `url` (the full camera original, often 5–9 MB) only for a zoom view. Using `url` in a grid or on a page will make the site slow. Only a small share of the full catalog has a photo, so build a no-photo placeholder (all 15 current test items have photos).
 - **`details`** holds the jewelry specs. Every value can be `null`/empty, so render a row only when it has a value. `item_form_code` (ER, RN, NL, BR, PND, …) and `metal_codes` (SL, YG, WG, RG, …) are the steadiest for filtering. `category` is an **open list** (Gold, Silver, Gold Jewelry, Diamond, Loose Stone and more can appear): show it as a label and never hard-code a fixed set. `gold_weight_g` is the metal weight in grams for any metal. `diamonds` and `stones` list carats (`weight_ct`) and `count` per stone kind, and only about 16% of designs have them for now, so treat carats as optional.
 - **`title`** is still the barcode/PJ number, never the provider's shared style label.
@@ -254,6 +254,8 @@ All admin endpoints below now require an admin token — `POST /api/admin/login`
   ]
 }
 ```
+
+**Added Oct 18 (v1.33), on each order:** `financed_principal` (the amount financed, without interest), `total_payable` (down payment plus every live installment), `amount_paid` (the confirmed down payment plus paid installments), `is_reconstructed` (true once the plan was rebuilt after a missed payment, with `reconstructed_at`), and `principal_amount` and `interest_amount` on each installment. `installment_count` and `plan_label` now count only the live schedule (a rebuilt plan used to show 12 payments instead of 6). The plan-creation response (`POST /api/layaway/plans`) already returns `principal_amount` and `interest_amount` on every schedule row.
 
 `down_payment_amount` and `down_payment_status` (Oct 11) describe the down payment; status is `paid`, `awaiting_confirmation` (proof submitted, accounting has not confirmed), `rejected` (last submission rejected, customer can resubmit) or `pending` (nothing submitted). `status` is `on_track`, `overdue` (at least one installment past due), or `completed`. `next_due_date` is `null` once completed. `completed_on` is the date of the last installment paid, only set once `status` is `completed`. `plan_label` and each installment's fields are convenience/display fields — not new data, just avoiding a second fetch per plan.
 
@@ -462,7 +464,9 @@ Real responses from the sandbox, with customer details replaced. Formats to know
 
 Failed requests return JSON `{ "error": "..." }` with 401, 403, 400 or 500, never a file. CSV responses send `Content-Disposition: attachment; filename="..."`.
 
-_Version 1.32 - Updated Oct 17, 2026 (latest): **gallery `price` now includes the markup** (it equals the lay-away total of the piece; show it as-is). **Manual payments must be paid in full:** `POST /api/layaway/plans/:id/payments/manual` and `.../down-payment/manual` refuse any `amount` that differs from the amount due with `400 { error, expected_amount }`, so the form should show the amount as fixed. **New:** `GET /api/admin/payments/history` (confirmed and rejected payments) and `POST /api/layaway/plans/:id/cancel` (customer cancels before the down payment is confirmed)._
+_Version 1.33 - Updated Oct 18, 2026 (latest): gallery items carry `lowest_payment_amount`. Orders carry `financed_principal`, `total_payable`, `amount_paid`, `is_reconstructed`, `reconstructed_at` and principal/interest on each installment; `installment_count` and `plan_label` no longer count superseded installments (a rebuilt plan showed 12 payments instead of 6)._
+
+_Version 1.32 - Updated Oct 17, 2026: **gallery `price` now includes the markup** (it equals the lay-away total of the piece; show it as-is). **Manual payments must be paid in full:** `POST /api/layaway/plans/:id/payments/manual` and `.../down-payment/manual` refuse any `amount` that differs from the amount due with `400 { error, expected_amount }`, so the form should show the amount as fixed. **New:** `GET /api/admin/payments/history` (confirmed and rejected payments) and `POST /api/layaway/plans/:id/cancel` (customer cancels before the down payment is confirmed)._
 
 _Version 1.31 - Updated Oct 14, 2026: noted that `POST /api/admin/plans/:id/reservation/cancel` is not tied to plan status._
 
