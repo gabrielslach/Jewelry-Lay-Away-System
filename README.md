@@ -71,3 +71,23 @@ Run `npm test` and `npm run lint` before handing off changes.
 ## Deployment
 
 Pushes to `main` run `.github/workflows/pages.yml`: `npm ci` → `npm run build:pages` → deploy to GitHub Pages. The build copies `index.html` to `404.html` so client-side routes work on refresh.
+
+### Building for static hosting, a CDN, or a web server
+
+The build is plain static files in `dist/`, so any static host, CDN, or web server (nginx, Apache, S3 + CloudFront, Netlify, …) can serve it.
+
+```bash
+VITE_API_BASE=https://your-backend.example.com npm run build
+```
+
+- **`VITE_API_BASE`** is baked in at build time. Set it to the backend's origin (no trailing slash and no `/api`). Leave it empty only if the host proxies `/api` to the backend on the same origin.
+- **Base path:** assets are served from `/` by default. If the app lives under a sub-path, add `--base /sub-path/` (`npx vite build --base /sub-path/`).
+- **Upload** the contents of `dist/` to the host's web root.
+- **SPA routing:** the app uses client-side routes, so refreshing or opening a deep link such as `/admin/orders` must return `index.html` instead of a 404:
+  - Static hosts with a 404 fallback (GitHub Pages): `cp dist/index.html dist/404.html`. `npm run build:pages` does this for you.
+  - nginx: `location / { try_files $uri /index.html; }`
+  - Apache: enable `mod_rewrite` and rewrite any request that is not an existing file to `/index.html`.
+  - Netlify, S3 + CloudFront, and similar: configure a rewrite of all paths to `/index.html` with status 200 (or 404 error page → `/index.html` on CloudFront).
+- **CORS:** the backend must allow the site's origin when `VITE_API_BASE` points to a different domain.
+
+Check the result locally with `npm run preview`.
