@@ -18,7 +18,6 @@ function apiUrl(path) {
 }
 
 const STATUS_MESSAGES = {
-  401: 'Please sign in to continue.',
   403: 'You do not have access to this record.',
   404: 'We could not find that item.',
 };

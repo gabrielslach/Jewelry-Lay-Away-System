@@ -19,8 +19,9 @@ export async function ensureAdminToken() {
   return data.access_token;
 }
 
+// Empty message: the session-expired modal explains it, so pages show no inline error.
 function signInRequired() {
-  return new ServiceError('Please sign in to continue.', 401);
+  return new ServiceError('', 401);
 }
 
 function sessionExpired() {
@@ -33,7 +34,7 @@ let pendingRefresh = null;
 async function refreshAccessToken() {
   if (!getAdminRefreshToken()) {
     clearAdminSession();
-    throw signInRequired();
+    throw sessionExpired();
   }
   pendingRefresh ??= refreshAdminToken().finally(() => {
     pendingRefresh = null;

@@ -68,7 +68,7 @@ describe('customerRequest', () => {
     setCustomerToken('expired');
     localStorage.setItem('customerRefreshToken', 'revoked');
     await expect(customerRequest(ORDERS)).rejects.toMatchObject({
-      message: 'Please sign in to continue.',
+      message: '',
       status: 401,
     });
     expect(getCustomer()).not.toBeNull();
@@ -86,15 +86,15 @@ describe('customerRequest', () => {
     off();
   });
 
-  it('asks guests to sign in without calling the API or emitting', async () => {
+  it('asks guests to sign in without calling the API', async () => {
     const expired = vi.fn();
     const off = subscribeSessionExpired('customer', expired);
     await expect(customerRequest(ORDERS)).rejects.toMatchObject({
-      message: 'Please sign in to continue.',
+      message: '',
       status: 401,
     });
     expect(fetchSpy).not.toHaveBeenCalled();
-    expect(expired).not.toHaveBeenCalled();
+    expect(expired).toHaveBeenCalledTimes(1);
     off();
   });
 
