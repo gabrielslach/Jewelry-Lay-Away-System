@@ -1,8 +1,9 @@
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { SessionProvider } from '../../src/components/SessionProvider.jsx';
 import StorefrontLayout from '../../src/layouts/StorefrontLayout.jsx';
+import { emitSessionExpired } from '../../src/services/sessionExpired.js';
 import { loginCustomer } from '../../src/services/loginCustomer.js';
 
 function renderLayout(initialEntries = ['/']) {
@@ -37,6 +38,14 @@ function panel() {
 }
 
 describe('StorefrontLayout', () => {
+  it('shows the sign-in modal when the customer session expires', () => {
+    renderLayout(['/account']);
+    act(() => emitSessionExpired('customer'));
+    expect(screen.getByRole('dialog', { name: 'Sign in to continue' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it('renders storefront navigation and footer', () => {
     renderLayout();
     expect(

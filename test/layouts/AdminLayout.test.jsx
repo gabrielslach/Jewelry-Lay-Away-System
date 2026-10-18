@@ -1,7 +1,8 @@
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import AdminLayout from '../../src/layouts/AdminLayout.jsx';
+import { emitSessionExpired } from '../../src/services/sessionExpired.js';
 import { getAdminToken } from '../../src/services/session.js';
 import { signInAdmin, signOutAdmin } from '../helpers/adminAuth.js';
 
@@ -53,6 +54,24 @@ describe('AdminLayout', () => {
       </MemoryRouter>,
     );
     fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+    expect(screen.getByRole('heading', { name: 'Admin sign in' })).toBeInTheDocument();
+    expect(getAdminToken()).toBeFalsy();
+  });
+
+  it('shows the sign-in modal on expiry and sends staff to login with the page', () => {
+    render(
+      <MemoryRouter initialEntries={['/admin/orders']}>
+        <Routes>
+          <Route path="/admin/login" element={<h1>Admin sign in</h1>} />
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route path="orders" element={<p>Orders</p>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+    act(() => emitSessionExpired('admin'));
+    expect(screen.getByRole('dialog', { name: 'Sign in to continue' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     expect(screen.getByRole('heading', { name: 'Admin sign in' })).toBeInTheDocument();
     expect(getAdminToken()).toBeFalsy();
   });

@@ -155,13 +155,16 @@ describe('Account', () => {
     expect(chromeLink('My Account')).toHaveAttribute('href', '/account');
   });
 
-  it('sends the shopper to sign in when the refresh token is revoked', async () => {
+  it('blocks the page with the sign-in modal when the refresh token is revoked', async () => {
     await signIn();
     setCustomerToken('expired');
     localStorage.setItem('customerRefreshToken', 'revoked');
     renderApp();
+    expect(
+      await screen.findByRole('dialog', { name: 'Sign in to continue' }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
-    expect(chromeLink('Sign in')).toHaveAttribute('href', '/login');
   });
 
   it('signs out to the sign-in page', async () => {

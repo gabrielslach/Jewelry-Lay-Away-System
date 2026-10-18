@@ -59,4 +59,15 @@ describe('Modal', () => {
     expect(body.contains(foot)).toBe(false);
     expect(foot.previousElementSibling).toBe(body);
   });
+
+  it('ignores Escape, backdrop clicks and hides the close button when not dismissible', () => {
+    const onClose = vi.fn();
+    const { container } = render(
+      <Modal title="T" dismissible={false} onClose={onClose}>Body</Modal>,
+    );
+    fireEvent.keyDown(document, { key: 'Escape' });
+    fireEvent.click(container.querySelector('.modal-backdrop'));
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'Close' })).not.toBeInTheDocument();
+  });
 });

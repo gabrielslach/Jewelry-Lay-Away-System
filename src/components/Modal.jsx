@@ -4,18 +4,20 @@ import './Modal.css';
 
 const openModals = [];
 
-export default function Modal({ title, children, footer, onClose }) {
+export default function Modal({ title, children, footer, onClose, dismissible = true }) {
   const onCloseRef = useRef(onClose);
+  const dismissibleRef = useRef(dismissible);
 
   useEffect(() => {
     onCloseRef.current = onClose;
+    dismissibleRef.current = dismissible;
   });
 
   useEffect(() => {
     const self = {};
     openModals.push(self);
     function onKeyDown(event) {
-      if (event.key === 'Escape' && openModals.at(-1) === self) {
+      if (dismissibleRef.current && event.key === 'Escape' && openModals.at(-1) === self) {
         onCloseRef.current();
       }
     }
@@ -30,7 +32,7 @@ export default function Modal({ title, children, footer, onClose }) {
     <div
       className="modal-backdrop"
       onClick={(event) => {
-        if (event.target === event.currentTarget) {
+        if (dismissible && event.target === event.currentTarget) {
           onClose();
         }
       }}
@@ -38,9 +40,11 @@ export default function Modal({ title, children, footer, onClose }) {
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div className="modal-head">
           <h3 id="modal-title">{title}</h3>
-          <button className="modal-close" type="button" aria-label="Close" onClick={onClose}>
-            <CloseIcon title="" />
-          </button>
+          {dismissible ? (
+            <button className="modal-close" type="button" aria-label="Close" onClick={onClose}>
+              <CloseIcon title="" />
+            </button>
+          ) : null}
         </div>
         <div className="modal-body">{children}</div>
         {footer ? <div className="modal-foot">{footer}</div> : null}

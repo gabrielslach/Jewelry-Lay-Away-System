@@ -1,9 +1,6 @@
 import { request } from './http.js';
-import {
-  clearCustomerSession,
-  getCustomerRefreshToken,
-  setCustomerToken,
-} from './session.js';
+import { emitSessionExpired } from './sessionExpired.js';
+import { getCustomerRefreshToken, setCustomerToken } from './session.js';
 
 export async function refreshCustomerToken() {
   try {
@@ -15,7 +12,7 @@ export async function refreshCustomerToken() {
     return access_token;
   } catch (err) {
     if (err.status === 401) {
-      clearCustomerSession();
+      emitSessionExpired('customer');
     }
     throw err;
   }
