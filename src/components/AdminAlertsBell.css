@@ -82,3 +82,16 @@
   padding: 10px 14px;
   text-decoration: none;
 }
+
+@media (max-width: 479px) {
+  .admin-bell-wrap {
+    position: static;
+  }
+
+  .bell-panel {
+    left: 12px;
+    right: 12px;
+    top: 100%;
+    width: auto;
+  }
+}

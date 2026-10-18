@@ -434,3 +434,105 @@ export function initialSettings() {
     grace_period_days: 7,
   };
 }
+
+export function initialCustomerNotifications(now = new Date()) {
+  const ago = (hours) => new Date(now.getTime() - hours * 3600e3).toISOString();
+  return [
+    {
+      id: 1,
+      customer_id: 1,
+      kind: 'payment_rejected',
+      title: 'Payment rejected',
+      body: 'The reference number on your payment could not be verified. Please check the number on your receipt and resubmit your proof of payment so we can confirm it.',
+      created_at: ago(1),
+      read_at: null,
+    },
+    {
+      id: 2,
+      customer_id: 1,
+      kind: 'due_today',
+      title: 'Payment due today',
+      body: 'Your installment is due today! Pay by bank transfer or GCash and upload your proof of payment before midnight to avoid a late fee.',
+      created_at: ago(3),
+      read_at: null,
+    },
+    {
+      id: 3,
+      customer_id: 1,
+      kind: 'payment_confirmed',
+      title: 'Payment confirmed',
+      body: 'Your installment payment is confirmed.',
+      created_at: ago(26),
+      read_at: null,
+    },
+    {
+      id: 4,
+      customer_id: 1,
+      kind: 'down_payment_confirmed',
+      title: 'Down payment confirmed',
+      body: 'Your down payment is confirmed. Your lay-away plan is now active, and your first installment is due in 30 days. You can track every payment from your account.',
+      created_at: ago(24 * 5),
+      read_at: ago(24 * 4),
+    },
+    {
+      id: 5,
+      customer_id: 1,
+      kind: 'plan_created',
+      title: 'Lay-away plan created',
+      body: 'Plan LA-1001 for Solitaire Ring.',
+      created_at: ago(24 * 6),
+      read_at: ago(24 * 5),
+    },
+    {
+      id: 6,
+      customer_id: 1,
+      kind: 'plan_closed',
+      title: 'Plan closed',
+      body: 'Your lay-away plan has been closed. Any remaining balance has been settled, and no further payments are due. Thank you for choosing Mine Credit!',
+      created_at: ago(24 * 20),
+      read_at: ago(24 * 19),
+    },
+  ];
+}
+
+export function initialAdminNotifications(now = new Date()) {
+  const ago = (hours) => new Date(now.getTime() - hours * 3600e3).toISOString();
+  return [
+    {
+      id: 7,
+      kind: 'payment_submitted',
+      title: 'Payment to confirm: plan #86, payment 1',
+      body: 'A customer submitted a bank transfer for plan #86 (payment 1). Amount: PHP 1183.23. Reference: assa. Check the bank, then confirm or reject it in the admin.',
+      plan_id: '86',
+      created_at: ago(1),
+      read_at: null,
+    },
+    {
+      id: 8,
+      kind: 'payment_submitted',
+      title: 'Payment to confirm: plan #90, down payment',
+      body: 'A customer submitted a bank transfer for plan #90 (down payment). Amount: PHP 83467.80. Reference: AA-12334. Check the bank, then confirm or reject it in the admin.',
+      plan_id: '90',
+      created_at: ago(24),
+      read_at: null,
+    },
+    {
+      id: 9,
+      kind: 'payment_submitted',
+      title: 'Payment to confirm: plan #88, down payment',
+      body: 'A customer submitted a bank transfer for plan #88 (down payment). Amount: PHP 22702.68. Reference: vbcnnvcnv. Check the bank, then confirm or reject it in the admin.',
+      plan_id: '88',
+      created_at: ago(48),
+      read_at: null,
+    },
+    {
+      id: 10,
+      kind: 'plan_reconstructed',
+      title: 'Plan #86 reconstructed',
+      body: "Bossing Omar Kumar's plan #86 (MC21703) missed a term past its grace period and was reconstructed. New balance PHP 4,896.13.",
+      plan_id: '86',
+      created_at: ago(49),
+      read_at: null,
+    },
+  ];
+}

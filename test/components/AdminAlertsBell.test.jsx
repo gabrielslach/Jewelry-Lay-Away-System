@@ -12,7 +12,7 @@ describe('AdminAlertsBell', () => {
         {
           id: 1,
           title: 'Payment submitted',
-          body: 'A payment is waiting.',
+          body: 'A payment is waiting. Review it in Orders.',
           created_at: new Date().toISOString(),
         },
       ],
@@ -28,6 +28,8 @@ describe('AdminAlertsBell', () => {
     expect(await screen.findByText('1')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Alerts' }));
     expect(screen.getByText('Payment submitted')).toBeInTheDocument();
+    expect(screen.getByText('A payment is waiting.')).toBeInTheDocument();
+    expect(screen.queryByText(/Review it in Orders/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Mark all read' }));
     expect(markRead).toHaveBeenCalled();
   });
