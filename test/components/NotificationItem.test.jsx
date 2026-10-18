@@ -21,4 +21,15 @@ describe('NotificationItem', () => {
     expect(screen.getByRole('listitem')).toHaveClass('read');
     expect(screen.queryByRole('button', { name: 'Mark read' })).not.toBeInTheDocument();
   });
+
+  it('shows only the first sentence until expanded', () => {
+    const long = { ...item, body: 'Your plan is due soon. Schedule:\n1. Oct 1 - 100' };
+    render(<ul><NotificationItem item={long} onMarkRead={vi.fn()} /></ul>);
+    expect(screen.getByText('Your plan is due soon.')).toBeInTheDocument();
+    expect(screen.queryByText(/Schedule/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Show more' }));
+    expect(screen.getByText(/Schedule/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Show less' }));
+    expect(screen.queryByText(/Schedule/)).not.toBeInTheDocument();
+  });
 });
