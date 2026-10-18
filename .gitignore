@@ -6,3 +6,6 @@ dist
 .env.*
 !.env.example
 coverage
+
+.playwright-mcp/
+specs/accounts.txt
