@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BellIcon } from '../theme/icons.jsx';
 import { formatRelativeTime } from '../lib/dates.js';
+import { firstSentence } from '../lib/text.js';
 import {
   getAdminNotifications,
   markAdminNotificationsRead,
@@ -87,7 +88,7 @@ export default function AdminAlertsBell() {
           {items.slice(0, 4).map((item) => (
             <div className="bell-panel-item" key={item.id}>
               <b>{item.title}</b>
-              <p>{item.body}</p>
+              <p>{firstSentence(item.body ?? '').trim()}</p>
               <span>{formatRelativeTime(item.created_at)}</span>
             </div>
           ))}
