@@ -7,6 +7,7 @@ import {
   getCustomerToken,
   setCustomerToken,
 } from '../../src/services/session.js';
+import { subscribeSessionExpired } from '../../src/services/sessionExpired.js';
 
 const ORDERS = '/api/customers/orders';
 let fetchSpy;
@@ -62,7 +63,7 @@ describe('customerRequest', () => {
     expect(callsTo(ORDERS)).toHaveLength(4);
   });
 
-  it('signs out when the refresh token is rejected', async () => {
+  it('keeps the session for the sign-in modal when the refresh token is rejected', async () => {
     await signIn();
     setCustomerToken('expired');
     localStorage.setItem('customerRefreshToken', 'revoked');
@@ -70,17 +71,31 @@ describe('customerRequest', () => {
       message: 'Please sign in to continue.',
       status: 401,
     });
-    expect(getCustomer()).toBeNull();
-    expect(getCustomerRefreshToken()).toBeNull();
-    expect(getCustomerToken()).toBeNull();
+    expect(getCustomer()).not.toBeNull();
+    expect(getCustomerRefreshToken()).toBe('revoked');
   });
 
-  it('asks guests to sign in without calling the API', async () => {
+  it('emits session expired when the refresh token is rejected', async () => {
+    const expired = vi.fn();
+    const off = subscribeSessionExpired('customer', expired);
+    await signIn();
+    setCustomerToken('expired');
+    localStorage.setItem('customerRefreshToken', 'revoked');
+    await expect(customerRequest(ORDERS)).rejects.toMatchObject({ status: 401 });
+    expect(expired).toHaveBeenCalledTimes(1);
+    off();
+  });
+
+  it('asks guests to sign in without calling the API or emitting', async () => {
+    const expired = vi.fn();
+    const off = subscribeSessionExpired('customer', expired);
     await expect(customerRequest(ORDERS)).rejects.toMatchObject({
       message: 'Please sign in to continue.',
       status: 401,
     });
     expect(fetchSpy).not.toHaveBeenCalled();
+    expect(expired).not.toHaveBeenCalled();
+    off();
   });
 
   it('does not refresh on 403', async () => {

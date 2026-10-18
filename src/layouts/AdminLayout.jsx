@@ -8,6 +8,7 @@ import {
 } from 'react-router-dom';
 import AdminAlertsBell from '../components/AdminAlertsBell.jsx';
 import Button from '../components/Button.jsx';
+import SessionExpiredModal from '../components/SessionExpiredModal.jsx';
 import { Logo } from '../theme/assets.js';
 import { HamburgerIcon } from '../theme/icons.jsx';
 import { getAdminAlerts } from '../services/adminAlerts.js';
@@ -80,7 +81,7 @@ export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const title = titles[location.pathname] || 'Admin';
-  const signedIn = Boolean(getAdminRefreshToken());
+  const [signedIn] = useState(() => Boolean(getAdminRefreshToken()));
   const admin = getAdmin();
   const isAdmin = (admin?.role ?? 'admin') === 'admin';
 
@@ -170,6 +171,7 @@ export default function AdminLayout() {
           <Outlet context={{ alerts, refreshAlerts }} />
         </div>
       </div>
+      <SessionExpiredModal scope="admin" />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   getAdminToken,
   setAdminSession,
 } from './session.js';
+import { emitSessionExpired } from './sessionExpired.js';
 
 /** Test/dev helper: mints a staff session via the mock. Do not call from SPA request paths. */
 export async function ensureAdminToken() {
@@ -22,6 +23,11 @@ function signInRequired() {
   return new ServiceError('Please sign in to continue.', 401);
 }
 
+function sessionExpired() {
+  emitSessionExpired('admin');
+  return signInRequired();
+}
+
 let pendingRefresh = null;
 
 async function refreshAccessToken() {
@@ -35,7 +41,7 @@ async function refreshAccessToken() {
   try {
     return await pendingRefresh;
   } catch (err) {
-    throw err.status === 401 ? signInRequired() : err;
+    throw err.status === 401 ? sessionExpired() : err;
   }
 }
 
@@ -52,11 +58,7 @@ export async function withAdminAuth(run) {
   try {
     return await run(freshToken);
   } catch (err) {
-    if (err.status === 401) {
-      clearAdminSession();
-      throw signInRequired();
-    }
-    throw err;
+    throw err.status === 401 ? sessionExpired() : err;
   }
 }
 
