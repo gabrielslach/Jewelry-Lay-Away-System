@@ -10,13 +10,14 @@ function sessionExpired() {
   return signInRequired();
 }
 
+// Empty message: the session-expired modal explains it, so pages show no inline error.
 function signInRequired() {
-  return new ServiceError('Please sign in to continue.', 401);
+  return new ServiceError('', 401);
 }
 
 async function refreshAccessToken() {
   if (!getCustomerRefreshToken()) {
-    throw signInRequired();
+    throw sessionExpired();
   }
   pendingRefresh ??= refreshCustomerToken().finally(() => {
     pendingRefresh = null;

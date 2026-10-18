@@ -49,9 +49,9 @@ describe('adminRequest', () => {
     await expect(adminRequest(DASHBOARD)).rejects.toMatchObject({
       name: 'ServiceError',
       status: 401,
-      message: 'Please sign in to continue.',
+      message: '',
     });
-    expect(expired).not.toHaveBeenCalled();
+    expect(expired).toHaveBeenCalledTimes(1);
     off();
     expect(getAdminToken()).toBeNull();
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -68,7 +68,7 @@ describe('adminRequest', () => {
 
     await expect(adminRequest(DASHBOARD)).rejects.toMatchObject({
       status: 401,
-      message: 'Please sign in to continue.',
+      message: '',
     });
     expect(expired).toHaveBeenCalledTimes(1);
     off();
